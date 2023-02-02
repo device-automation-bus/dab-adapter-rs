@@ -1,10 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
-#[derive(Default, Serialize)]
+#[derive(Default,Serialize,Deserialize)]
 pub struct KeyListRequest {}
 
 #[allow(non_snake_case)]
-#[derive(Default, Serialize)]
-pub struct KeyList {
-    pub keyCodes: Vec<String>,
+#[derive(Default,Serialize,Deserialize)]
+pub struct KeyList{
+	pub keyCodes: Vec<String>,
 }
+
