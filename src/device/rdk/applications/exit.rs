@@ -13,6 +13,7 @@
 #[allow(unused_imports)]
 use crate::dab::applications::exit::ExitApplicationRequest;
 use crate::dab::applications::exit::ExitApplicationResponse;
+use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -24,7 +25,21 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = ExitApplicationResponse::default();
     // *** Fill in the fields of the struct ExitApplicationResponse here ***
 
-    let Dab_Request: ExitApplicationRequest = serde_json::from_str(&_packet).unwrap();
+    let IncomingMessage = serde_json::from_str(&_packet);
+
+    match IncomingMessage {
+        Err(err) => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        Ok(_) => (),
+    }
+
+    let Dab_Request: ExitApplicationRequest = IncomingMessage.unwrap();
 
     #[derive(Serialize)]
     struct RdkRequest {
