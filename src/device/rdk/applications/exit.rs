@@ -54,6 +54,15 @@ pub fn process(_packet: String) -> Result<String, String> {
         callsign: String,
     }
 
+    if Dab_Request.appId.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "request missing 'appId' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
     let req_params = RequestParams {
         callsign: Dab_Request.appId,
     };
