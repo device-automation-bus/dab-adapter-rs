@@ -13,6 +13,7 @@
 #[allow(unused_imports)]
 use crate::dab::applications::get_state::GetApplicationStateRequest;
 use crate::dab::applications::get_state::GetApplicationStateResponse;
+use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -24,47 +25,94 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = GetApplicationStateResponse::default();
     // *** Fill in the fields of the struct GetApplicationStateResponse here ***
 
+    let IncomingMessage = serde_json::from_str(&_packet);
+
+    match IncomingMessage {
+        Err(err) => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        Ok(_) => (),
+    }
+
+    let Dab_Request: GetApplicationStateRequest = IncomingMessage.unwrap();
+
+    if Dab_Request.appId.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "request missing 'appId' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
     #[derive(Serialize)]
     struct RdkRequest {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: String,
     }
 
     let request = RdkRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
+        method: "org.rdk.RDKShell.getState".into(),
     };
+
+    #[derive(Deserialize)]
+    struct GetStateResult {
+        state: Vec<State>,
+        success: bool,
+    }
 
     #[derive(Deserialize)]
     struct RdkResponse {
         jsonrpc: String,
         id: i32,
-        result: GetConnectedVideoDisplaysResult,
+        result: GetStateResult,
     }
 
     #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
-        success: bool,
+    struct State {
+        callsign: String,
+        state: String,
+        uri: String,
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
     let response_json = http_post(json_string);
 
     match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-            println!("Sucesso: {}", rdkresponse.result.success);
-        }
-
         Err(err) => {
-            println!("Erro: {}", err);
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(response) => {
+            let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
 
-            return Err(err);
+            for item in rdkresponse.result.state {
+                if item.callsign != Dab_Request.appId {
+                    continue;
+                }
+                match item.state.as_str() {
+                    "suspended" => ResponseOperator.state = "BACKGROUND".to_string(),
+                    _ => ResponseOperator.state = "FOREGROUND".to_string(),
+                }
+                break;
+            }
+
+            // We couldn't find the requested appId in the list, that
+            // means the app isn't running yet
+            if ResponseOperator.state.is_empty() {
+                ResponseOperator.state = "STOPPED".to_string();
+            }
         }
     }
 
