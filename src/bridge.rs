@@ -57,10 +57,10 @@ pub fn main() {
         "dab/device/info".to_string(),
         Box::new(hw_specific::device::info::process),
     );
-    // handlers.insert(
-    //     "dab/system/restart".to_string(),
-    //     Box::new(hw_specific::system::restart::process),
-    // );
+    handlers.insert(
+        "dab/system/restart".to_string(),
+        Box::new(hw_specific::system::restart::process),
+    );
     // handlers.insert(
     //     "dab/system/settings/list".to_string(),
     //     Box::new(hw_specific::system::settings::list::process),
@@ -125,22 +125,10 @@ pub fn main() {
     //     "dab/voice/send-text".to_string(),
     //     Box::new(hw_specific::voice::send_text::process),
     // );
-    // handlers.insert(
-    //     "dab/version".to_string(),
-    //     Box::new(hw_specific::version::process),
-    // );
-    // handlers.insert(
-    //     "dab/system/language/list".to_string(),
-    //     Box::new(hw_specific::system::language::list::process),
-    // );
-    // handlers.insert(
-    //     "dab/system/language/get".to_string(),
-    //     Box::new(hw_specific::system::language::get::process),
-    // );
-    // handlers.insert(
-    //     "dab/system/language/set".to_string(),
-    //     Box::new(hw_specific::system::language::set::process),
-    // );
+    handlers.insert(
+        "dab/version".to_string(),
+        Box::new(hw_specific::version::process),
+    );
 
     dab::start(mqtt_host, mqtt_port, handlers)
 }

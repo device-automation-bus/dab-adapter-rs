@@ -24,48 +24,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = Version::default();
     // *** Fill in the fields of the struct Version here ***
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: String,
-    }
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetConnectedVideoDisplaysResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-    }
+    ResponseOperator.versions.push("2.0".to_string());
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
