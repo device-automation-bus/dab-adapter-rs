@@ -34,7 +34,7 @@ pub fn http_post(json_string: String) -> Result<String, String> {
 }
 
 lazy_static! {
-    static ref RDK_KEYMAP: HashMap<String, i16> = {
+    static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
         keycode_map.insert(String::from("KEY_LEFT"), 37);
         keycode_map.insert(String::from("KEY_UP"), 38);
@@ -68,6 +68,10 @@ pub fn get_rdk_keys() -> Vec<String> {
         .keys()
         .map(|k| k.to_owned().to_string())
         .collect()
+}
+
+pub fn get_keycode(keyname: String) -> Option<&'static u16> {
+    RDK_KEYMAP.get(&keyname)
 }
 
 // Return language tags defined in RFC 5646.

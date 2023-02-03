@@ -13,6 +13,7 @@ use crate::dab::input::key_press::KeyPressRequest;
 use crate::dab::input::key_press::KeyPressResponse;
 #[allow(unused_imports)]
 use crate::dab::ErrorResponse;
+use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -24,31 +25,77 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = KeyPressResponse::default();
     // *** Fill in the fields of the struct KeyPressResponse here ***
 
+    let IncomingMessage = serde_json::from_str(&_packet);
+
+    match IncomingMessage {
+        Err(err) => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        Ok(_) => (),
+    }
+
+    let Dab_Request: KeyPressRequest = IncomingMessage.unwrap();
+
+    if Dab_Request.keyCode.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "request missing 'keyCode' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
+    let mut KeyCode: u16;
+
+    match get_keycode(Dab_Request.keyCode.clone()) {
+        Some(k) => KeyCode = *k,
+        None => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "keyCode' not found".to_string(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+    }
+
+    //#########org.rdk.RDKShell.injectKey#########
     #[derive(Serialize)]
-    struct RdkRequest {
+    struct InjectKeyRequest {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: String,
+        params: InjectKeyRequestParams,
     }
 
-    let request = RdkRequest {
+    #[derive(Serialize)]
+    struct InjectKeyRequestParams {
+        keyCode: u16,
+    }
+
+    let req_params = InjectKeyRequestParams { keyCode: KeyCode };
+
+    let request = InjectKeyRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
+        method: "org.rdk.RDKShell.1.injectKey".into(),
+        params: req_params,
     };
 
     #[derive(Deserialize)]
-    struct RdkResponse {
+    struct InjectKeyResponse {
         jsonrpc: String,
         id: i32,
-        result: GetConnectedVideoDisplaysResult,
+        result: InjectKeyResult,
     }
 
     #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
+    struct InjectKeyResult {
         success: bool,
     }
 
@@ -56,15 +103,14 @@ pub fn process(_packet: String) -> Result<String, String> {
     let response_json = http_post(json_string);
 
     match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
         Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
         }
+        _ => (),
     }
 
     // *******************************************************************
