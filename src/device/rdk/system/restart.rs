@@ -22,31 +22,41 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = RestartResponse::default();
     // *** Fill in the fields of the struct RestartResponse here ***
 
+    //#########org.rdk.System.reboot#########
     #[derive(Serialize)]
-    struct RdkRequest {
+    struct RebootRequest {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: String,
+        params: RebootRequestParams,
     }
 
-    let request = RdkRequest {
+    #[derive(Serialize)]
+    struct RebootRequestParams {
+        rebootReason: String,
+    }
+
+    let req_params = RebootRequestParams {
+        rebootReason: "DAB_REBOOT_REQUEST".to_string(),
+    };
+
+    let request = RebootRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
+        method: "org.rdk.System.reboot".into(),
+        params: req_params,
     };
 
     #[derive(Deserialize)]
-    struct RdkResponse {
+    struct RebootResponse {
         jsonrpc: String,
         id: i32,
-        result: GetConnectedVideoDisplaysResult,
+        result: RebootResult,
     }
 
     #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
+    struct RebootResult {
+        IARM_Bus_Call_STATUS: u32,
         success: bool,
     }
 
@@ -54,14 +64,15 @@ pub fn process(_packet: String) -> Result<String, String> {
     let response_json = http_post(json_string);
 
     match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
         Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(response) => {
+            let Reboot: RebootResponse = serde_json::from_str(&response).unwrap();
         }
     }
 
