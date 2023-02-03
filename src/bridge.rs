@@ -61,10 +61,10 @@ pub fn main() {
         "dab/system/restart".to_string(),
         Box::new(hw_specific::system::restart::process),
     );
-    // handlers.insert(
-    //     "dab/system/settings/list".to_string(),
-    //     Box::new(hw_specific::system::settings::list::process),
-    // );
+    handlers.insert(
+        "dab/system/settings/list".to_string(),
+        Box::new(hw_specific::system::settings::list::process),
+    );
     // handlers.insert(
     //     "dab/system/settings/get".to_string(),
     //     Box::new(hw_specific::system::settings::get::process),
@@ -73,10 +73,10 @@ pub fn main() {
     //     "dab/system/settings/set".to_string(),
     //     Box::new(hw_specific::system::settings::set::process),
     // );
-    // handlers.insert(
-    //     "dab/input/key/list".to_string(),
-    //     Box::new(hw_specific::input::key::list::process),
-    // );
+    handlers.insert(
+        "dab/input/key/list".to_string(),
+        Box::new(hw_specific::input::key::list::process),
+    );
     // handlers.insert(
     //     "dab/input/key-press".to_string(),
     //     Box::new(hw_specific::input::key_press::process),

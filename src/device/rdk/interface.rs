@@ -1,4 +1,6 @@
 use futures::executor::block_on;
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use surf::Client;
 
 static mut DEVICE_ADDRESS: String = String::new();
@@ -29,6 +31,43 @@ pub fn http_post(json_string: String) -> Result<String, String> {
             return Err(err.to_string());
         }
     }
+}
+
+lazy_static! {
+    static ref RDK_KEYMAP: HashMap<String, i16> = {
+        let mut keycode_map = HashMap::new();
+        keycode_map.insert(String::from("KEY_LEFT"), 37);
+        keycode_map.insert(String::from("KEY_UP"), 38);
+        keycode_map.insert(String::from("KEY_RIGHT"), 39);
+        keycode_map.insert(String::from("KEY_DOWN"), 40);
+        keycode_map.insert(String::from("KEY_ENTER"), 13);
+        keycode_map.insert(String::from("KEY_MENU"), 36);
+        keycode_map.insert(String::from("KEY_EXIT"), 36);
+        keycode_map.insert(String::from("KEY_POWER"), 112);
+        keycode_map.insert(String::from("KEY_VOLUME_DOWN"), 174);
+        keycode_map.insert(String::from("KEY_VOLUME_UP"), 175);
+        keycode_map.insert(String::from("KEY_MUTE"), 173);
+        keycode_map.insert(String::from("KEY_CHANNEL_UP"), 175);
+        keycode_map.insert(String::from("KEY_CHANNEL_DOWN"), 174);
+        keycode_map.insert(String::from("KEY_0"), 48);
+        keycode_map.insert(String::from("KEY_1"), 49);
+        keycode_map.insert(String::from("KEY_2"), 50);
+        keycode_map.insert(String::from("KEY_3"), 51);
+        keycode_map.insert(String::from("KEY_4"), 52);
+        keycode_map.insert(String::from("KEY_5"), 53);
+        keycode_map.insert(String::from("KEY_6"), 54);
+        keycode_map.insert(String::from("KEY_7"), 55);
+        keycode_map.insert(String::from("KEY_8"), 56);
+        keycode_map.insert(String::from("KEY_9"), 57);
+        keycode_map
+    };
+}
+
+pub fn get_rdk_keys() -> Vec<String> {
+    RDK_KEYMAP
+        .keys()
+        .map(|k| k.to_owned().to_string())
+        .collect()
 }
 
 // Return language tags defined in RFC 5646.
