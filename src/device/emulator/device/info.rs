@@ -24,6 +24,8 @@
 // pub struct NetworkInterface{
 // pub connected: bool,
 // pub macAddress: String,
+// pub ipAddress: String,
+// pub dns: Vec<String>,
 // pub r#type: NetworkInterfaceType,
 // }
 
@@ -38,9 +40,9 @@
 // pub firmwareBuild: String,
 // pub networkInterfaces: Vec<NetworkInterface>,
 // pub displayType: DisplayType,
-// pub screenWidthPixels: f32,
-// pub screenHeightPixels: f32,
-// pub uptimeSince: u32,
+// pub screenWidthPixels: u32,
+// pub screenHeightPixels: u32,
+// pub uptimeSince: u64,
 // }
 
 #[allow(unused_imports)]
