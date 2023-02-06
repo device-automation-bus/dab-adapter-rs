@@ -77,10 +77,10 @@ pub fn main() {
         "dab/input/key/list".to_string(),
         Box::new(hw_specific::input::key::list::process),
     );
-    // handlers.insert(
-    //     "dab/input/key-press".to_string(),
-    //     Box::new(hw_specific::input::key_press::process),
-    // );
+    handlers.insert(
+        "dab/input/key-press".to_string(),
+        Box::new(hw_specific::input::key_press::process),
+    );
     // handlers.insert(
     //     "dab/input/long-key-press".to_string(),
     //     Box::new(hw_specific::input::long_key_press::process),
