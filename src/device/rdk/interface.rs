@@ -2,17 +2,36 @@ use futures::executor::block_on;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use surf::Client;
-
+use crate::device::rdk::output::image::save_image;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Server};
 static mut DEVICE_ADDRESS: String = String::new();
+use tokio;
 
-pub fn init(address: String) {
+#[tokio::main]
+pub async fn init(address: String) {
     unsafe {
         DEVICE_ADDRESS.push_str(&address);
     }
+
+    let make_service = make_service_fn(|_conn| async {
+        Ok::<_, hyper::Error>(service_fn(save_image))
+    });
+
+    let addr = ([0, 0, 0, 0], 7878).into();
+    let server = Server::bind(&addr).serve(make_service);
+
+    tokio::spawn(async {
+        server.await.unwrap();
+    });
+    // server.await.unwrap();
 }
-pub fn http_post(json_string: String) -> Result<String, String> {
+
+#[tokio::main]
+pub async fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
     let rdk_address = unsafe { &DEVICE_ADDRESS };
+
     let response = block_on(async {
         client
             .post(rdk_address)

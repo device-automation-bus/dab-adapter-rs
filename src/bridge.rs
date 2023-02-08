@@ -27,6 +27,8 @@ pub fn main() {
         .unwrap_or(String::from("http://localhost:9998/jsonrpc"));
 
     hw_specific::interface::init(device);
+
+
     let mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>> =
         HashMap::new();
     handlers.insert(
@@ -61,10 +63,10 @@ pub fn main() {
         "dab/system/restart".to_string(),
         Box::new(hw_specific::system::restart::process),
     );
-    handlers.insert(
-        "dab/system/settings/list".to_string(),
-        Box::new(hw_specific::system::settings::list::process),
-    );
+    // handlers.insert(
+    //     "dab/system/settings/list".to_string(),
+    //     Box::new(hw_specific::system::settings::list::process),
+    // );
     // handlers.insert(
     //     "dab/system/settings/get".to_string(),
     //     Box::new(hw_specific::system::settings::get::process),
@@ -85,10 +87,10 @@ pub fn main() {
     //     "dab/input/long-key-press".to_string(),
     //     Box::new(hw_specific::input::long_key_press::process),
     // );
-    // handlers.insert(
-    //     "dab/output/image".to_string(),
-    //     Box::new(hw_specific::output::image::process),
-    // );
+    handlers.insert(
+        "dab/output/image".to_string(),
+        Box::new(hw_specific::output::image::process),
+    );
     // handlers.insert(
     //     "dab/device-telemetry/start".to_string(),
     //     Box::new(hw_specific::device_telemetry::start::process),
