@@ -11,16 +11,16 @@ Since this software uses Cargo package manager, the building process is straight
 $ cargo build
 ```
 
-The output binary will be located at `./target/debug/dabridge`.
+The output binary will be located at `./target/debug/dab-bridge`.
 
 ## Usage ##
 
 ```
-dabridge --help
-dabridge 0.1.0
+dab-bridge --help
+dab-bridge 0.1.0
 
 USAGE:
-    dabridge [OPTIONS]
+    dab-bridge [OPTIONS]
 
 OPTIONS:
     -b, --broker <MQTT_HOST>    The MQTT broker host name or IP (default: localhost)
@@ -39,7 +39,7 @@ This bridge supports the three full protocol implementation types, as demonstrat
 ![Option 1: "On Device" Implementation](doc/Option1.png)
 
 ```
-$ dabridge
+$ dab-bridge
 ```
 
 ### Option 2: Remote Broker Implementation ###
@@ -49,7 +49,7 @@ $ dabridge
 Let's suppose `192.168.0.100` as the MQTT Broker IP address:
 
 ```
-$ dabridge -b 192.168.0.100
+$ dab-bridge -b 192.168.0.100
 ```
 
 ### Option 3: "Bridge" Implementation ###
@@ -59,12 +59,12 @@ $ dabridge -b 192.168.0.100
 Let's suppose `192.168.0.200` as the RDK Device (Device Under Test) IP address:
 
 ```
-$ dabridge -d 192.168.0.200
+$ dab-bridge -d 192.168.0.200
 ```
 
 ## DAB Operations Currently Supported ##
 
-This version implements support for the Device Automation Bus (DAB) Protocol Specification document version `Version: 1.0 | Last Updated: 2021-03-01`. It currently supports the following DAB operations:
+This version implements support for the Device Automation Bus (DAB) Protocol Specification document version `Version: 2.0`. It currently supports the following DAB operations:
 
 ### Applications ###
 
@@ -77,9 +77,6 @@ This version implements support for the Device Automation Bus (DAB) Protocol Spe
 | dab/applications/exit                | Yes       |
 | dab/device/info                      | Yes       |
 | dab/system/restart                   | Yes       |
-| dab/system/language/list             | -   [1]   |
-| dab/system/language/get              | - [1]   |
-| dab/system/language/set              | - [1]   |
 
 *[1] Currently Accelerator UI is not integrated with RDK's language settings file.*
 
@@ -100,27 +97,12 @@ This version implements support for the Device Automation Bus (DAB) Protocol Spe
 |	KEY_MUTE	            |	173	  |
 |	KEY_CHANNEL_UP	      |	175	  |
 |	KEY_CHANNEL_DOWN	    |	174	  |
-|	KEY_MENU	            |	-	    |
 |	KEY_EXIT            	|	36  	|
-|	KEY_INFO            	|	-	    |
-|	KEY_GUIDE	            |	-	    |
 |	KEY_UP	              |	38	  |
-|	KEY_PAGE_UP	          |	-	    |
-|	KEY_PAGE_DOWN         |	-	    |
 |	KEY_RIGHT	            |	39	  |
 |	KEY_DOWN	            |	40	  |
 |	KEY_LEFT	            |	37	  |
 |	KEY_ENTER	            |	13	  |
-|	KEY_BACK	            |	-	    |
-|	KEY_PLAY	            |	-	    |
-|	KEY_PLAY_PAUSE	      |	-	    |
-|	KEY_PAUSE	            |	-	    |
-|	KEY_RECORD	          |	-	    |
-|	KEY_STOP	            |	-	    |
-|	KEY_REWIND	          |	-	    |
-|	KEY_FAST_FORWARD     	|	-	    |
-|	KEY_SKIP_REWIND	      |	-	    |
-|	KEY_SKIP_FAST_FORWARD	|	-	    |
 |	KEY_0	                |	48  	|
 |	KEY_1	                |	49  	|
 |	KEY_2	                |	50  	|
@@ -131,11 +113,6 @@ This version implements support for the Device Automation Bus (DAB) Protocol Spe
 |	KEY_7	                |	55  	|
 |	KEY_8	                |	56  	|
 |	KEY_9	                |	57  	|
-|	KEY_RED	              |	-	    |
-|	KEY_GREEN	            |	-	    |
-|	KEY_YELLOW	          |	-	    |
-|	KEY_BLUE              |	-	    |
-
 
 ### Device and Application Telemetry ###
 
