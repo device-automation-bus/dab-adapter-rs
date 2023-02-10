@@ -29,9 +29,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator
         .operations
         .push("applications/launch".to_string());
-    ResponseOperator
-        .operations
-        .push("applications/launch-with-content".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("applications/launch-with-content".to_string());
     ResponseOperator
         .operations
         .push("applications/get-state".to_string());
@@ -42,48 +42,48 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator
         .operations
         .push("system/restart".to_string());
-    ResponseOperator
-        .operations
-        .push("system/settings/list".to_string());
-    ResponseOperator
-        .operations
-        .push("system/settings/get".to_string());
-    ResponseOperator
-        .operations
-        .push("system/settings/set".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/settings/list".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/settings/get".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/settings/set".to_string());
     ResponseOperator
         .operations
         .push("input/key/list".to_string());
     ResponseOperator
         .operations
         .push("input/key-press".to_string());
-    ResponseOperator
-        .operations
-        .push("input/long-key-press".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("input/long-key-press".to_string());
     ResponseOperator.operations.push("output/image".to_string());
-    ResponseOperator
-        .operations
-        .push("device-telemetry/start".to_string());
-    ResponseOperator
-        .operations
-        .push("device-telemetry/stop".to_string());
-    ResponseOperator
-        .operations
-        .push("app-telemetry/start".to_string());
-    ResponseOperator
-        .operations
-        .push("app-telemetry/stop".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("device-telemetry/start".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("device-telemetry/stop".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("app-telemetry/start".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("app-telemetry/stop".to_string());
     ResponseOperator
         .operations
         .push("health-check/get".to_string());
-    ResponseOperator.operations.push("voice/list".to_string());
-    ResponseOperator.operations.push("voice/set".to_string());
-    ResponseOperator
-        .operations
-        .push("voice/send-audio".to_string());
-    ResponseOperator
-        .operations
-        .push("voice/send-text".to_string());
+    // ResponseOperator.operations.push("voice/list".to_string());
+    // ResponseOperator.operations.push("voice/set".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("voice/send-audio".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("voice/send-text".to_string());
     ResponseOperator.operations.push("version".to_string());
     ResponseOperator
         .operations
