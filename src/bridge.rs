@@ -32,103 +32,103 @@ pub fn main() {
     let mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>> =
         HashMap::new();
     handlers.insert(
-        "dab/operations/list".to_string(),
+        "operations/list".to_string(),
         Box::new(hw_specific::operations::list::process),
     );
     handlers.insert(
-        "dab/applications/list".to_string(),
+        "applications/list".to_string(),
         Box::new(hw_specific::applications::list::process),
     );
     handlers.insert(
-        "dab/applications/launch".to_string(),
+        "applications/launch".to_string(),
         Box::new(hw_specific::applications::launch::process),
     );
     // handlers.insert(
-    //     "dab/applications/launch-with-content".to_string(),
+    //     "applications/launch-with-content".to_string(),
     //     Box::new(hw_specific::applications::launch_with_content::process),
     // );
     handlers.insert(
-        "dab/applications/get-state".to_string(),
+        "applications/get-state".to_string(),
         Box::new(hw_specific::applications::get_state::process),
     );
     handlers.insert(
-        "dab/applications/exit".to_string(),
+        "applications/exit".to_string(),
         Box::new(hw_specific::applications::exit::process),
     );
     handlers.insert(
-        "dab/device/info".to_string(),
+        "device/info".to_string(),
         Box::new(hw_specific::device::info::process),
     );
     handlers.insert(
-        "dab/system/restart".to_string(),
+        "system/restart".to_string(),
         Box::new(hw_specific::system::restart::process),
     );
     // handlers.insert(
-    //     "dab/system/settings/list".to_string(),
+    //     "system/settings/list".to_string(),
     //     Box::new(hw_specific::system::settings::list::process),
     // );
     // handlers.insert(
-    //     "dab/system/settings/get".to_string(),
+    //     "system/settings/get".to_string(),
     //     Box::new(hw_specific::system::settings::get::process),
     // );
     // handlers.insert(
-    //     "dab/system/settings/set".to_string(),
+    //     "system/settings/set".to_string(),
     //     Box::new(hw_specific::system::settings::set::process),
     // );
     handlers.insert(
-        "dab/input/key/list".to_string(),
+        "input/key/list".to_string(),
         Box::new(hw_specific::input::key::list::process),
     );
     handlers.insert(
-        "dab/input/key-press".to_string(),
+        "input/key-press".to_string(),
         Box::new(hw_specific::input::key_press::process),
     );
     // handlers.insert(
-    //     "dab/input/long-key-press".to_string(),
+    //     "input/long-key-press".to_string(),
     //     Box::new(hw_specific::input::long_key_press::process),
     // );
     handlers.insert(
-        "dab/output/image".to_string(),
+        "output/image".to_string(),
         Box::new(hw_specific::output::image::process),
     );
     // handlers.insert(
-    //     "dab/device-telemetry/start".to_string(),
+    //     "device-telemetry/start".to_string(),
     //     Box::new(hw_specific::device_telemetry::start::process),
     // );
     // handlers.insert(
-    //     "dab/device-telemetry/stop".to_string(),
+    //     "device-telemetry/stop".to_string(),
     //     Box::new(hw_specific::device_telemetry::stop::process),
     // );
     // handlers.insert(
-    //     "dab/app-telemetry/start".to_string(),
+    //     "app-telemetry/start".to_string(),
     //     Box::new(hw_specific::app_telemetry::start::process),
     // );
     // handlers.insert(
-    //     "dab/app-telemetry/stop".to_string(),
+    //     "app-telemetry/stop".to_string(),
     //     Box::new(hw_specific::app_telemetry::stop::process),
     // );
     // handlers.insert(
-    //     "dab/health-check/get".to_string(),
+    //     "health-check/get".to_string(),
     //     Box::new(hw_specific::health_check::get::process),
     // );
     // handlers.insert(
-    //     "dab/voice/list".to_string(),
+    //     "voice/list".to_string(),
     //     Box::new(hw_specific::voice::list::process),
     // );
     // handlers.insert(
-    //     "dab/voice/set".to_string(),
+    //     "voice/set".to_string(),
     //     Box::new(hw_specific::voice::set::process),
     // );
     // handlers.insert(
-    //     "dab/voice/send-audio".to_string(),
+    //     "voice/send-audio".to_string(),
     //     Box::new(hw_specific::voice::send_audio::process),
     // );
     // handlers.insert(
-    //     "dab/voice/send-text".to_string(),
+    //     "voice/send-text".to_string(),
     //     Box::new(hw_specific::voice::send_text::process),
     // );
     handlers.insert(
-        "dab/version".to_string(),
+        "version".to_string(),
         Box::new(hw_specific::version::process),
     );
 

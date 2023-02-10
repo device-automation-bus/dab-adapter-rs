@@ -134,7 +134,7 @@ pub fn run(
         println!("Error sending message: {:?}", e);
     }
 
-    // subscribe to all topics starting with `dab/`
+    // subscribe to all topics starting with `dab/<device-id>/`
     if subscribe(&cli, &device_id) == false {
         process::exit(1);
     }
@@ -144,12 +144,15 @@ pub fn run(
         if let Some(packet) = msg_rx {
             let result: String;
             let function_topic = std::string::String::from(packet.topic());
+            let substring = "dab/".to_owned() + &device_id + "/";
+            let operation = function_topic.replace(&substring, "");
+            
             let rx_properties = packet.properties().clone();
             let msg = decode_request(packet);
 
-            match handlers.get_mut(&function_topic) {
+            match handlers.get_mut(&operation) {
                 Some(callback) => {
-                    println!("OK: {}", function_topic);
+                    println!("OK: {}", operation);
                     // println!("MSG: {}",msg);
                     result = match callback(msg) {
                         Ok(r) => r,
@@ -162,7 +165,7 @@ pub fn run(
                 }
                 // If we can't get the proper handler, then this function is not implemented (yet)
                 _ => {
-                    println!("ERROR: {}", function_topic);
+                    println!("ERROR: {}", operation);
                     result = serde_json::to_string(&SimpleResponse { status: 501 }).unwrap();
                 }
             }
