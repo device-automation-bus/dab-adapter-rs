@@ -68,7 +68,7 @@ fn decode_request(packet: Message) -> String {
     String::from_utf8(packet.payload().to_vec()).unwrap()
 }
 
-pub fn start(
+pub fn run(
     mqtt_host: String,
     mqtt_port: u16,
     mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>>,

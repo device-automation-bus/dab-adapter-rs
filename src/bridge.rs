@@ -132,5 +132,5 @@ pub fn main() {
         Box::new(hw_specific::version::process),
     );
 
-    dab::start(mqtt_host, mqtt_port, handlers)
+    dab::run(mqtt_host, mqtt_port, handlers)
 }
