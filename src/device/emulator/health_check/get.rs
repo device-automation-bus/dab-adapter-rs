@@ -18,7 +18,7 @@ use serde_json::json;
 pub fn process(_packet: String) -> Result<String, String> {
     let ResponseOperator = HealthCheckResponse::default();
     // *** Fill in the fields of the struct HealthCheckResponse here ***
-
+    ResponseOperator.healthy = true;
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
