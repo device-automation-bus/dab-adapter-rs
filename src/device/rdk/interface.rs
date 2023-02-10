@@ -11,9 +11,8 @@ use tokio;
 #[tokio::main]
 pub async fn init(device_ip: &str) {
 
-    let address = format!("http://{}:9998/jsonrpc", device_ip);
     unsafe {
-        DEVICE_ADDRESS.push_str(&address);
+        DEVICE_ADDRESS.push_str(&device_ip);
     }
 
     let make_service = make_service_fn(|_conn| async {
@@ -48,7 +47,7 @@ pub fn get_device_id() -> String {
 #[tokio::main]
 pub async fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
-    let rdk_address = unsafe { &DEVICE_ADDRESS };
+    let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
     let response = block_on(async {
         client
@@ -101,9 +100,7 @@ lazy_static! {
 }
 
 pub fn get_ip_address() -> String {
-    let rdk_address = unsafe { &DEVICE_ADDRESS };
-    let ip_address = rdk_address.split(":").collect::<Vec<&str>>()[0];
-    ip_address.to_string()
+    unsafe { DEVICE_ADDRESS.clone() }
 }
 
 pub fn get_rdk_keys() -> Vec<String> {
