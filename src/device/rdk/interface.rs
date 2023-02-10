@@ -9,7 +9,9 @@ static mut DEVICE_ADDRESS: String = String::new();
 use tokio;
 
 #[tokio::main]
-pub async fn init(address: String) {
+pub async fn init(device_ip: &str) {
+
+    let address = format!("http://{}:9998/jsonrpc", device_ip);
     unsafe {
         DEVICE_ADDRESS.push_str(&address);
     }

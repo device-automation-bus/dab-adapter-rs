@@ -22,13 +22,14 @@ pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
     let mqtt_port = opt.port.unwrap_or(1883);
-    let device = opt
+    let device_ip = opt
         .device
-        .unwrap_or(String::from("http://localhost:9998/jsonrpc"));
+        .unwrap_or(String::from("localhost"));
 
-    hw_specific::interface::init(device);
+    // Initialize the device
+    hw_specific::interface::init(&device_ip);
 
-
+    // Register the handlers
     let mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>> =
         HashMap::new();
     handlers.insert(
