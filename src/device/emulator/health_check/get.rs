@@ -16,7 +16,7 @@ use serde_json::json;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 pub fn process(_packet: String) -> Result<String, String> {
-    let ResponseOperator = HealthCheckResponse::default();
+    let mut ResponseOperator = HealthCheckResponse::default();
     // *** Fill in the fields of the struct HealthCheckResponse here ***
     ResponseOperator.healthy = true;
     // *******************************************************************

@@ -13,8 +13,6 @@ use crate::dab::health_check::get::HealthCheckRequest;
 use crate::dab::health_check::get::HealthCheckResponse;
 #[allow(unused_imports)]
 use crate::dab::ErrorResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[allow(non_snake_case)]
