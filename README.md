@@ -30,7 +30,7 @@ OPTIONS:
     -V, --version               Print version information
 ```
 
-## Examples ##
+## Implementations ##
 
 This bridge supports the three full protocol implementation types, as demonstrated in the [DAB Installation Guide v1.0](https://getdab.org/wp-content/uploads/2021/03/InstallationGuide_v1.0.pdf).
 
