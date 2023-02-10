@@ -10,15 +10,17 @@ pub mod system;
 pub mod version;
 pub mod voice;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, process, thread, time::Duration};
+use std::{collections::HashMap, process, thread, time::{SystemTime, UNIX_EPOCH,Duration}};
+use crate::device::rdk as hw_specific;
 
 use paho_mqtt::{
     message::Message, message::MessageBuilder, properties::Properties, properties::PropertyCode,
     Client, ConnectOptionsBuilder, CreateOptionsBuilder,
 };
 
-fn subscribe(cli: &Client) -> bool {
-    if let Err(e) = cli.subscribe("dab/#", 0) {
+fn subscribe(cli: &Client, device_id: &str) -> bool {
+    let topic = "dab/".to_owned() + device_id + "/#";
+    if let Err(e) = cli.subscribe(&topic, 0) {
         println!("Error subscribing topic: {:?}", e);
         return false;
     }
@@ -27,15 +29,10 @@ fn subscribe(cli: &Client) -> bool {
 
 fn connect(cli: &Client) -> bool {
     // Connect and wait for it to complete or fail.
-    let fail_message = MessageBuilder::new()
-        .topic("test")
-        .payload("Consumer lost connection")
-        .finalize();
 
     let conn_opts = ConnectOptionsBuilder::new()
         .keep_alive_interval(Duration::from_secs(20))
         .clean_session(false)
-        .will_message(fail_message)
         .finalize();
 
     if let Err(e) = cli.connect(conn_opts) {
@@ -58,6 +55,26 @@ pub struct SimpleResponse {
     pub status: u16,
 }
 
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
+#[derive(Default, Serialize, Deserialize)]
+pub enum NotificationLevel{
+    #[default]
+    info,
+    warn,
+    debug,
+    trace,
+    error,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub struct Messages {
+    pub timestamp: u64,
+    level: NotificationLevel,
+    ip: String,
+    message: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
     pub status: u16,
@@ -73,10 +90,12 @@ pub fn run(
     mqtt_port: u16,
     mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>>,
 ) {
-    // Connect to the MQTT broker and subscribe to all topics starting with `dab/`
+    // Get the device ID
+    let device_id = hw_specific::interface::get_device_id();
+
+    // Connect to the MQTT broker
     let create_opts = CreateOptionsBuilder::new()
         .server_uri(mqtt_host + ":" + &mqtt_port.to_string())
-        .client_id("client id".to_string())
         .mqtt_version(5)
         .finalize();
 
@@ -91,10 +110,34 @@ pub fn run(
         process::exit(1);
     }
 
-    if subscribe(&cli) == false {
-        process::exit(1);
+    // Broadcast a message to dab/<device-id>/messages topic:
+
+    let now = SystemTime::now();
+    let unix_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
+
+    let ip_address = hw_specific::interface::get_ip_address();
+
+    let msg = serde_json::to_string(&Messages {
+            timestamp: unix_time,
+            level: NotificationLevel::info,
+            ip: ip_address,
+            message: "DAB started successfully".to_string(),
+        }).unwrap();
+
+    let msg_tx = MessageBuilder::new()
+        .topic("dab/".to_string() + &device_id + "/messages")
+        .payload(msg)
+        .qos(0)
+        .finalize();
+
+    if let Err(e) = cli.publish(msg_tx) {
+        println!("Error sending message: {:?}", e);
     }
 
+    // subscribe to all topics starting with `dab/`
+    if subscribe(&cli, &device_id) == false {
+        process::exit(1);
+    }
     // Process incoming messages
     println!("Processing requests...");
     for msg_rx in rx.iter() {
@@ -155,7 +198,7 @@ pub fn run(
                     process::exit(1);
                 } else {
                     println!("Successfully reconnected");
-                    if subscribe(&cli) == false {
+                    if subscribe(&cli,&device_id) == false {
                         process::exit(1);
                     }
                     break;

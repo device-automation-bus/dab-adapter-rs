@@ -27,6 +27,22 @@ pub async fn init(address: String) {
     // server.await.unwrap();
 }
 
+
+pub fn get_device_id() -> String {
+    let json_string = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"DeviceIdentification.deviceidentification\"}".to_string();
+    let response = http_post(json_string);
+    match response {
+        Ok(r) => {
+            let response: serde_json::Value = serde_json::from_str(&r).unwrap();
+            let device_id = response["result"]["deviceid"].as_str().unwrap();
+            return device_id.to_string();
+        }
+        Err(err) => {
+            return err.to_string();
+        }
+    }
+}
+
 #[tokio::main]
 pub async fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
@@ -80,6 +96,12 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_9"), 57);
         keycode_map
     };
+}
+
+pub fn get_ip_address() -> String {
+    let rdk_address = unsafe { &DEVICE_ADDRESS };
+    let ip_address = rdk_address.split(":").collect::<Vec<&str>>()[0];
+    ip_address.to_string()
 }
 
 pub fn get_rdk_keys() -> Vec<String> {
