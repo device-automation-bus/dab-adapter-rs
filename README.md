@@ -30,6 +30,10 @@ OPTIONS:
     -V, --version               Print version information
 ```
 
+## Device ID ##
+
+In this implementation for RDK, the Device ID as specified by DAB is given by the [Device unique identifier from the RDK plugin](https://rdkcentral.github.io/rdkservices/#/api/DeviceIdentificationPlugin).
+
 ## Implementations ##
 
 This bridge supports the three full protocol implementation types, as demonstrated in the [DAB Installation Guide v1.0](https://getdab.org/wp-content/uploads/2021/03/InstallationGuide_v1.0.pdf).
