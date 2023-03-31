@@ -113,21 +113,13 @@ pub fn main() {
     //     Box::new(hw_specific::health_check::get::process),
     // );
     // handlers.insert(
-    //     "voice/list".to_string(),
-    //     Box::new(hw_specific::voice::list::process),
-    // );
-    // handlers.insert(
-    //     "voice/set".to_string(),
-    //     Box::new(hw_specific::voice::set::process),
-    // );
-    // handlers.insert(
     //     "voice/send-audio".to_string(),
     //     Box::new(hw_specific::voice::send_audio::process),
     // );
-    // handlers.insert(
-    //     "voice/send-text".to_string(),
-    //     Box::new(hw_specific::voice::send_text::process),
-    // );
+    handlers.insert(
+        "voice/send-text".to_string(),
+        Box::new(hw_specific::voice::send_text::process),
+    );
     handlers.insert(
         "version".to_string(),
         Box::new(hw_specific::version::process),
