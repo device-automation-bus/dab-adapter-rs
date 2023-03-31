@@ -56,7 +56,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     match response_json {
         Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
+            let _rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
         }
 
         Err(err) => {
