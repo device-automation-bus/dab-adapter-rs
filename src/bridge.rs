@@ -22,9 +22,7 @@ pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
     let mqtt_port = opt.port.unwrap_or(1883);
-    let device_ip = opt
-        .device
-        .unwrap_or(String::from("localhost"));
+    let device_ip = opt.device.unwrap_or(String::from("localhost"));
 
     // Initialize the device
     hw_specific::interface::init(&device_ip);

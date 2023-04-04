@@ -9,9 +9,13 @@ pub mod output;
 pub mod system;
 pub mod version;
 pub mod voice;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, process, thread, time::{SystemTime, UNIX_EPOCH,Duration}};
 use crate::device::rdk as hw_specific;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    process, thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use paho_mqtt::{
     message::Message, message::MessageBuilder, properties::Properties, properties::PropertyCode,
@@ -58,7 +62,7 @@ pub struct SimpleResponse {
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[derive(Default, Serialize, Deserialize)]
-pub enum NotificationLevel{
+pub enum NotificationLevel {
     #[default]
     info,
     warn,
@@ -118,11 +122,12 @@ pub fn run(
     let ip_address = hw_specific::interface::get_ip_address();
 
     let msg = serde_json::to_string(&Messages {
-            timestamp: unix_time,
-            level: NotificationLevel::info,
-            ip: ip_address,
-            message: "DAB started successfully".to_string(),
-        }).unwrap();
+        timestamp: unix_time,
+        level: NotificationLevel::info,
+        ip: ip_address,
+        message: "DAB started successfully".to_string(),
+    })
+    .unwrap();
 
     let msg_tx = MessageBuilder::new()
         .topic("dab/".to_string() + &device_id + "/messages")
@@ -146,7 +151,7 @@ pub fn run(
             let function_topic = std::string::String::from(packet.topic());
             let substring = "dab/".to_owned() + &device_id + "/";
             let operation = function_topic.replace(&substring, "");
-            
+
             let rx_properties = packet.properties().clone();
             let msg = decode_request(packet);
 
@@ -201,7 +206,7 @@ pub fn run(
                     process::exit(1);
                 } else {
                     println!("Successfully reconnected");
-                    if subscribe(&cli,&device_id) == false {
+                    if subscribe(&cli, &device_id) == false {
                         process::exit(1);
                     }
                     break;
