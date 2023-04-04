@@ -20,17 +20,11 @@ use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use std::io::prelude::*;
 use hyper::{Body, Request, Response};
-use tiff::{
-    encoder::{
-        colortype,
-        compression::*,
-        TiffEncoder,
-    },
-};
-use std::fs::File;
 use local_ip_address::local_ip;
+use std::fs::File;
+use std::io::prelude::*;
+use tiff::encoder::{colortype, compression::*, TiffEncoder};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -42,7 +36,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let my_local_ip = local_ip().unwrap();
     let my_server: String = "http://".to_string() + &my_local_ip.to_string() + &":7878".to_string();
     println!("my_server: {}", my_server);
-    
+
     let IncomingMessage = serde_json::from_str(&_packet);
 
     match IncomingMessage {
@@ -118,7 +112,8 @@ pub fn process(_packet: String) -> Result<String, String> {
             return Err(serde_json::to_string(&error).unwrap());
         }
         Ok(response) => {
-            let UploadScreenCapture: UploadScreenCaptureResponse = serde_json::from_str(&response).unwrap();
+            let UploadScreenCapture: UploadScreenCaptureResponse =
+                serde_json::from_str(&response).unwrap();
             println!("response: {:?}", &response);
         }
     }
@@ -136,11 +131,11 @@ pub fn process(_packet: String) -> Result<String, String> {
             return Err(serde_json::to_string(&error).unwrap());
         }
         Ok(response) => {
-            let UploadScreenCapture: UploadScreenCaptureResponse = serde_json::from_str(&response).unwrap();
+            let UploadScreenCapture: UploadScreenCaptureResponse =
+                serde_json::from_str(&response).unwrap();
         }
     }
     //######### Correlate Fields #########
-
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
@@ -149,7 +144,6 @@ pub fn process(_packet: String) -> Result<String, String> {
 }
 
 pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-
     println!("got!");
     // Get the body of the request and save the body to a file
     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
@@ -164,12 +158,20 @@ pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, hyper::Err
     // Decode to tiff
     let mut file = File::create("output.tiff").unwrap();
     let mut tiff_encodder = TiffEncoder::new(&mut file).unwrap();
-    let mut output_image = tiff_encodder.new_image_with_compression::<colortype::RGBA8, Uncompressed>(1920, 1080, Uncompressed::default()).unwrap();
+    let mut output_image = tiff_encodder
+        .new_image_with_compression::<colortype::RGBA8, Uncompressed>(
+            1920,
+            1080,
+            Uncompressed::default(),
+        )
+        .unwrap();
 
     let mut idx = 0;
     while output_image.next_strip_sample_count() > 0 {
         let sample_count = output_image.next_strip_sample_count() as usize;
-        output_image.write_strip(&buffer[idx..idx+sample_count]).unwrap();
+        output_image
+            .write_strip(&buffer[idx..idx + sample_count])
+            .unwrap();
         idx += sample_count;
     }
     output_image.finish().unwrap();
