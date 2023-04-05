@@ -55,8 +55,9 @@ struct Request {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct SimpleResponse {
+pub struct NotImplemented {
     pub status: u16,
+    pub error: String,
 }
 
 #[allow(dead_code)]
@@ -171,7 +172,11 @@ pub fn run(
                 // If we can't get the proper handler, then this function is not implemented (yet)
                 _ => {
                     println!("ERROR: {}", operation);
-                    result = serde_json::to_string(&SimpleResponse { status: 501 }).unwrap();
+                    result = serde_json::to_string(&NotImplemented {
+                        status: 501,
+                        error: "Not implemented".to_string(),
+                    })
+                    .unwrap();
                 }
             }
 
