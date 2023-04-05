@@ -110,10 +110,10 @@ pub fn main() {
     //     "health-check/get".to_string(),
     //     Box::new(hw_specific::health_check::get::process),
     // );
-    // handlers.insert(
-    //     "voice/send-audio".to_string(),
-    //     Box::new(hw_specific::voice::send_audio::process),
-    // );
+    handlers.insert(
+        "voice/send-audio".to_string(),
+        Box::new(hw_specific::voice::send_audio::process),
+    );
     handlers.insert(
         "voice/send-text".to_string(),
         Box::new(hw_specific::voice::send_text::process),

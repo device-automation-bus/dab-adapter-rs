@@ -1,23 +1,25 @@
+use crate::device::rdk::output::image::save_image;
+use async_std::fs::File;
+use async_std::io::copy;
 use futures::executor::block_on;
+use futures::TryStreamExt;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::Server;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
+use surf::get;
 use surf::Client;
-use crate::device::rdk::output::image::save_image;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Server};
 static mut DEVICE_ADDRESS: String = String::new();
 use tokio;
 
 #[tokio::main]
 pub async fn init(device_ip: &str) {
-
     unsafe {
         DEVICE_ADDRESS.push_str(&device_ip);
     }
 
-    let make_service = make_service_fn(|_conn| async {
-        Ok::<_, hyper::Error>(service_fn(save_image))
-    });
+    let make_service =
+        make_service_fn(|_conn| async { Ok::<_, hyper::Error>(service_fn(save_image)) });
 
     let addr = ([0, 0, 0, 0], 7878).into();
     let server = Server::bind(&addr).serve(make_service);
@@ -28,9 +30,10 @@ pub async fn init(device_ip: &str) {
     // server.await.unwrap();
 }
 
-
 pub fn get_device_id() -> String {
-    let json_string = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"DeviceIdentification.deviceidentification\"}".to_string();
+    let json_string =
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"DeviceIdentification.deviceidentification\"}"
+            .to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
@@ -41,6 +44,24 @@ pub fn get_device_id() -> String {
         Err(err) => {
             return err.to_string();
         }
+    }
+}
+#[tokio::main]
+pub async fn http_download(url: String) -> Result<(), String> {
+    let client = Client::new();
+
+    let response = block_on(async { client.get(url).await });
+
+    match response {
+        Ok(mut r) => {
+            block_on(async {
+                let mut file = File::create("/tmp/tts.wav").await.unwrap();
+                let mut body = r.take_body();
+                copy(&mut body, &mut file).await;
+            });
+            Ok(())
+        }
+        Err(err) => Err(err.to_string()),
     }
 }
 

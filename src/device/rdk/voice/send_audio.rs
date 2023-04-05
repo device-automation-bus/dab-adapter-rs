@@ -2,11 +2,12 @@
 // #[derive(Default,Serialize,Deserialize)]
 // pub struct SendAudioRequest{
 // pub fileLocation: String,
+// pub voiceSystem: String,
 // }
 
 // #[allow(non_snake_case)]
 // #[derive(Default,Serialize,Deserialize)]
-// pub struct VoiceRequestResponse {}
+// pub struct VoiceAudioRequestResponse {}
 
 #[allow(unused_imports)]
 use crate::dab::voice::send_audio::SendAudioRequest;
@@ -17,58 +18,47 @@ use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use super::voice_functions::encode_adpcm;
+use super::voice_functions::sendVoiceCommamd;
+use crate::device::rdk::interface::http_download;
+
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = VoiceRequestResponse::default();
-    // *** Fill in the fields of the struct VoiceRequestResponse here ***
+pub fn process(packet: String) -> Result<String, String> {
+    use std::process::Command;
+    use tts_rust::{languages::Languages, tts::GTTSClient};
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: String,
-    }
+    let IncomingMessage: Result<SendAudioRequest, serde_json::Error> =
+        serde_json::from_str(&packet);
 
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetConnectedVideoDisplaysResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Ok(val2) => {
-            let _rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
+    match IncomingMessage {
         Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        Ok(DabRequest) => {
+            if DabRequest.fileLocation.is_empty() {
+                let response = ErrorResponse {
+                    status: 400,
+                    error: "request missing 'fileLocation' parameter".to_string(),
+                };
+                let Response_json = json!(response);
+                return Err(serde_json::to_string(&Response_json).unwrap());
+            }
+            if let Err(e) = http_download(DabRequest.fileLocation) {
+                let response = ErrorResponse {
+                    status: 400,
+                    error: e,
+                };
+                let Response_json = json!(response);
+                return Err(serde_json::to_string(&Response_json).unwrap());
+            }
         }
     }
-
-    // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    sendVoiceCommamd()
 }
