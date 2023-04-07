@@ -23,8 +23,8 @@ use paho_mqtt::{
 };
 
 fn subscribe(cli: &Client, device_id: &str) -> bool {
-    let topic = "dab/".to_owned() + device_id + "/#";
-    if let Err(e) = cli.subscribe(&topic, 0) {
+    let topics = vec!["dab/".to_owned() + device_id + "/#","dab/discovery".to_owned()];
+    if let Err(e) = cli.subscribe_many(&topics,&[0,0]) {
         println!("Error subscribing topic: {:?}", e);
         return false;
     }
@@ -58,6 +58,13 @@ struct Request {
 pub struct NotImplemented {
     pub status: u16,
     pub error: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct DiscoveryResponse {
+    pub status: u16,
+    pub ip: String,
+    pub deviceId: String,
 }
 
 #[allow(dead_code)]
@@ -125,7 +132,7 @@ pub fn run(
     let msg = serde_json::to_string(&Messages {
         timestamp: unix_time,
         level: NotificationLevel::info,
-        ip: ip_address,
+        ip: ip_address.clone(),
         message: "DAB started successfully".to_string(),
     })
     .unwrap();
@@ -148,40 +155,51 @@ pub fn run(
     println!("Processing requests...");
     for msg_rx in rx.iter() {
         if let Some(packet) = msg_rx {
-            let result: String;
+            let mut result: String = String::new();
             let function_topic = std::string::String::from(packet.topic());
             let substring = "dab/".to_owned() + &device_id + "/";
-            let operation = function_topic.replace(&substring, "");
-
             let rx_properties = packet.properties().clone();
-            let msg = decode_request(packet);
+            let response_topic = rx_properties.get_string(PropertyCode::ResponseTopic);
+            let correlation_data = rx_properties.get_string(PropertyCode::CorrelationData);
 
-            match handlers.get_mut(&operation) {
-                Some(callback) => {
-                    println!("OK: {}", operation);
-                    // println!("MSG: {}",msg);
-                    result = match callback(msg) {
-                        Ok(r) => r,
-                        Err(e) => serde_json::to_string(&ErrorResponse {
-                            status: 500,
-                            error: e,
-                        })
-                        .unwrap(),
+
+            if function_topic == "dab/discovery"{
+                result = serde_json::to_string(&DiscoveryResponse {
+                    status: 200,
+                    ip: ip_address.clone(),
+                    deviceId: device_id.clone(),
+                }).unwrap();
+                                    
+            }
+            else{
+                let operation = function_topic.replace(&substring, "");
+                let msg = decode_request(packet);
+
+                match handlers.get_mut(&operation) {
+                    Some(callback) => {
+                        println!("OK: {}", operation);
+                        // println!("MSG: {}",msg);
+                        result = match callback(msg) {
+                            Ok(r) => r,
+                            Err(e) => serde_json::to_string(&ErrorResponse {
+                                status: 500,
+                                error: e,
+                            })
+                            .unwrap(),
+                        }
                     }
-                }
-                // If we can't get the proper handler, then this function is not implemented (yet)
-                _ => {
-                    println!("ERROR: {}", operation);
-                    result = serde_json::to_string(&NotImplemented {
-                        status: 501,
-                        error: "Not implemented".to_string(),
-                    })
-                    .unwrap();
+                    // If we can't get the proper handler, then this function is not implemented (yet)
+                    _ => {
+                        println!("ERROR: {}", operation);
+                        result = serde_json::to_string(&NotImplemented {
+                            status: 501,
+                            error: "Not implemented".to_string(),
+                        })
+                        .unwrap();
+                    }
                 }
             }
 
-            let response_topic = rx_properties.get_string(PropertyCode::ResponseTopic);
-            let correlation_data = rx_properties.get_string(PropertyCode::CorrelationData);
             if let Some(r) = response_topic {
                 let mut msg_prop = Properties::new();
                 if let Some(c) = correlation_data {
