@@ -6,6 +6,7 @@ description = "Enables compatibility of devices based on Reference Design Kit (R
 version = "0.4.0"
 edition = "2021"
 repository = "https://gitlab.collabora.com/collabora/dab-rdk-bridge.git"
+build = "build.rs"
 
 [[bin]]
 name = "dab-bridge"
@@ -30,3 +31,7 @@ flate2 = "1.0"
 local-ip-address = "0.5"
 tts_rust = "0.3.5"
 hound = "3.5.0"
+built = { version = "0.6", features = ["chrono", "semver"] }
+
+[build-dependencies]
+built = { version = "0.6", features = ["git2", "chrono", "semver"] }
