@@ -1,6 +1,3 @@
-
-
-
 // pub mod app_telemetry;
 pub mod applications;
 // pub mod device;
@@ -27,8 +24,11 @@ use paho_mqtt::{
 };
 
 fn subscribe(cli: &Client, device_id: &str) -> bool {
-    let topics = vec!["dab/".to_owned() + device_id + "/#","dab/discovery".to_owned()];
-    if let Err(e) = cli.subscribe_many(&topics,&[0,0]) {
+    let topics = vec![
+        "dab/".to_owned() + device_id + "/#",
+        "dab/discovery".to_owned(),
+    ];
+    if let Err(e) = cli.subscribe_many(&topics, &[0, 0]) {
         println!("Error subscribing topic: {:?}", e);
         return false;
     }
@@ -167,16 +167,14 @@ pub fn run(
             let response_topic = rx_properties.get_string(PropertyCode::ResponseTopic);
             let correlation_data = rx_properties.get_string(PropertyCode::CorrelationData);
 
-
-            if function_topic == "dab/discovery"{
+            if function_topic == "dab/discovery" {
                 result = serde_json::to_string(&DiscoveryResponse {
                     status: 200,
                     ip: ip_address.clone(),
                     deviceId: device_id.clone(),
-                }).unwrap();
-                                    
-            }
-            else{
+                })
+                .unwrap();
+            } else {
                 let operation = function_topic.replace(&substring, "");
                 let msg = decode_request(packet);
 

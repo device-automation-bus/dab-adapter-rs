@@ -1,5 +1,5 @@
-pub mod interface;
 pub mod applications;
+pub mod interface;
 // pub mod app_telemetry;
 // pub mod device;
 // pub mod device_telemetry;

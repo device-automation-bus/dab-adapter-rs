@@ -19,7 +19,7 @@ struct Opt {
     /// Print the version information
     #[clap(short, long, value_parser, value_name = "VERSION")]
     version: bool,
-} 
+}
 
 // The file `built.rs` was placed there by cargo and `build.rs`
 mod built_info {
@@ -37,7 +37,7 @@ fn display_version() {
     );
 
     if let Some(hash) = built_info::GIT_COMMIT_HASH {
-        print!("Git commit: {}",hash);
+        print!("Git commit: {}", hash);
     }
 
     match built_info::GIT_HEAD_REF {
@@ -52,9 +52,11 @@ fn display_version() {
     );
 
     let built_time = built::util::strptime(built_info::BUILT_TIME_UTC);
-    println!("Built on {}",built_time.with_timezone(&built::chrono::offset::Local));
+    println!(
+        "Built on {}",
+        built_time.with_timezone(&built::chrono::offset::Local)
+    );
 }
-
 
 pub fn main() {
     let opt = Opt::parse();
@@ -62,7 +64,7 @@ pub fn main() {
     let mqtt_port = opt.port.unwrap_or(1883);
     let device_ip = opt.device.unwrap_or(String::from("localhost"));
 
-    if opt.version{
+    if opt.version {
         display_version();
         return;
     }
