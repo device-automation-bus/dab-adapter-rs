@@ -160,8 +160,7 @@ pub fn run(
     println!("Processing requests...");
     for msg_rx in rx.iter() {
         if let Some(packet) = msg_rx {
-            // let mut result: String = String::new();
-            let mut result: Option<String> = None;
+            let result: String;
             let function_topic = std::string::String::from(packet.topic());
             let substring = "dab/".to_owned() + &device_id + "/";
             let rx_properties = packet.properties().clone();
