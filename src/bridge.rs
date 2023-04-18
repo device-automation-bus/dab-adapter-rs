@@ -36,7 +36,7 @@ fn display_version() {
         built_info::RUSTC_VERSION
     );
 
-    if let Some(hash) = (built_info::GIT_COMMIT_HASH) {
+    if let Some(hash) = built_info::GIT_COMMIT_HASH {
         print!("Git commit: {}",hash);
     }
 
@@ -73,14 +73,14 @@ pub fn main() {
     // Register the handlers
     let mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>> =
         HashMap::new();
-    handlers.insert(
-        "operations/list".to_string(),
-        Box::new(hw_specific::operations::list::process),
-    );
-    handlers.insert(
-        "applications/list".to_string(),
-        Box::new(hw_specific::applications::list::process),
-    );
+    // handlers.insert(
+    //     "operations/list".to_string(),
+    //     Box::new(hw_specific::operations::list::process),
+    // );
+    // handlers.insert(
+    //     "applications/list".to_string(),
+    //     Box::new(hw_specific::applications::list::process),
+    // );
     handlers.insert(
         "applications/launch".to_string(),
         Box::new(hw_specific::applications::launch::process),
@@ -89,22 +89,22 @@ pub fn main() {
     //     "applications/launch-with-content".to_string(),
     //     Box::new(hw_specific::applications::launch_with_content::process),
     // );
-    handlers.insert(
-        "applications/get-state".to_string(),
-        Box::new(hw_specific::applications::get_state::process),
-    );
+    // handlers.insert(
+    //     "applications/get-state".to_string(),
+    //     Box::new(hw_specific::applications::get_state::process),
+    // );
     handlers.insert(
         "applications/exit".to_string(),
         Box::new(hw_specific::applications::exit::process),
     );
-    handlers.insert(
-        "device/info".to_string(),
-        Box::new(hw_specific::device::info::process),
-    );
-    handlers.insert(
-        "system/restart".to_string(),
-        Box::new(hw_specific::system::restart::process),
-    );
+    // handlers.insert(
+    //     "device/info".to_string(),
+    //     Box::new(hw_specific::device::info::process),
+    // );
+    // handlers.insert(
+    //     "system/restart".to_string(),
+    //     Box::new(hw_specific::system::restart::process),
+    // );
     // handlers.insert(
     //     "system/settings/list".to_string(),
     //     Box::new(hw_specific::system::settings::list::process),
@@ -117,22 +117,22 @@ pub fn main() {
     //     "system/settings/set".to_string(),
     //     Box::new(hw_specific::system::settings::set::process),
     // );
-    handlers.insert(
-        "input/key/list".to_string(),
-        Box::new(hw_specific::input::key::list::process),
-    );
-    handlers.insert(
-        "input/key-press".to_string(),
-        Box::new(hw_specific::input::key_press::process),
-    );
+    // handlers.insert(
+    //     "input/key/list".to_string(),
+    //     Box::new(hw_specific::input::key::list::process),
+    // );
+    // handlers.insert(
+    //     "input/key-press".to_string(),
+    //     Box::new(hw_specific::input::key_press::process),
+    // );
     // handlers.insert(
     //     "input/long-key-press".to_string(),
     //     Box::new(hw_specific::input::long_key_press::process),
     // );
-    handlers.insert(
-        "output/image".to_string(),
-        Box::new(hw_specific::output::image::process),
-    );
+    // handlers.insert(
+    //     "output/image".to_string(),
+    //     Box::new(hw_specific::output::image::process),
+    // );
     // handlers.insert(
     //     "device-telemetry/start".to_string(),
     //     Box::new(hw_specific::device_telemetry::start::process),
@@ -153,18 +153,18 @@ pub fn main() {
     //     "health-check/get".to_string(),
     //     Box::new(hw_specific::health_check::get::process),
     // );
-    handlers.insert(
-        "voice/send-audio".to_string(),
-        Box::new(hw_specific::voice::send_audio::process),
-    );
-    handlers.insert(
-        "voice/send-text".to_string(),
-        Box::new(hw_specific::voice::send_text::process),
-    );
-    handlers.insert(
-        "version".to_string(),
-        Box::new(hw_specific::version::process),
-    );
+    // handlers.insert(
+    //     "voice/send-audio".to_string(),
+    //     Box::new(hw_specific::voice::send_audio::process),
+    // );
+    // handlers.insert(
+    //     "voice/send-text".to_string(),
+    //     Box::new(hw_specific::voice::send_text::process),
+    // );
+    // handlers.insert(
+    //     "version".to_string(),
+    //     Box::new(hw_specific::version::process),
+    // );
 
     dab::run(mqtt_host, mqtt_port, handlers)
 }

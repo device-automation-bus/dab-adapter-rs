@@ -1,14 +1,18 @@
-pub mod app_telemetry;
+
+
+
+// pub mod app_telemetry;
 pub mod applications;
-pub mod device;
-pub mod device_telemetry;
-pub mod health_check;
-pub mod input;
-pub mod operations;
-pub mod output;
-pub mod system;
-pub mod version;
-pub mod voice;
+// pub mod device;
+// pub mod device_telemetry;
+// pub mod health_check;
+// pub mod input;
+// pub mod operations;
+// pub mod output;
+// pub mod system;
+// pub mod version;
+// pub mod voice;
+
 use crate::device::rdk as hw_specific;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -60,6 +64,7 @@ pub struct NotImplemented {
     pub error: String,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DiscoveryResponse {
     pub status: u16,
@@ -155,7 +160,8 @@ pub fn run(
     println!("Processing requests...");
     for msg_rx in rx.iter() {
         if let Some(packet) = msg_rx {
-            let mut result: String = String::new();
+            // let mut result: String = String::new();
+            let mut result: Option<String> = None;
             let function_topic = std::string::String::from(packet.topic());
             let substring = "dab/".to_owned() + &device_id + "/";
             let rx_properties = packet.properties().clone();
