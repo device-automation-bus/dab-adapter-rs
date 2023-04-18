@@ -12,9 +12,9 @@ use tokio;
 pub async fn init(_device_ip: &str) {
     // use hyper::service::{make_service_fn, service_fn};
     // use hyper::Server;
-    // unsafe {
-    //     DEVICE_ADDRESS.push_str(_&device_ip);
-    // }
+    unsafe {
+        DEVICE_ADDRESS.push_str(&_device_ip);
+    }
 
     // let make_service =
     //     make_service_fn(|_conn| async { Ok::<_, hyper::Error>(service_fn(save_image)) });
@@ -62,8 +62,7 @@ pub async fn http_download(url: String) -> Result<(), String> {
     }
 }
 
-#[tokio::main]
-pub async fn http_post(json_string: String) -> Result<String, String> {
+pub fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
