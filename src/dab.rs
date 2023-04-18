@@ -157,7 +157,7 @@ pub fn run(
         process::exit(1);
     }
     // Process incoming messages
-    println!("Processing requests...");
+    println!("Ready to process DAB requests");
     for msg_rx in rx.iter() {
         if let Some(packet) = msg_rx {
             let result: String;
