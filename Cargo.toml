@@ -35,3 +35,4 @@ built = { version = "0.6", features = ["chrono", "semver"] }
 
 [build-dependencies]
 built = { version = "0.6", features = ["git2", "chrono", "semver"] }
+rustfmt = "0.6.0"
