@@ -65,6 +65,7 @@ pub async fn http_download(url: String) -> Result<(), String> {
 pub fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
+    println!("RDK address: {} ---- {} ", rdk_address, json_string);
 
     let response = block_on(async {
         client

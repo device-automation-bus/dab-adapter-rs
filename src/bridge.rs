@@ -3,6 +3,7 @@ mod device;
 use device::rdk as hw_specific;
 mod dab;
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -58,6 +59,9 @@ fn display_version() {
     );
 }
 
+pub type SharedMap =
+    HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
+
 pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
@@ -73,8 +77,11 @@ pub fn main() {
     hw_specific::interface::init(&device_ip);
 
     // Register the handlers
-    let mut handlers: HashMap<String, Box<dyn FnMut(String) -> Result<String, String>>> =
-        HashMap::new();
+    let handlers: SharedMap = HashMap::new();
+    let shared_map = Arc::new(RwLock::new(handlers));
+    let shared_map_main = Arc::clone(&shared_map);
+    let mut handlers = shared_map_main.write().unwrap();
+
     // handlers.insert(
     //     "operations/list".to_string(),
     //     Box::new(hw_specific::operations::list::process),
@@ -168,5 +175,6 @@ pub fn main() {
     //     Box::new(hw_specific::version::process),
     // );
 
-    dab::run(mqtt_host, mqtt_port, handlers)
+    drop(handlers);
+    dab::run(mqtt_host, mqtt_port, shared_map)
 }
