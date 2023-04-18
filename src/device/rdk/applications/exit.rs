@@ -91,77 +91,13 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     match response_json {
         Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
-    #[derive(Serialize)]
-    struct RdkRequestGetState {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = RdkRequestGetState {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.getState".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct GetStateResultGetState {
-        state: Vec<State>,
-        success: bool,
-    }
-
-    #[derive(Deserialize)]
-    struct RdkResponseGetState {
-        jsonrpc: String,
-        id: i32,
-        result: GetStateResultGetState,
-    }
-
-    #[derive(Deserialize)]
-    struct State {
-        callsign: String,
-        state: String,
-        uri: String,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
             let error = ErrorResponse {
                 status: 500,
                 error: err,
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
-        Ok(response) => {
-            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response).unwrap();
-
-            for item in rdkresponse.result.state {
-                if item.callsign != Dab_Request.appId {
-                    continue;
-                }
-                match item.state.as_str() {
-                    "suspended" => ResponseOperator.state = "BACKGROUND".to_string(),
-                    _ => ResponseOperator.state = "FOREGROUND".to_string(),
-                }
-                break;
-            }
-
-            // We couldn't find the requested appId in the list, that
-            // means the app isn't running yet
-            if ResponseOperator.state.is_empty() {
-                ResponseOperator.state = "STOPPED".to_string();
-            }
-        }
+        _ => (),
     }
 
     // *******************************************************************
