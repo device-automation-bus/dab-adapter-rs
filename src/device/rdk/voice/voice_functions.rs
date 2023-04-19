@@ -125,7 +125,7 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn sendVoiceCommamd() -> Result<String, String> {
+pub fn sendVoiceCommand() -> Result<String, String> {
     let mut ResponseOperator = VoiceTextRequestResponse::default();
     // *** Fill in the fields of the struct VoiceTextRequestResponse here ***
     extern crate hound;

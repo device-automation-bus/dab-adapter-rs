@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::voice_functions::encode_adpcm;
-use super::voice_functions::sendVoiceCommamd;
+use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -84,5 +84,5 @@ pub fn process(packet: String) -> Result<String, String> {
 
     child.wait().expect("failed to wait for child process");
 
-    return sendVoiceCommamd();
+    return sendVoiceCommand();
 }

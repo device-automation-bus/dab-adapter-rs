@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::voice_functions::encode_adpcm;
-use super::voice_functions::sendVoiceCommamd;
+use super::voice_functions::sendVoiceCommand;
 use crate::device::rdk::interface::http_download;
 
 #[allow(non_snake_case)]
@@ -60,5 +60,5 @@ pub fn process(packet: String) -> Result<String, String> {
             }
         }
     }
-    sendVoiceCommamd()
+    sendVoiceCommand()
 }
