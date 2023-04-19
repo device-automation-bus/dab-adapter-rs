@@ -22,6 +22,7 @@ use serde_json::json;
 
 use hyper::{Body, Request, Response};
 use local_ip_address::local_ip;
+use std::convert::Infallible;
 use std::fs::File;
 use std::io::prelude::*;
 use tiff::encoder::{colortype, compression::*, TiffEncoder};
@@ -61,6 +62,56 @@ pub fn process(_packet: String) -> Result<String, String> {
         let Response_json = json!(response);
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
+
+    //#########Controller.1.activate#########
+    #[derive(Serialize)]
+    struct ControllerActivateRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: ControllerActivateRequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct ControllerActivateRequestParams {
+        callsign: String,
+    }
+
+    let req_params = ControllerActivateRequestParams {
+        callsign: "org.rdk.ScreenCapture".into(),
+    };
+
+    let request = ControllerActivateRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "Controller.1.activate".into(),
+        params: req_params,
+    };
+
+    #[derive(Deserialize)]
+    struct ControllerActivateResponse {
+        jsonrpc: String,
+        id: i32,
+        result: ControllerActivateResult,
+    }
+
+    #[derive(Deserialize)]
+    struct ControllerActivateResult {}
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string.clone());
+
+    match response_json {
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(_) => {}
+    }
+
     //#########org.rdk.ScreenCapture.uploadScreenCapture#########
     #[derive(Serialize)]
     struct UploadScreenCaptureRequest {
@@ -101,18 +152,18 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string.clone());
+    // let response_json = http_post(json_string.clone());
 
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => {}
-    }
+    // match response_json {
+    //     Err(err) => {
+    //         let error = ErrorResponse {
+    //             status: 500,
+    //             error: err,
+    //         };
+    //         return Err(serde_json::to_string(&error).unwrap());
+    //     }
+    //     Ok(_) => {}
+    // }
 
     println!("json_string: {}", json_string);
     // A bug on RDK requires to send the same request twice
@@ -130,14 +181,16 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
     //######### Correlate Fields #########
 
+    // ResponseOperator.outputLocation = Dab_Request.outputLocation;
+    ResponseOperator.format = "tiff".to_string();
+
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
 }
 
-pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    // println!("got!");
+pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     // Get the body of the request and save the body to a file
     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
     let mut file = File::create("image.png").unwrap();

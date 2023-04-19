@@ -4,27 +4,30 @@ use async_std::io::copy;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::convert::Infallible;
 use surf::Client;
 static mut DEVICE_ADDRESS: String = String::new();
 use tokio;
 
-#[tokio::main]
-pub async fn init(_device_ip: &str) {
-    use hyper::service::{make_service_fn, service_fn};
-    use hyper::Server;
+pub async fn init(device_ip: &str) {
     unsafe {
-        DEVICE_ADDRESS.push_str(&_device_ip);
+        DEVICE_ADDRESS.push_str(&device_ip);
     }
+    tokio::spawn(start_http_server());
+}
+
+async fn start_http_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    use hyper::server::Server;
+    use hyper::service::{make_service_fn, service_fn};
 
     let make_service =
-        make_service_fn(|_conn| async { Ok::<_, hyper::Error>(service_fn(save_image)) });
+        make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(save_image)) });
 
     let addr = ([0, 0, 0, 0], 7878).into();
-    let server = Server::bind(&addr).serve(make_service);
-
-    tokio::spawn(async {
-        server.await.unwrap();
-    });
+    let http_server = Server::bind(&addr).serve(make_service);
+    println!("Started http server at port 7878 for dab/output/image operator");
+    http_server.await?;
+    Ok(())
 }
 
 pub fn get_device_id() -> String {
@@ -43,8 +46,8 @@ pub fn get_device_id() -> String {
         }
     }
 }
-#[tokio::main]
-pub async fn http_download(url: String) -> Result<(), String> {
+
+pub fn http_download(url: String) -> Result<(), String> {
     let client = Client::new();
 
     let response = block_on(async { client.get(url).await });
@@ -56,9 +59,9 @@ pub async fn http_download(url: String) -> Result<(), String> {
                 let mut body = r.take_body();
                 copy(&mut body, &mut file).await.unwrap();
             });
-            Ok(())
+            return Ok(());
         }
-        Err(err) => Err(err.to_string()),
+        Err(err) => return Err(err.to_string()),
     }
 }
 

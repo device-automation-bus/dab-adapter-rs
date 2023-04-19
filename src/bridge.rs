@@ -62,7 +62,8 @@ fn display_version() {
 pub type SharedMap =
     HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
 
-pub fn main() {
+#[tokio::main]
+pub async fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
     let mqtt_port = opt.port.unwrap_or(1883);
@@ -74,7 +75,7 @@ pub fn main() {
     }
 
     // Initialize the device
-    hw_specific::interface::init(&device_ip);
+    hw_specific::interface::init(&device_ip).await;
 
     // Register the handlers
     let handlers: SharedMap = HashMap::new();
@@ -176,5 +177,5 @@ pub fn main() {
     );
 
     drop(handlers);
-    dab::run(mqtt_host, mqtt_port, shared_map)
+    dab::run(mqtt_host, mqtt_port, shared_map).await;
 }

@@ -41,13 +41,17 @@ pub fn process(packet: String) -> Result<String, String> {
                 let Response_json = json!(response);
                 return Err(serde_json::to_string(&Response_json).unwrap());
             }
-            if let Err(e) = http_download(DabRequest.fileLocation) {
-                let response = ErrorResponse {
-                    status: 400,
-                    error: e,
-                };
-                let Response_json = json!(response);
-                return Err(serde_json::to_string(&Response_json).unwrap());
+            let result = http_download(DabRequest.fileLocation);
+            match result {
+                Ok(_) => {}
+                Err(e) => {
+                    let response = ErrorResponse {
+                        status: 400,
+                        error: e,
+                    };
+                    let Response_json = json!(response);
+                    return Err(serde_json::to_string(&Response_json).unwrap());
+                }
             }
         }
     }

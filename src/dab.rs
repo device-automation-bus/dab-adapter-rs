@@ -229,8 +229,6 @@ async fn handle_dab_message(
     let _ = handle.await;
 }
 
-#[tokio::main]
-
 pub async fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>) {
     // Get the device ID
     let device_id = hw_specific::interface::get_device_id();
