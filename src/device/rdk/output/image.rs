@@ -137,6 +137,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 }
 
 pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    // println!("got!");
     // Get the body of the request and save the body to a file
     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
     let mut file = File::create("image.png").unwrap();
