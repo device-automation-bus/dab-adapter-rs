@@ -9,12 +9,12 @@ fn main() {
     built::write_built_file_with_opts(&opts, src.as_ref(), &dst)
         .expect("Failed to acquire build-time information");
 
-    let status = Command::new("cargo")
-        .args(&["fmt", "--all"])
-        .status()
-        .expect("Failed to run cargo fmt");
+    // let status = Command::new("cargo")
+    //     .args(&["fmt", "--all"])
+    //     .status()
+    //     .expect("Failed to run cargo fmt");
 
-    if !status.success() {
-        panic!("cargo fmt failed");
-    }
+    // if !status.success() {
+    //     panic!("cargo fmt failed");
+    // }
 }
