@@ -9,16 +9,10 @@
 // #[derive(Default,Serialize,Deserialize)]
 // pub struct VoiceTextRequestResponse {}
 
-#[allow(unused_imports)]
 use crate::dab::voice::send_text::SendTextRequest;
-use crate::dab::voice::send_text::VoiceTextRequestResponse;
-#[allow(unused_imports)]
 use crate::dab::ErrorResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::voice_functions::encode_adpcm;
 use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]

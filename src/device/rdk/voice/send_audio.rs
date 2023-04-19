@@ -9,16 +9,10 @@
 // #[derive(Default,Serialize,Deserialize)]
 // pub struct VoiceAudioRequestResponse {}
 
-#[allow(unused_imports)]
 use crate::dab::voice::send_audio::SendAudioRequest;
-use crate::dab::voice::send_audio::VoiceRequestResponse;
-#[allow(unused_imports)]
 use crate::dab::ErrorResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::voice_functions::encode_adpcm;
 use super::voice_functions::sendVoiceCommand;
 use crate::device::rdk::interface::http_download;
 
@@ -26,9 +20,6 @@ use crate::device::rdk::interface::http_download;
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(packet: String) -> Result<String, String> {
-    use std::process::Command;
-    use tts_rust::{languages::Languages, tts::GTTSClient};
-
     let IncomingMessage: Result<SendAudioRequest, serde_json::Error> =
         serde_json::from_str(&packet);
 

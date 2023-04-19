@@ -71,9 +71,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
-        Ok(response) => {
-            let Reboot: RebootResponse = serde_json::from_str(&response).unwrap();
-        }
+        Ok(_) => {}
     }
 
     // *******************************************************************

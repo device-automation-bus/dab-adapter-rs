@@ -111,11 +111,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
-        Ok(response) => {
-            let UploadScreenCapture: UploadScreenCaptureResponse =
-                serde_json::from_str(&response).unwrap();
-            println!("response: {:?}", &response);
-        }
+        Ok(_) => {}
     }
 
     println!("json_string: {}", json_string);
@@ -130,10 +126,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
-        Ok(response) => {
-            let UploadScreenCapture: UploadScreenCaptureResponse =
-                serde_json::from_str(&response).unwrap();
-        }
+        Ok(_) => {}
     }
     //######### Correlate Fields #########
 

@@ -55,9 +55,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let response_json = http_post(json_string);
 
     match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
+        Ok(_) => {}
 
         Err(err) => {
             println!("Erro: {}", err);
