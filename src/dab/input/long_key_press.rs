@@ -8,4 +8,4 @@ pub struct LongKeyPressRequest {
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct KeyPressResponse {}
+pub struct LongKeyPressResponse {}
