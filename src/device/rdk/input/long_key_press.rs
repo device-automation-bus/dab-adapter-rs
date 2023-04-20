@@ -16,6 +16,7 @@ use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use serde_json::{self, Value};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -83,23 +84,27 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     #[derive(Serialize)]
     struct GenerateKeyRequestParams {
-        keys: Vec<Key>,
+        keys: Value,
     }
 
-    #[derive(Serialize)]
-    struct Key {
-        keyCode: u16,
-        modifiers: Vec<String>,
-        delay: f32,
-    }
+    let key_code = KeyCode;
+    let interval_ms = 100;
+    let total_time = Dab_Request.durationMs;
 
-    let key = Key {
-        keyCode: KeyCode,
-        modifiers: vec![],
-        delay: (Dab_Request.durationMs as f32 / 1000.0),
+    let interval_s = (interval_ms as f32 / 1000.0) as f32;
+    let repetitions = (total_time as f32 / interval_ms as f32).round() as usize;
+
+    let key = format!(
+        r#"{{"keyCode":{},"modifiers":[],"delay":{}}},"#,
+        key_code, interval_s
+    );
+
+    let key_value: Value = serde_json::from_str(&key[..key.len() - 1]).unwrap();
+    let keys_sequence = vec![key_value.clone(); repetitions];
+
+    let req_params = GenerateKeyRequestParams {
+        keys: serde_json::Value::Array(keys_sequence),
     };
-
-    let req_params = GenerateKeyRequestParams { keys: vec![key] };
 
     let request = GenerateKeyRequest {
         jsonrpc: "2.0".into(),
