@@ -26,7 +26,25 @@ use local_ip_address::local_ip;
 use std::convert::Infallible;
 use std::fs::File;
 use std::io::prelude::*;
+use std::thread;
+use std::time::Duration;
 use tiff::encoder::{colortype, compression::*, TiffEncoder};
+
+use image::{GenericImageView, ImageResult};
+
+fn is_png_empty(file_path: &str) -> ImageResult<bool> {
+    let img = image::open(file_path)?;
+    let (width, height) = img.dimensions();
+    for x in 0..width {
+        for y in 0..height {
+            let pixel = img.get_pixel(x, y);
+            if pixel.0[3] != 0 {
+                return Ok(false);
+            }
+        }
+    }
+    Ok(true)
+}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -37,7 +55,6 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     let my_local_ip = local_ip().unwrap();
     let my_server: String = "http://".to_string() + &my_local_ip.to_string() + &":7878".to_string();
-    println!("my_server: {}", my_server);
 
     let IncomingMessage = serde_json::from_str(&_packet);
 
@@ -164,6 +181,18 @@ pub fn process(_packet: String) -> Result<String, String> {
             return Err(serde_json::to_string(&error).unwrap());
         }
         Ok(_) => {}
+    }
+
+    thread::sleep(Duration::from_secs(10));
+
+    let file_path = "/tmp/screenshot.png";
+    let is_empty = is_png_empty(file_path).unwrap();
+    if is_empty {
+        let error = ErrorResponse {
+            status: 500,
+            error: "Screenshot is empty. Maybe DRM protected?".to_string(),
+        };
+        return Err(serde_json::to_string(&error).unwrap());
     }
 
     let result_upload = upload_image(Dab_Request.outputLocation.clone());
