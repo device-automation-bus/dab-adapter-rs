@@ -1,10 +1,11 @@
 use crate::device::rdk::output::image::save_image;
-use async_std::fs::File;
-use async_std::io::copy;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::fs::File;
+use std::io::Read;
+use std::io::Write;
 use surf::Client;
 static mut DEVICE_ADDRESS: String = String::new();
 use tokio;
@@ -47,6 +48,44 @@ pub fn get_device_id() -> String {
     }
 }
 
+pub fn upload_image(url: String) -> Result<(), String> {
+    // Read the TIFF image file into a Vec<u8>
+    let filepath = "/tmp/screenshot.tiff";
+    let mut file = File::open(filepath).unwrap();
+    let mut buffer = Vec::new();
+    let result = file.read_to_end(&mut buffer);
+    match result {
+        Ok(_) => {}
+        Err(err) => {
+            return Err(err.to_string());
+        }
+    }
+
+    // Create a surf::Client
+    let client = Client::new();
+
+    // Create a PUT request
+    let response = block_on(async {
+        client
+            .put(url)
+            .body_bytes(&buffer)
+            .header("Content-Type", "image/tiff")
+            .await
+            .unwrap()
+            .body_string()
+            .await
+    });
+
+    match response {
+        Ok(_) => {
+            return Ok(());
+        }
+        Err(err) => {
+            return Err(err.to_string());
+        }
+    }
+}
+
 pub fn http_download(url: String) -> Result<(), String> {
     let client = Client::new();
 
@@ -54,11 +93,9 @@ pub fn http_download(url: String) -> Result<(), String> {
 
     match response {
         Ok(mut r) => {
-            block_on(async {
-                let mut file = File::create("/tmp/tts.wav").await.unwrap();
-                let mut body = r.take_body();
-                copy(&mut body, &mut file).await.unwrap();
-            });
+            let mut file = File::create("/tmp/tts.wav").unwrap();
+            let body = block_on(async { r.body_bytes().await.unwrap() });
+            file.write_all(&body).unwrap();
             return Ok(());
         }
         Err(err) => return Err(err.to_string()),
@@ -92,6 +129,13 @@ pub fn http_post(json_string: String) -> Result<String, String> {
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
+        keycode_map.insert(String::from("KEY_POWER"), 116);
+        keycode_map.insert(String::from("KEY_HOME"), 36);
+        keycode_map.insert(String::from("KEY_BACK"), 36);
+        keycode_map.insert(String::from("KEY_PLAY"), 13);
+        keycode_map.insert(String::from("KEY_PLAY_PAUSE"), 13);
+        keycode_map.insert(String::from("KEY_PAUSE"), 13);
+        keycode_map.insert(String::from("KEY_MENU"), 121);
         keycode_map.insert(String::from("KEY_LEFT"), 37);
         keycode_map.insert(String::from("KEY_UP"), 38);
         keycode_map.insert(String::from("KEY_RIGHT"), 39);
@@ -99,7 +143,6 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_ENTER"), 13);
         keycode_map.insert(String::from("KEY_MENU"), 36);
         keycode_map.insert(String::from("KEY_EXIT"), 36);
-        keycode_map.insert(String::from("KEY_POWER"), 112);
         keycode_map.insert(String::from("KEY_VOLUME_DOWN"), 174);
         keycode_map.insert(String::from("KEY_VOLUME_UP"), 175);
         keycode_map.insert(String::from("KEY_MUTE"), 173);

@@ -17,6 +17,7 @@ use crate::dab::output::image::OutputImageResponse;
 #[allow(unused_imports)]
 use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::upload_image;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -152,21 +153,6 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    // let response_json = http_post(json_string.clone());
-
-    // match response_json {
-    //     Err(err) => {
-    //         let error = ErrorResponse {
-    //             status: 500,
-    //             error: err,
-    //         };
-    //         return Err(serde_json::to_string(&error).unwrap());
-    //     }
-    //     Ok(_) => {}
-    // }
-
-    println!("json_string: {}", json_string);
-    // A bug on RDK requires to send the same request twice
     let response_json = http_post(json_string.clone());
 
     match response_json {
@@ -179,10 +165,23 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
         Ok(_) => {}
     }
-    //######### Correlate Fields #########
 
-    // ResponseOperator.outputLocation = Dab_Request.outputLocation;
+    let result_upload = upload_image(Dab_Request.outputLocation.clone());
+
+    match result_upload {
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(_) => {}
+    }
+
+    //######### Correlate Fields #########
     ResponseOperator.format = "tiff".to_string();
+    ResponseOperator.outputFile = Dab_Request.outputLocation;
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
