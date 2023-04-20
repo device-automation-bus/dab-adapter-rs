@@ -115,18 +115,18 @@ pub async fn main() {
         "system/restart".to_string(),
         Box::new(hw_specific::system::restart::process),
     );
-    handlers.insert(
-        "system/settings/list".to_string(),
-        Box::new(hw_specific::system::settings::list::process),
-    );
-    handlers.insert(
-        "system/settings/get".to_string(),
-        Box::new(hw_specific::system::settings::get::process),
-    );
-    handlers.insert(
-        "system/settings/set".to_string(),
-        Box::new(hw_specific::system::settings::set::process),
-    );
+    // handlers.insert(
+    //     "system/settings/list".to_string(),
+    //     Box::new(hw_specific::system::settings::list::process),
+    // );
+    // handlers.insert(
+    //     "system/settings/get".to_string(),
+    //     Box::new(hw_specific::system::settings::get::process),
+    // );
+    // handlers.insert(
+    //     "system/settings/set".to_string(),
+    //     Box::new(hw_specific::system::settings::set::process),
+    // );
     handlers.insert(
         "input/key/list".to_string(),
         Box::new(hw_specific::input::key::list::process),
@@ -143,26 +143,26 @@ pub async fn main() {
         "output/image".to_string(),
         Box::new(hw_specific::output::image::process),
     );
-    handlers.insert(
-        "device-telemetry/start".to_string(),
-        Box::new(hw_specific::device_telemetry::start::process),
-    );
-    handlers.insert(
-        "device-telemetry/stop".to_string(),
-        Box::new(hw_specific::device_telemetry::stop::process),
-    );
-    handlers.insert(
-        "app-telemetry/start".to_string(),
-        Box::new(hw_specific::app_telemetry::start::process),
-    );
-    handlers.insert(
-        "app-telemetry/stop".to_string(),
-        Box::new(hw_specific::app_telemetry::stop::process),
-    );
-    handlers.insert(
-        "health-check/get".to_string(),
-        Box::new(hw_specific::health_check::get::process),
-    );
+    // handlers.insert(
+    //     "device-telemetry/start".to_string(),
+    //     Box::new(hw_specific::device_telemetry::start::process),
+    // );
+    // handlers.insert(
+    //     "device-telemetry/stop".to_string(),
+    //     Box::new(hw_specific::device_telemetry::stop::process),
+    // );
+    // handlers.insert(
+    //     "app-telemetry/start".to_string(),
+    //     Box::new(hw_specific::app_telemetry::start::process),
+    // );
+    // handlers.insert(
+    //     "app-telemetry/stop".to_string(),
+    //     Box::new(hw_specific::app_telemetry::stop::process),
+    // );
+    // handlers.insert(
+    //     "health-check/get".to_string(),
+    //     Box::new(hw_specific::health_check::get::process),
+    // );
     handlers.insert(
         "voice/send-audio".to_string(),
         Box::new(hw_specific::voice::send_audio::process),

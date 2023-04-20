@@ -12,6 +12,7 @@
 #[allow(unused_imports)]
 use crate::dab::applications::launch_with_content::LaunchApplicationWithContentRequest;
 use crate::dab::applications::launch_with_content::LaunchApplicationWithContentResponse;
+use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -22,45 +23,129 @@ use serde_json::json;
 pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = LaunchApplicationWithContentResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationWithContentResponse here ***
+    let IncomingMessage = serde_json::from_str(&_packet);
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: String,
+    match IncomingMessage {
+        Err(err) => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        _ => (),
     }
 
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
-    };
+    let Dab_Request: LaunchApplicationWithContentRequest = IncomingMessage.unwrap();
+
+    if Dab_Request.appId.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "request missing 'appId' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
+    if Dab_Request.contentId.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "request missing 'contentId' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
 
     #[derive(Deserialize)]
     struct RdkResponse {
         jsonrpc: String,
         id: i32,
-        result: GetConnectedVideoDisplaysResult,
+        result: LaunchResult,
     }
 
     #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
+    struct LaunchResult {
+        launchType: String,
         success: bool,
     }
 
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    if Dab_Request.appId == "Cobalt" {
+        #[derive(Serialize)]
+        struct CobaltConfig {
+            url: String,
+        }
+        #[derive(Serialize)]
+        struct Param {
+            callsign: String,
+            r#type: String,
+            configuration: CobaltConfig,
+        }
+        #[derive(Serialize)]
+        struct RdkRequest {
+            jsonrpc: String,
+            id: i32,
+            method: String,
+            params: Param,
+        }
 
-    match response_json {
-        Ok(_) => {}
+        let req_params = Param {
+            callsign: Dab_Request.appId.clone(),
+            r#type: Dab_Request.appId,
+            configuration: CobaltConfig {
+                url: Dab_Request.contentId,
+            },
+        };
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.launch".into(),
+            params: req_params,
+        };
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string);
 
-        Err(err) => {
-            println!("Erro: {}", err);
+        match response_json {
+            Err(err) => {
+                println!("Erro: {}", err);
 
-            return Err(err);
+                return Err(err);
+            }
+            _ => (),
+        }
+    } else {
+        #[derive(Serialize)]
+        struct Param {
+            callsign: String,
+            uri: String,
+        }
+        #[derive(Serialize)]
+        struct RdkRequest {
+            jsonrpc: String,
+            id: i32,
+            method: String,
+            params: Param,
+        }
+        let req_params = Param {
+            callsign: Dab_Request.appId,
+            uri: Dab_Request.contentId,
+        };
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.launch".into(),
+            params: req_params,
+        };
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string);
+
+        match response_json {
+            Err(err) => {
+                println!("Erro: {}", err);
+
+                return Err(err);
+            }
+            _ => (),
         }
     }
 
