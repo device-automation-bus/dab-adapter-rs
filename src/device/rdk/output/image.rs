@@ -192,16 +192,16 @@ pub fn process(_packet: String) -> Result<String, String> {
 pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     // Get the body of the request and save the body to a file
     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
-    let mut file = File::create("image.png").unwrap();
+    let mut file = File::create("/tmp/screenshot.png").unwrap();
     file.write_all(&body).unwrap();
 
     // Open the image
-    let input_png = image::open("image.png").unwrap();
+    let input_png = image::open("/tmp/screenshot.png").unwrap();
     let rgb_image = input_png.clone().into_rgba8();
     let buffer = rgb_image.clone().into_raw();
 
     // Decode to tiff
-    let mut file = File::create("output.tiff").unwrap();
+    let mut file = File::create("/tmp/screenshot.tiff").unwrap();
     let mut tiff_encodder = TiffEncoder::new(&mut file).unwrap();
     let mut output_image = tiff_encodder
         .new_image_with_compression::<colortype::RGBA8, Uncompressed>(
