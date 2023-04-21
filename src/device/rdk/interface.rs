@@ -128,6 +128,48 @@ pub fn http_post(json_string: String) -> Result<String, String> {
     }
 }
 
+pub fn service_deactivate(service: String) -> Result<(), String> {
+    //#########Controller.1.deactivate#########
+    #[derive(Serialize)]
+    struct ControllerDeactivateRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: ControllerDeactivateRequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct ControllerDeactivateRequestParams {
+        callsign: String,
+    }
+
+    let req_params = ControllerDeactivateRequestParams { callsign: service };
+
+    let request = ControllerDeactivateRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "Controller.1.deactivate".into(),
+        params: req_params,
+    };
+
+    #[derive(Deserialize)]
+    struct ControllerDeactivateResult {}
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string.clone());
+
+    match response_json {
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(_) => return Ok(()),
+    }
+}
+
 pub fn service_activate(service: String) -> Result<(), String> {
     //#########Controller.1.activate#########
     #[derive(Serialize)]
