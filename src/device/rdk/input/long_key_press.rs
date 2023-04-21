@@ -17,6 +17,9 @@ use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::{self, Value};
+use std::thread;
+use std::time::Duration;
+use std::time::Instant;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -87,56 +90,68 @@ pub fn process(_packet: String) -> Result<String, String> {
         keys: Value,
     }
 
-    let key_code = KeyCode;
-    let interval_ms = 100;
+    let interval_ms: u64 = 50;
     let total_time = Dab_Request.durationMs;
-
-    let interval_s = (interval_ms as f32 / 1000.0) as f32;
     let repetitions = (total_time as f32 / interval_ms as f32).round() as usize;
 
-    let key = format!(
-        r#"{{"keyCode":{},"modifiers":[],"delay":{}}},"#,
-        key_code, interval_s
-    );
+    //#########org.rdk.RDKShell.injectKey#########
+    #[derive(Serialize)]
+    struct InjectKeyRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: InjectKeyRequestParams,
+    }
 
-    let key_value: Value = serde_json::from_str(&key[..key.len() - 1]).unwrap();
-    let keys_sequence = vec![key_value.clone(); repetitions];
+    #[derive(Serialize)]
+    struct InjectKeyRequestParams {
+        keyCode: u16,
+    }
 
-    let req_params = GenerateKeyRequestParams {
-        keys: serde_json::Value::Array(keys_sequence),
-    };
+    let req_params = InjectKeyRequestParams { keyCode: KeyCode };
 
-    let request = GenerateKeyRequest {
+    let request = InjectKeyRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.RDKShell.1.generateKey".into(),
+        method: "org.rdk.RDKShell.1.injectKey".into(),
         params: req_params,
     };
 
     #[derive(Deserialize)]
-    struct GenerateKeyResponse {
+    struct InjectKeyResponse {
         jsonrpc: String,
         id: i32,
-        result: GenerateKeyResult,
+        result: InjectKeyResult,
     }
 
     #[derive(Deserialize)]
-    struct GenerateKeyResult {
+    struct InjectKeyResult {
         success: bool,
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
 
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
+    for _i in 0..repetitions - 1 {
+        let start_time = Instant::now();
+
+        let response_json = http_post(json_string.clone());
+
+        match response_json {
+            Err(err) => {
+                let error = ErrorResponse {
+                    status: 500,
+                    error: err,
+                };
+                return Err(serde_json::to_string(&error).unwrap());
+            }
+            _ => (),
         }
-        _ => (),
+
+        let end_time = Instant::now();
+        let elapsed_time_ms = end_time.duration_since(start_time).as_millis();
+        if (elapsed_time_ms) < interval_ms.into() {
+            thread::sleep(Duration::from_millis(interval_ms - elapsed_time_ms as u64));
+        }
     }
 
     // *******************************************************************
