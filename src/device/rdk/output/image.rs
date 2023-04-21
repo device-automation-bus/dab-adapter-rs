@@ -17,6 +17,7 @@ use crate::dab::output::image::OutputImageResponse;
 #[allow(unused_imports)]
 use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::upload_image;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -81,54 +82,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-    //#########Controller.1.activate#########
-    #[derive(Serialize)]
-    struct ControllerActivateRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: ControllerActivateRequestParams,
-    }
-
-    #[derive(Serialize)]
-    struct ControllerActivateRequestParams {
-        callsign: String,
-    }
-
-    let req_params = ControllerActivateRequestParams {
-        callsign: "org.rdk.ScreenCapture".into(),
-    };
-
-    let request = ControllerActivateRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "Controller.1.activate".into(),
-        params: req_params,
-    };
-
-    #[derive(Deserialize)]
-    struct ControllerActivateResponse {
-        jsonrpc: String,
-        id: i32,
-        result: ControllerActivateResult,
-    }
-
-    #[derive(Deserialize)]
-    struct ControllerActivateResult {}
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string.clone());
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => {}
-    }
+    service_activate("org.rdk.ScreenCapture".to_string()).unwrap();
 
     //#########org.rdk.ScreenCapture.uploadScreenCapture#########
     #[derive(Serialize)]

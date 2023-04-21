@@ -1,14 +1,16 @@
+use crate::dab::ErrorResponse;
 use crate::device::rdk::output::image::save_image;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use surf::Client;
-static mut DEVICE_ADDRESS: String = String::new();
 use tokio;
+static mut DEVICE_ADDRESS: String = String::new();
 
 pub async fn init(device_ip: &str) {
     unsafe {
@@ -123,6 +125,48 @@ pub fn http_post(json_string: String) -> Result<String, String> {
         Err(err) => {
             return Err(err.to_string());
         }
+    }
+}
+
+pub fn service_activate(service: String) -> Result<(), String> {
+    //#########Controller.1.activate#########
+    #[derive(Serialize)]
+    struct ControllerActivateRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: ControllerActivateRequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct ControllerActivateRequestParams {
+        callsign: String,
+    }
+
+    let req_params = ControllerActivateRequestParams { callsign: service };
+
+    let request = ControllerActivateRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "Controller.1.activate".into(),
+        params: req_params,
+    };
+
+    #[derive(Deserialize)]
+    struct ControllerActivateResult {}
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string.clone());
+
+    match response_json {
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(_) => return Ok(()),
     }
 }
 

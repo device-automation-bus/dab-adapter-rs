@@ -37,31 +37,31 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
+    //#########org.rdk.RDKShell.getScreenResolution#########
     #[derive(Serialize)]
-    struct RdkRequest {
+    struct GetScreenResolutionRequest {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: String,
     }
 
-    let request = RdkRequest {
+    let request = GetScreenResolutionRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
+        method: "org.rdk.RDKShell.getScreenResolution".into(),
     };
 
     #[derive(Deserialize)]
-    struct RdkResponse {
+    struct GetScreenResolutionResponse {
         jsonrpc: String,
         id: i32,
-        result: GetConnectedVideoDisplaysResult,
+        result: GetScreenResolutionResult,
     }
 
     #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
+    struct GetScreenResolutionResult {
+        w: u32,
+        h: u32,
         success: bool,
     }
 
@@ -69,14 +69,63 @@ pub fn process(_packet: String) -> Result<String, String> {
     let response_json = http_post(json_string);
 
     match response_json {
-        Ok(val2) => {
-            let _rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
         Err(err) => {
-            println!("Erro: {}", err);
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(response) => {
+            let screen_resolution: GetScreenResolutionResponse =
+                serde_json::from_str(&response).unwrap();
+            ResponseOperator.outputResolution.width = screen_resolution.result.w;
+            ResponseOperator.outputResolution.height = screen_resolution.result.h;
+        }
+    }
 
-            return Err(err);
+    //#########org.rdk.RDKShell.getGraphicsFrameRate#########
+    #[derive(Serialize)]
+    struct GetGraphicsFrameRateRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+    }
+
+    let request = GetGraphicsFrameRateRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.getGraphicsFrameRate".into(),
+    };
+
+    #[derive(Deserialize)]
+    struct GetGraphicsFrameRateResponse {
+        jsonrpc: String,
+        id: i32,
+        result: GetGraphicsFrameRateResult,
+    }
+
+    #[derive(Deserialize)]
+    struct GetGraphicsFrameRateResult {
+        frameRate: u32,
+        success: bool,
+    }
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+        Ok(response) => {
+            let get_framerate: GetGraphicsFrameRateResponse =
+                serde_json::from_str(&response).unwrap();
+            ResponseOperator.outputResolution.frequency = get_framerate.result.frameRate as f32;
         }
     }
 
