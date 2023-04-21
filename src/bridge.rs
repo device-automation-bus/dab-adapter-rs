@@ -115,10 +115,10 @@ pub async fn main() {
         "system/restart".to_string(),
         Box::new(hw_specific::system::restart::process),
     );
-    // handlers.insert(
-    //     "system/settings/list".to_string(),
-    //     Box::new(hw_specific::system::settings::list::process),
-    // );
+    handlers.insert(
+        "system/settings/list".to_string(),
+        Box::new(hw_specific::system::settings::list::process),
+    );
     // handlers.insert(
     //     "system/settings/get".to_string(),
     //     Box::new(hw_specific::system::settings::get::process),

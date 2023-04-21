@@ -93,9 +93,9 @@ pub struct AudioVolume {
 pub struct ListSystemSettings {
     pub language: Vec<String>,
     pub outputResolution: Vec<OutputResolution>,
-    pub memc: bool,
-    pub cec: bool,
-    pub lowLatencyMode: bool,
+    pub memc: Vec<bool>,
+    pub cec: Vec<bool>,
+    pub lowLatencyMode: Vec<bool>,
     pub matchContentFrameRate: Vec<MatchContentFrameRate>,
     pub hdrOutputMode: Vec<HdrOutputMode>,
     pub pictureMode: Vec<PictureMode>,
@@ -103,6 +103,6 @@ pub struct ListSystemSettings {
     pub audioOutputSource: Vec<AudioOutputSource>,
     pub videoInputSource: Vec<VideoInputSource>,
     pub audioVolume: AudioVolume,
-    pub mute: bool,
-    pub textToSpeech: bool,
+    pub mute: Vec<bool>,
+    pub textToSpeech: Vec<bool>,
 }

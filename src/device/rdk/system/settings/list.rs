@@ -83,34 +83,34 @@
 
 // #[allow(non_snake_case)]
 // #[derive(Default,Serialize,Deserialize)]
-// pub struct ListSystemSettings{
-// pub language: Vec<String>,
-// pub outputResolution: Vec<OutputResolution>,
-// pub memc: bool,
-// pub cec: bool,
-// pub lowLatencyMode: bool,
-// pub matchContentFrameRate: Vec<MatchContentFrameRate>,
-// pub hdrOutputMode: Vec<HdrOutputMode>,
-// pub pictureMode: Vec<PictureMode>,
-// pub audioOutputMode: Vec<AudioOutputMode>,
-// pub audioOutputSource: Vec<AudioOutputSource>,
-// pub videoInputSource: Vec<VideoInputSource>,
-// pub audioVolume: AudioVolume,
-// pub mute: bool,
-// pub textToSpeech: bool,
+// pub struct ListSystemSettings {
+//     pub language: Vec<String>,
+//     pub outputResolution: Vec<OutputResolution>,
+//     pub memc: Vec<bool>,
+//     pub cec: Vec<bool>,
+//     pub lowLatencyMode: Vec<bool>,
+//     pub matchContentFrameRate: Vec<MatchContentFrameRate>,
+//     pub hdrOutputMode: Vec<HdrOutputMode>,
+//     pub pictureMode: Vec<PictureMode>,
+//     pub audioOutputMode: Vec<AudioOutputMode>,
+//     pub audioOutputSource: Vec<AudioOutputSource>,
+//     pub videoInputSource: Vec<VideoInputSource>,
+//     pub audioVolume: AudioVolume,
+//     pub mute: Vec<bool>,
+//     pub textToSpeech: Vec<bool>,
 // }
 
-#[allow(unused_imports)]
+// use super::LANGUAGES;
+// use super::RESOLUTIONS;
+use crate::dab::system::settings::list::AudioOutputMode;
+use crate::dab::system::settings::list::AudioOutputSource;
 use crate::dab::system::settings::list::AudioVolume;
+use crate::dab::system::settings::list::HdrOutputMode;
 use crate::dab::system::settings::list::ListSystemSettings;
-#[allow(unused_imports)]
+use crate::dab::system::settings::list::MatchContentFrameRate;
 use crate::dab::system::settings::list::OutputResolution;
-#[allow(unused_imports)]
-use crate::dab::system::settings::list::SettingsListRequest;
-#[allow(unused_imports)]
-use crate::dab::ErrorResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
+use crate::dab::system::settings::list::PictureMode;
+use crate::dab::system::settings::list::VideoInputSource;
 use serde_json::json;
 
 #[allow(non_snake_case)]
@@ -120,48 +120,108 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = ListSystemSettings::default();
     // *** Fill in the fields of the struct ListSystemSettings here ***
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: String,
-    }
+    // // Return language tags defined in RFC 5646.
+    // /*
+    //     IMPORTANT NOTE: As defined on the org.rdk.UserPreferences plugin documentation
+    //     (https://rdkcentral.github.io/rdkservices/#/api/UserPreferencesPlugin):
+    //     "The language is written to the /opt/user_preferences.conf file on the device.
+    //     It is the responsibility of the client application to validate the language value and process
+    //     it if required. Any language string that is valid on the client can be set"
+    ResponseOperator.language = vec!["en-US".to_string()];
 
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
-    };
+    ResponseOperator.outputResolution = vec![
+        OutputResolution {
+            width: 1920,
+            height: 1080,
+            frequency: 60.0,
+        },
+        OutputResolution {
+            width: 1920,
+            height: 1080,
+            frequency: 50.0,
+        },
+        OutputResolution {
+            width: 1280,
+            height: 720,
+            frequency: 60.0,
+        },
+        OutputResolution {
+            width: 1280,
+            height: 720,
+            frequency: 50.0,
+        },
+        OutputResolution {
+            width: 720,
+            height: 576,
+            frequency: 50.0,
+        },
+        OutputResolution {
+            width: 640,
+            height: 480,
+            frequency: 50.0,
+        },
+    ];
 
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetConnectedVideoDisplaysResult,
-    }
+    ResponseOperator.memc = vec![false, true];
 
-    #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
-        success: bool,
-    }
+    ResponseOperator.cec = vec![false, true];
 
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    ResponseOperator.lowLatencyMode = vec![false, true];
 
-    match response_json {
-        Ok(val2) => {
-            let _rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
+    ResponseOperator.mute = vec![false, true];
 
-        Err(err) => {
-            println!("Erro: {}", err);
+    ResponseOperator.textToSpeech = vec![false, true];
 
-            return Err(err);
-        }
-    }
+    ResponseOperator.hdrOutputMode = vec![
+        HdrOutputMode::AlwaysHdr,
+        HdrOutputMode::HdrOnPlayback,
+        HdrOutputMode::DisableHdr,
+    ];
+
+    ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
+
+    ResponseOperator.matchContentFrameRate = vec![
+        MatchContentFrameRate::EnabledAlways,
+        // MatchContentFrameRate::EnabledSeamlessOnly,
+        MatchContentFrameRate::Disabled,
+    ];
+
+    ResponseOperator.pictureMode = vec![
+        PictureMode::Standard,
+        // PictureMode::Dynamic,
+        // PictureMode::Movie,
+        // PictureMode::Sports,
+        // PictureMode::FilmMaker,
+        // PictureMode::Game,
+        // PictureMode::Auto,
+    ];
+    ResponseOperator.audioOutputMode = vec![
+        AudioOutputMode::Stereo,
+        AudioOutputMode::MultichannelPcm,
+        AudioOutputMode::PassThrough,
+        AudioOutputMode::Auto,
+    ];
+    ResponseOperator.audioOutputSource = vec![
+        // AudioOutputSource::NativeSpeaker,
+        // AudioOutputSource::Arc,
+        // AudioOutputSource::EArc,
+        AudioOutputSource::Optical,
+        // AudioOutputSource::Aux,
+        AudioOutputSource::Bluetooth,
+        // AudioOutputSource::Auto,
+        AudioOutputSource::HDMI,
+    ];
+    ResponseOperator.videoInputSource = vec![
+        VideoInputSource::Tuner,
+        // VideoInputSource::HDMI1,
+        // VideoInputSource::HDMI2,
+        // VideoInputSource::HDMI3,
+        // VideoInputSource::HDMI4,
+        // VideoInputSource::Composite,
+        // VideoInputSource::Component,
+        // VideoInputSource::Home,
+        // VideoInputSource::Cast,
+    ];
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
