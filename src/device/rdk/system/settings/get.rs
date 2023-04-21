@@ -39,7 +39,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
-    //#########org.rdk.RDKShell.getGraphicsFrameRate#########
+    //######### outputResolution #########
     service_activate("org.rdk.FrameRate".to_string()).unwrap();
     #[derive(Serialize)]
     struct GetDisplayFrameRateRequest {
@@ -97,6 +97,45 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
     service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string()).unwrap();
 
+    //######### audioVolume #########
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.DisplaySettings.getVolumeLevel".into(),
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    #[derive(Deserialize)]
+    struct GetVolumeLevelResponse {
+        jsonrpc: String,
+        id: i32,
+        result: GetVolumeLevelResult,
+    }
+
+    #[derive(Deserialize)]
+    struct GetVolumeLevelResult {
+        volumeLevel: String,
+        success: bool,
+    }
+
+    match response_json {
+        Err(err) => {
+            return Err(err);
+        }
+        Ok(response) => {
+            let get_audio_volume: GetVolumeLevelResponse = serde_json::from_str(&response).unwrap();
+            let volume = get_audio_volume.result.volumeLevel.parse::<f32>().unwrap();
+            ResponseOperator.audioVolume = volume as u32;
+        }
+    }
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);

@@ -123,10 +123,10 @@ pub async fn main() {
         "system/settings/get".to_string(),
         Box::new(hw_specific::system::settings::get::process),
     );
-    // handlers.insert(
-    //     "system/settings/set".to_string(),
-    //     Box::new(hw_specific::system::settings::set::process),
-    // );
+    handlers.insert(
+        "system/settings/set".to_string(),
+        Box::new(hw_specific::system::settings::set::process),
+    );
     handlers.insert(
         "input/key/list".to_string(),
         Box::new(hw_specific::input::key::list::process),

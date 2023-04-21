@@ -14,18 +14,18 @@ pub struct OutputResolution {
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum MatchContentFrameRate {
-    #[default]
     EnabledAlways,
     EnabledSeamlessOnly,
+    #[default]
     Disabled,
 }
 
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum HdrOutputMode {
-    #[default]
     AlwaysHdr,
     HdrOnPlayback,
+    #[default]
     DisableHdr,
 }
 
@@ -55,7 +55,6 @@ pub enum AudioOutputMode {
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum AudioOutputSource {
-    #[default]
     NativeSpeaker,
     Arc,
     EArc,
@@ -63,6 +62,7 @@ pub enum AudioOutputSource {
     Aux,
     Bluetooth,
     Auto,
+    #[default]
     HDMI,
 }
 

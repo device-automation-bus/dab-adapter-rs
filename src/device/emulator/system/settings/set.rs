@@ -1,13 +1,18 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct SetSystemSettingsRequest{
-// pub language: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct SetSystemSettingsResponse{
-// pub language: String,
+// pub struct SetSystemSettingsRequest {
+//     pub language: String,
+//     pub outputResolution: OutputResolution,
+//     pub memc: bool,
+//     pub cec: bool,
+//     pub lowLatencyMode: bool,
+//     pub matchContentFrameRate: MatchContentFrameRate,
+//     pub hdrOutputMode: HdrOutputMode,
+//     pub pictureMode: PictureMode,
+//     pub audioOutputMode: AudioOutputMode,
+//     pub audioOutputSource: AudioOutputSource,
+//     pub videoInputSource: VideoInputSource,
+//     pub audioVolume: u32,
+//     pub mute: bool,
+//     pub textToSpeech: bool,
 // }
 
 #[allow(unused_imports)]
