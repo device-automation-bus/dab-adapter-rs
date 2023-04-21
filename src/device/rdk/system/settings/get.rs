@@ -27,6 +27,8 @@ use crate::dab::system::settings::get::GetSystemSettingsResponse;
 #[allow(unused_imports)]
 use crate::dab::ErrorResponse;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::service_activate;
+use crate::device::rdk::interface::service_deactivate;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -37,77 +39,31 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
-    //#########org.rdk.RDKShell.getScreenResolution#########
-    #[derive(Serialize)]
-    struct GetScreenResolutionRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = GetScreenResolutionRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.getScreenResolution".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct GetScreenResolutionResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetScreenResolutionResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetScreenResolutionResult {
-        w: u32,
-        h: u32,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            let screen_resolution: GetScreenResolutionResponse =
-                serde_json::from_str(&response).unwrap();
-            ResponseOperator.outputResolution.width = screen_resolution.result.w;
-            ResponseOperator.outputResolution.height = screen_resolution.result.h;
-        }
-    }
-
     //#########org.rdk.RDKShell.getGraphicsFrameRate#########
+    service_activate("org.rdk.FrameRate".to_string()).unwrap();
     #[derive(Serialize)]
-    struct GetGraphicsFrameRateRequest {
+    struct GetDisplayFrameRateRequest {
         jsonrpc: String,
         id: i32,
         method: String,
     }
 
-    let request = GetGraphicsFrameRateRequest {
+    let request = GetDisplayFrameRateRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.RDKShell.getGraphicsFrameRate".into(),
+        method: "org.rdk.FrameRate.getDisplayFrameRate".into(),
     };
 
     #[derive(Deserialize)]
-    struct GetGraphicsFrameRateResponse {
+    struct GetDisplayFrameRateResponse {
         jsonrpc: String,
         id: i32,
-        result: GetGraphicsFrameRateResult,
+        result: GetDisplayFrameRateResult,
     }
 
     #[derive(Deserialize)]
-    struct GetGraphicsFrameRateResult {
-        frameRate: u32,
+    struct GetDisplayFrameRateResult {
+        framerate: String,
         success: bool,
     }
 
@@ -123,11 +79,23 @@ pub fn process(_packet: String) -> Result<String, String> {
             return Err(serde_json::to_string(&error).unwrap());
         }
         Ok(response) => {
-            let get_framerate: GetGraphicsFrameRateResponse =
+            let get_framerate: GetDisplayFrameRateResponse =
                 serde_json::from_str(&response).unwrap();
-            ResponseOperator.outputResolution.frequency = get_framerate.result.frameRate as f32;
+            let mut dimensions = get_framerate
+                .result
+                .framerate
+                .trim_end_matches(']')
+                .split('x');
+
+            ResponseOperator.outputResolution.width =
+                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
+            ResponseOperator.outputResolution.height =
+                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
+            ResponseOperator.outputResolution.frequency =
+                dimensions.next().unwrap().parse::<i32>().unwrap() as f32;
         }
     }
+    service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string()).unwrap();
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
