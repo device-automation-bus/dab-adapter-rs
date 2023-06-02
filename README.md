@@ -1,7 +1,7 @@
-# DAB <==> RDK bridge #
+# DAB <==> RDK Adapter #
 
 This software is a RUST application that enables compatibility with DAB specification to devices based on [Reference Design Kit (RDK)](https://rdkcentral.com/).
-The DAB <-> RDK bridge can be executed both on the RDK device or using an external PC.
+The DAB <-> RDK adapter can be executed both on the RDK device or using an external PC.
 
 ## Building ##
 
@@ -11,16 +11,16 @@ Since this software uses Cargo package manager, the building process is straight
 $ cargo build
 ```
 
-The output binary will be located at `./target/debug/dab-bridge`.
+The output binary will be located at `./target/debug/dab-adapter`.
 
 ## Usage ##
 
 ```
-dab-bridge --help
-dab-bridge 0.1.0
+dab-adapter --help
+dab-adapter 0.1.0
 
 USAGE:
-    dab-bridge [OPTIONS]
+    dab-adapter [OPTIONS]
 
 OPTIONS:
     -b, --broker <MQTT_HOST>    The MQTT broker host name or IP (default: localhost)
@@ -36,14 +36,14 @@ In this implementation for RDK, the Device ID as specified by DAB is given by th
 
 ## Implementations ##
 
-This bridge supports the three full protocol implementation types, as demonstrated in the [DAB Installation Guide v1.0](https://getdab.org/wp-content/uploads/2021/03/InstallationGuide_v1.0.pdf).
+This adapter supports the three full protocol implementation types, as demonstrated in the [DAB Installation Guide v1.0](https://getdab.org/wp-content/uploads/2021/03/InstallationGuide_v1.0.pdf).
 
 ### Option 1: "On Device" Implementation ###
 
 ![Option 1: "On Device" Implementation](doc/Option1.png)
 
 ```
-$ dab-bridge
+$ dab-adapter
 ```
 
 ### Option 2: Remote Broker Implementation ###
@@ -53,7 +53,7 @@ $ dab-bridge
 Let's suppose `192.168.0.100` as the MQTT Broker IP address:
 
 ```
-$ dab-bridge -b 192.168.0.100
+$ dab-adapter -b 192.168.0.100
 ```
 
 ### Option 3: "Bridge" Implementation ###
@@ -63,7 +63,7 @@ $ dab-bridge -b 192.168.0.100
 Let's suppose `192.168.0.200` as the RDK Device (Device Under Test) IP address:
 
 ```
-$ dab-bridge -d 192.168.0.200
+$ dab-adapter -d 192.168.0.200
 ```
 
 ## DAB Operations Currently Supported ##

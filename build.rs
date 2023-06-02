@@ -1,5 +1,3 @@
-use std::process::Command;
-
 fn main() {
     let mut opts = built::Options::default();
     opts.set_dependencies(true);

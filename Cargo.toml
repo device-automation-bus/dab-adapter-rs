@@ -1,16 +1,16 @@
 [package]
-name = "dab-bridge"
+name = "dab-adapter"
 license = "MIT OR Apache-2.0"
-homepage = "https://gitlab.collabora.com/collabora/dab-rdk-bridge"
+homepage = "https://gitlab.collabora.com/collabora/dab-rdk-adapter"
 description = "Enables compatibility of devices based on Reference Design Kit (RDK) with DAB (get-dab.com)"
 version = "0.4.9"
 edition = "2021"
-repository = "https://gitlab.collabora.com/collabora/dab-rdk-bridge.git"
+repository = "https://gitlab.collabora.com/collabora/dab-rdk-adapter.git"
 build = "build.rs"
 
 [[bin]]
-name = "dab-bridge"
-path = "src/bridge.rs"
+name = "dab-adapter"
+path = "src/adapter.rs"
 
 [dependencies]
 clap = { version = "3.2", features = ["derive"] }
