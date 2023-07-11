@@ -35,14 +35,16 @@ async fn start_http_server() -> Result<(), Box<dyn std::error::Error + Send + Sy
 
 pub fn get_device_id() -> String {
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"DeviceIdentification.deviceidentification\"}"
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}"
             .to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
             let response: serde_json::Value = serde_json::from_str(&r).unwrap();
-            let device_id = response["result"]["deviceid"].as_str().unwrap();
-            return device_id.to_string();
+            let device_id = response["result"]["estb_mac"].as_str().unwrap();
+            let dab_device_id = device_id.replace(":", "").to_string();
+            println!("DAB Device ID: {}", dab_device_id);
+            return dab_device_id;
         }
         Err(err) => {
             return err.to_string();
