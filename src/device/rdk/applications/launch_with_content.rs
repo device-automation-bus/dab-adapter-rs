@@ -49,10 +49,10 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-    if Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube" {
+    if !(Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube") {
         let response = ErrorResponse {
             status: 500,
-            error: "This operator currently only supports YouTube".to_string(),
+            error: "This operator currently only supports Youtube".to_string(),
         };
         let Response_json = json!(response);
         return Err(serde_json::to_string(&Response_json).unwrap());
@@ -155,7 +155,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
-            method: "Cobalt.1.deeplink".into(),
+            method: "Youtube.1.deeplink".into(),
             params: req_params,
         };
         let json_string = serde_json::to_string(&request).unwrap();
