@@ -36,23 +36,10 @@ pub fn process(_packet: String) -> Result<String, String> {
             let Response_json = json!(response);
             return Err(serde_json::to_string(&Response_json).unwrap());
         }
-        Ok(_) => (),
+        _ => (),
     }
 
     let Dab_Request: ExitApplicationRequest = IncomingMessage.unwrap();
-
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: RequestParams,
-    }
-
-    #[derive(Serialize)]
-    struct RequestParams {
-        callsign: String,
-    }
 
     if Dab_Request.appId.is_empty() {
         let response = ErrorResponse {
@@ -63,27 +50,57 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
+
+    // RDK Request Common Structs
+    #[derive(Serialize,Clone)]
+    struct RequestParams {
+        callsign: String,
+    }
+
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
     let req_params = RequestParams {
         callsign: Dab_Request.appId.clone(),
     };
+    // ****************** org.rdk.RDKShell.getState ********************
+    #[derive(Serialize)]
+    struct RdkRequestGetState {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+    }
 
-    let request = RdkRequest {
+    let request = RdkRequestGetState {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.RDKShell.destroy".into(),
-        params: req_params,
+        method: "org.rdk.RDKShell.getState".into(),
     };
 
     #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: DestroyResult,
+    struct Runtimes {
+        callsign: String,
+        state: String,
+        uri: String,
+        lastExitReason: i32,
     }
 
     #[derive(Deserialize)]
-    struct DestroyResult {
+    struct GetStateResult {
+        state: Vec<Runtimes>,
         success: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct RdkResponseGetState {
+        jsonrpc: String,
+        id: i32,
+        result: GetStateResult,
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
@@ -91,13 +108,43 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     match response_json {
         Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
+            println!("Erro: {}", err);
+
+            return Err(err);
         }
         _ => (),
+    }
+
+    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+    let mut app_created = false;
+    for r in rdkresponse.result.state.iter() {
+        let app = r.callsign.clone();
+        if app == Dab_Request.appId {
+            app_created = true;
+        }
+    }
+    
+    if app_created {
+
+        // ****************** org.rdk.RDKShell.destroy ********************
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.destroy".into(),
+            params: req_params.clone(),
+        };
+
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string);
+
+        match response_json {
+            Err(err) => {
+                println!("Erro: {}", err);
+
+                return Err(err);
+            }
+            _ => (),
+        }
     }
 
     // *******************************************************************
