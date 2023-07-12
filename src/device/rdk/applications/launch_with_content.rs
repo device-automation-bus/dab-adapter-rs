@@ -169,7 +169,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let request = RdkRequest {
                 jsonrpc: "2.0".into(),
                 id: 3,
-                method: Dab_Request.appId.clone() + "Youtube.1.deeplink".into(),
+                method: Dab_Request.appId.clone() + ".1.deeplink".into(),
                 params: req_params,
             };
             let json_string = serde_json::to_string(&request).unwrap();

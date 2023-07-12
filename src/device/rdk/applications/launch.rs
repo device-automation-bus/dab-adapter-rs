@@ -125,7 +125,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube"
     let mut param_list = vec![]
     if (Dab_Request.parameters.len() > 0) {
-        param_list.append(Dab_Request.parameters)
+        param_list.append(Dab_Request.parameters.clone())
     }
     
     if !app_created {
@@ -160,7 +160,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 jsonrpc: "2.0".into(),
                 id: 3,
                 method: "org.rdk.RDKShell.launch".into(),
-                params: req_params,
+                params: req_params.clone(),
             };
             let json_string = serde_json::to_string(&request).unwrap();
             let response_json = http_post(json_string);
@@ -215,7 +215,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
-            method: "Youtube.1.deeplink".into(),
+            method: Dab_Request.appId.clone() + ".1.deeplink".into(),,
             params: req_params,
         };
         let json_string = serde_json::to_string(&request).unwrap();
