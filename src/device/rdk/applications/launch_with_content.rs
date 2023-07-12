@@ -136,7 +136,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
     
     if app_created {
-        // ****************** Cobalt.1.deeplink ********************
+        // ****************** Youtube.1.deeplink ********************
         #[derive(Serialize)]
         struct Param {
             url: String,
@@ -155,7 +155,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
-            method: "Youtube.1.deeplink".into(),
+            method: Dab_Request.appId.clone() + ".1.deeplink".into(),
             params: req_params,
         };
         let json_string = serde_json::to_string(&request).unwrap();
