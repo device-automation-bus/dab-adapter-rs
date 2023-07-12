@@ -134,85 +134,100 @@ pub fn process(_packet: String) -> Result<String, String> {
             app_created = true;
         }
     }
+
+    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube"
+    let mut param_list = vec![]
+    if (is_cobalt) {
+        if !(Dab_Request.contentId.is_empty()) {
+            param_list.push(format!("v={}",Dab_Request.contentId))
+        }
+    }
+
+    if (Dab_Request.parameters.len() > 0) {
+        param_list.append(Dab_Request.parameters)
+    }
     
-    if app_created {
-        // ****************** Cobalt.1.deeplink ********************
-        #[derive(Serialize)]
-        struct Param {
-            url: String,
-        }
-        #[derive(Serialize)]
-        struct RdkRequest {
-            jsonrpc: String,
-            id: i32,
-            method: String,
-            params: Param,
-        }
-
-        let req_params = Param {
-            url: Dab_Request.contentId,
-        };
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "Youtube.1.deeplink".into(),
-            params: req_params,
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
-
-        match response_json {
-            Err(err) => {
-                println!("Erro: {}", err);
-
-                return Err(err);
+    if (is_cobalt) {
+        if app_created {
+            // ****************** Cobalt.1.deeplink ********************
+            #[derive(Serialize)]
+            struct Param {
+                url: String,
             }
-            _ => (),
-        }
-
-    }else {
-        // ****************** org.rdk.RDKShell.launch ********************
-        #[derive(Serialize)]
-        struct CobaltConfig {
-            url: String,
-        }
-        #[derive(Serialize)]
-        struct Param {
-            callsign: String,
-            r#type: String,
-            configuration: CobaltConfig,
-        }
-        #[derive(Serialize)]
-        struct RdkRequest {
-            jsonrpc: String,
-            id: i32,
-            method: String,
-            params: Param,
-        }
-
-        let req_params = Param {
-            callsign: "Youtube".into(),
-            r#type: Dab_Request.appId,
-            configuration: CobaltConfig {
-                url: Dab_Request.contentId,
-            },
-        };
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.RDKShell.launch".into(),
-            params: req_params,
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
-
-        match response_json {
-            Err(err) => {
-                println!("Erro: {}", err);
-
-                return Err(err);
+            #[derive(Serialize)]
+            struct RdkRequest {
+                jsonrpc: String,
+                id: i32,
+                method: String,
+                params: Param,
             }
-            _ => (),
+
+            // This is Cobalt only, we will need a switch statement for other apps. 
+            let req_params = Param {
+                url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
+            };
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: "Youtube.1.deeplink".into(),
+                params: req_params,
+            };
+            let json_string = serde_json::to_string(&request).unwrap();
+            let response_json = http_post(json_string);
+
+            match response_json {
+                Err(err) => {
+                    println!("Erro: {}", err);
+
+                    return Err(err);
+                }
+                _ => (),
+            }
+
+        } else {
+            // ****************** org.rdk.RDKShell.launch ********************
+            #[derive(Serialize)]
+            struct CobaltConfig {
+                url: String,
+            }
+            #[derive(Serialize)]
+            struct Param {
+                callsign: String,
+                r#type: String,
+                configuration: CobaltConfig,
+            }
+            #[derive(Serialize)]
+            struct RdkRequest {
+                jsonrpc: String,
+                id: i32,
+                method: String,
+                params: Param,
+            }
+
+            let req_params = Param {
+                callsign: "Youtube".into(),
+                r#type: Dab_Request.appId,
+                configuration: CobaltConfig {
+                    url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
+                },
+            };
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: "org.rdk.RDKShell.launch".into(),
+                params: req_params,
+            };
+            let json_string = serde_json::to_string(&request).unwrap();
+            let response_json = http_post(json_string);
+
+            match response_json {
+                Err(err) => {
+                    println!("Erro: {}", err);
+
+                    return Err(err);
+                }
+                _ => (),
+            }
         }
     }
 
