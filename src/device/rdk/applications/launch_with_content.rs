@@ -38,7 +38,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         _ => (),
     }
 
-    let Dab_Request: LaunchApplicationWithContentRequest = IncomingMessage.unwrap();
+    let mut Dab_Request: LaunchApplicationWithContentRequest = IncomingMessage.unwrap();
 
     if Dab_Request.appId.is_empty() {
         let response = ErrorResponse {
@@ -134,17 +134,17 @@ pub fn process(_packet: String) -> Result<String, String> {
             app_created = true;
         }
     }
-    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube"
-    let mut param_list = vec![]
+    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
+    let mut param_list = vec![];
     if (is_cobalt) {
         if !(Dab_Request.contentId.is_empty()) {
-            param_list.push(format!("v={}",Dab_Request.contentId.clone()))
+            param_list.push(format!("v={}",Dab_Request.contentId.clone()));
         }
     }
 
 
     if (Dab_Request.parameters.len() > 0) {
-        param_list.append(Dab_Request.parameters.clone())
+        param_list.append(&mut Dab_Request.parameters);
     }
     
     if (is_cobalt) {

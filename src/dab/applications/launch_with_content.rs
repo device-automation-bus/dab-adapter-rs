@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct LaunchApplicationWithContentRequest {
     pub appId: String,
     pub contentId: String,
-    pub parameters: [String],
+    pub parameters: Vec<String>,
 }
 
 #[allow(non_snake_case)]
