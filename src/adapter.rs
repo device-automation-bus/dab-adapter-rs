@@ -62,8 +62,7 @@ fn display_version() {
 pub type SharedMap =
     HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
 
-#[tokio::main]
-pub async fn main() {
+pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
     let mqtt_port = opt.port.unwrap_or(1883);

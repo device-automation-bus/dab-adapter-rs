@@ -12,7 +12,7 @@ pub mod voice;
 
 use crate::device::rdk as hw_specific;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, atomic::{AtomicBool, Ordering}};
 use std::{
     collections::HashMap,
     process, thread,
@@ -67,10 +67,23 @@ pub struct NotImplemented {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Default)]
+pub struct DabResponse {
+    pub status: u16,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DiscoveryResponse {
     pub status: u16,
     pub ip: String,
     pub deviceId: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct DeviceTelemetryStartResponse{
+    pub status: u16,
+    pub duration: u64,
 }
 
 #[allow(dead_code)]
@@ -109,6 +122,7 @@ fn process_msg(
     ip_address: String,
     shared_map: Arc<RwLock<SharedMap>>,
     dab_mutex: Arc<Mutex<()>>,
+    device_telemetry: &mut DeviceTelemetry,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let result: String;
     let function_topic = std::string::String::from(packet.topic());
@@ -131,9 +145,10 @@ fn process_msg(
         let mut write_map = shared_map.write().unwrap();
 
         match write_map.get_mut(&operation) {
+            // If we get the proper handler, then call it
             Some(callback) => {
                 println!("OK: {}", operation);
-                // println!("MSG: {}",msg);
+
                 match dab_mutex.try_lock() {
                     Ok(_guard) => {
                         result = match callback(msg) {
@@ -155,14 +170,21 @@ fn process_msg(
                     }
                 }
             }
-            // If we can't get the proper handler, then this function is not implemented (yet)
+            // If we can't get the proper handler, then this is a telemetry operation or is not implemented
             _ => {
-                println!("ERROR: {}", operation);
-                result = serde_json::to_string(&NotImplemented {
-                    status: 501,
-                    error: "Not implemented".to_string(),
-                })
-                .unwrap();
+                // If the operation is device-telemetry/start, then start the device telemetry thread
+                if &operation == "device-telemetry/start" {
+                    result = device_telemetry_start_process(msg, device_telemetry).unwrap();
+                } else if &operation == "device-telemetry/stop" {
+                    result = device_telemetry_stop_process(msg, device_telemetry).unwrap();
+                } else {
+                    println!("ERROR: {}", operation);
+                    result = serde_json::to_string(&NotImplemented {
+                        status: 501,
+                        error: "Not implemented".to_string(),
+                    })
+                    .unwrap();
+                }
             }
         }
     }
@@ -248,6 +270,10 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
     let shared_cli_main = Arc::clone(&shared_cli);
     let cli = shared_cli_main.read().unwrap();
     let dab_mutex = Arc::new(Mutex::new(()));
+
+    // Start the device telemetry thread
+    let mut device_telemetry = DeviceTelemetry::new();
+
     // Process incoming messages
     println!("Ready to process DAB requests");
     for msg_rx in rx.iter() {
@@ -263,6 +289,7 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
                 ip_address.clone(),
                 shared_map,
                 dab_mutex,
+                &mut device_telemetry,
             ).unwrap();
 
         } else if !cli.is_connected() {
@@ -281,4 +308,91 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
             }
         }
     }
+}
+
+// Implement device-telemetry
+
+pub struct DeviceTelemetry {
+    enabled: Arc<AtomicBool>,
+    handle: Option<thread::JoinHandle<()>>,
+}
+
+impl DeviceTelemetry {
+    pub fn new( ) -> DeviceTelemetry {
+        DeviceTelemetry {
+            enabled: Arc::new(AtomicBool::new(false)),
+            handle: None,
+        }
+    }
+
+    pub fn start(&mut self, period: u64) {
+        // If it is already running, stop the instance before creating a new one
+        if self.enabled.load(Ordering::Relaxed) {
+            self.stop();
+        }
+
+        // Start the telemetry thread
+        self.enabled.store(true, Ordering::Relaxed);
+        let enabled = self.enabled.clone();
+        self.handle = Some(thread::spawn(move || {
+            while enabled.load(Ordering::Relaxed) {
+                println!("Printing from thread every {} ms", period);
+                thread::sleep(Duration::from_millis(period));
+            }
+        }));
+    }
+
+    pub fn stop(&mut self) {
+        // Stop the telemetry thread
+        self.enabled.store(false, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap();
+        }
+    }
+}
+
+
+use serde_json::json;
+use crate::dab::device_telemetry::start::StartDeviceTelemetryRequest;
+use crate::dab::device_telemetry::start::StartDeviceTelemetryResponse;
+#[allow(non_snake_case)]
+pub fn device_telemetry_start_process(_packet: String, device_telemetry: &mut DeviceTelemetry) -> Result<String, String> {
+
+    let mut ResponseOperator = StartDeviceTelemetryResponse::default();
+
+    let IncomingMessage = serde_json::from_str(&_packet);
+
+    match IncomingMessage {
+        Err(err) => {
+            let response = ErrorResponse {
+                status: 400,
+                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
+        }
+        _ => (),
+    }
+
+    let Dab_Request: StartDeviceTelemetryRequest = IncomingMessage.unwrap();
+
+    device_telemetry.start(Dab_Request.duration);
+
+    ResponseOperator.duration = Dab_Request.duration;
+
+    let mut ResponseOperator_json = json!(ResponseOperator);
+    ResponseOperator_json["status"] = json!(200);
+    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+}
+
+use crate::dab::device_telemetry::stop::StopDeviceTelemetryResponse;
+#[allow(non_snake_case)]
+pub fn device_telemetry_stop_process(_packet: String, device_telemetry: &mut DeviceTelemetry) -> Result<String, String> {
+    let ResponseOperator = StopDeviceTelemetryResponse::default();
+
+    device_telemetry.stop();
+
+    let mut ResponseOperator_json = json!(ResponseOperator);
+    ResponseOperator_json["status"] = json!(200);
+    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
 }
