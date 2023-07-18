@@ -18,7 +18,6 @@ use std::{
     process, thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::task::JoinHandle;
 
 use paho_mqtt::{
     message::Message, message::MessageBuilder, properties::Properties, properties::PropertyCode,
@@ -107,7 +106,7 @@ fn decode_request(packet: Message) -> String {
 pub type SharedMap =
     HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
 
-async fn process_msg(
+fn process_msg(
     packet: Message,
     shared_cli: Arc<RwLock<Client>>,
     device_id: String,
@@ -199,7 +198,7 @@ async fn process_msg(
     Ok(())
 }
 
-async fn handle_dab_message(
+fn handle_dab_message(
     packet: Message,
     shared_cli: Arc<RwLock<Client>>,
     device_id: String,
@@ -212,24 +211,17 @@ async fn handle_dab_message(
     let device_id_clone = device_id.clone();
     let ip_address_clone = ip_address.clone();
 
-    let handle: JoinHandle<Result<(), Box<dyn std::error::Error + Send + Sync>>> =
-        tokio::spawn(async move {
-            process_msg(
-                packet_clone,
-                shared_cli,
-                device_id_clone,
-                ip_address_clone,
-                shared_map,
-                dab_mutex,
-            )
-            .await
-        });
-
-    // Await the task to finish, ignoring any errors
-    let _ = handle.await;
+    process_msg(
+        packet_clone,
+        shared_cli,
+        device_id_clone,
+        ip_address_clone,
+        shared_map,
+        dab_mutex,
+    ).unwrap();
 }
 
-pub async fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>) {
+pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>) {
     // Get the device ID
     let device_id = hw_specific::interface::get_device_id();
 
@@ -291,14 +283,14 @@ pub async fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<Share
             let shared_map = Arc::clone(&shared_map);
             let shared_cli = Arc::clone(&shared_cli);
             let dab_mutex = Arc::clone(&dab_mutex);
-            tokio::spawn(handle_dab_message(
+            handle_dab_message(
                 packet.clone(),
                 shared_cli,
                 device_id.clone(),
                 ip_address.clone(),
                 shared_map,
                 dab_mutex,
-            ));
+            );
         } else if !cli.is_connected() {
             println!("Connection lost. Waiting to retry connection");
             loop {

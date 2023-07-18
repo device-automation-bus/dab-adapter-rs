@@ -75,7 +75,7 @@ pub async fn main() {
     }
 
     // Initialize the device
-    hw_specific::interface::init(&device_ip).await;
+    hw_specific::interface::init(&device_ip);
 
     // Register the handlers
     let handlers: SharedMap = HashMap::new();
@@ -177,5 +177,5 @@ pub async fn main() {
     );
 
     drop(handlers);
-    dab::run(mqtt_host, mqtt_port, shared_map).await;
+    dab::run(mqtt_host, mqtt_port, shared_map);
 }
