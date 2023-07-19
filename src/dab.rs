@@ -12,7 +12,7 @@ pub mod voice;
 
 use crate::device::rdk as hw_specific;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex, RwLock, atomic::{AtomicBool, Ordering}};
+use std::sync::{Arc, Mutex, RwLock};
 use std::{
     collections::HashMap,
     process, thread,
@@ -23,6 +23,10 @@ use paho_mqtt::{
     message::Message, message::MessageBuilder, properties::Properties, properties::PropertyCode,
     Client, ConnectOptionsBuilder, CreateOptionsBuilder,
 };
+
+use device_telemetry::DeviceTelemetry;
+// use device_telemetry::start::device_telemetry_start_process;
+// use device_telemetry::stop::device_telemetry_stop_process;
 
 fn subscribe(cli: &Client, device_id: &str) -> bool {
     let topics = vec![
@@ -49,6 +53,28 @@ fn connect(cli: &Client) -> bool {
         return false;
     }
     return true;
+}
+
+fn mqtt_publish(shared_cli: &Arc<RwLock<Client>>, topic: String, correlation_data: String, message: String)
+{
+    let mut msg_prop = Properties::new();
+    // Set topic properties
+    if let Err(e) = msg_prop.push_val(PropertyCode::CorrelationData, correlation_data) {
+        println!("Error setting Msg Properties: {:?}", e);
+        process::exit(1);
+    }
+    let msg_tx = MessageBuilder::new()
+        .topic(topic)
+        .payload(message)
+        .qos(0)
+        .properties(msg_prop)
+        .finalize();
+
+    let cli = shared_cli.read().unwrap();
+    let tok = cli.publish(msg_tx);
+    if let Err(e) = tok {
+        println!("Error sending message: {:?}", e);
+    }
 }
 
 #[allow(non_snake_case)]
@@ -112,6 +138,14 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TelemetryMessage{
+    pub timestamp: u64,
+    pub metric: String,
+    pub value: u32,
+}
+
+
 pub type SharedMap =
     HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
 
@@ -129,7 +163,12 @@ fn process_msg(
     let substring = "dab/".to_owned() + &device_id + "/";
     let rx_properties = packet.properties().clone();
     let response_topic = rx_properties.get_string(PropertyCode::ResponseTopic);
-    let correlation_data = rx_properties.get_string(PropertyCode::CorrelationData);
+    let mut correlation_data = "".to_string();
+
+    if let Some(c) = rx_properties.get_string(PropertyCode::CorrelationData) {
+        // Set topic properties
+        correlation_data = c.clone();
+    }
 
     if function_topic == "dab/discovery" {
         result = serde_json::to_string(&DiscoveryResponse {
@@ -140,6 +179,7 @@ fn process_msg(
         .unwrap();
     } else {
         let operation = function_topic.replace(&substring, "");
+        println!("DEBUG: {}", function_topic);
         let msg = String::from_utf8(packet.payload().to_vec()).unwrap();
 
         let mut write_map = shared_map.write().unwrap();
@@ -174,9 +214,9 @@ fn process_msg(
             _ => {
                 // If the operation is device-telemetry/start, then start the device telemetry thread
                 if &operation == "device-telemetry/start" {
-                    result = device_telemetry_start_process(msg, device_telemetry).unwrap();
+                    result = device_telemetry::start::process(msg, device_telemetry).unwrap();
                 } else if &operation == "device-telemetry/stop" {
-                    result = device_telemetry_stop_process(msg, device_telemetry).unwrap();
+                    result = device_telemetry::stop::process(msg, device_telemetry).unwrap();
                 } else {
                     println!("ERROR: {}", operation);
                     result = serde_json::to_string(&NotImplemented {
@@ -190,27 +230,8 @@ fn process_msg(
     }
 
     if let Some(r) = response_topic {
-        let mut msg_prop = Properties::new();
-        if let Some(c) = correlation_data {
-            // Set topic properties
-            if let Err(e) = msg_prop.push_val(PropertyCode::CorrelationData, c) {
-                println!("Error setting Msg Properties: {:?}", e);
-                process::exit(1);
-            }
-        }
         // Publish to a topic
-        let msg_tx = MessageBuilder::new()
-            .topic(r)
-            .payload(result)
-            .qos(0)
-            .properties(msg_prop)
-            .finalize();
-
-        let cli = shared_cli.read().unwrap();
-        let tok = cli.publish(msg_tx);
-        if let Err(e) = tok {
-            println!("Error sending message: {:?}", e);
-        }
+        mqtt_publish(&shared_cli, r, correlation_data, result);
     }
 
     Ok(())
@@ -236,6 +257,16 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
         process::exit(1);
     }
 
+    // subscribe to all topics starting with `dab/<device-id>/`
+    if subscribe(&cli, &device_id) == false {
+        process::exit(1);
+    }
+
+    let shared_cli = Arc::new(RwLock::new(cli));
+    let shared_cli_main = Arc::clone(&shared_cli);
+    let cli = shared_cli_main.read().unwrap();
+    let dab_mutex = Arc::new(Mutex::new(()));
+
     // Broadcast a message to dab/<device-id>/messages topic:
 
     let now = SystemTime::now();
@@ -251,28 +282,12 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
     })
     .unwrap();
 
-    let msg_tx = MessageBuilder::new()
-        .topic("dab/".to_string() + &device_id + "/messages")
-        .payload(msg)
-        .qos(0)
-        .finalize();
-
-    if let Err(e) = cli.publish(msg_tx) {
-        println!("Error sending message: {:?}", e);
-    }
-
-    // subscribe to all topics starting with `dab/<device-id>/`
-    if subscribe(&cli, &device_id) == false {
-        process::exit(1);
-    }
-
-    let shared_cli = Arc::new(RwLock::new(cli));
-    let shared_cli_main = Arc::clone(&shared_cli);
-    let cli = shared_cli_main.read().unwrap();
-    let dab_mutex = Arc::new(Mutex::new(()));
+    let shared_cli = Arc::clone(&shared_cli);
+    mqtt_publish(&shared_cli, "dab/".to_string() + &device_id.clone() + "/messages", "".to_string(), msg);
 
     // Start the device telemetry thread
-    let mut device_telemetry = DeviceTelemetry::new();
+    let shared_cli = Arc::clone(&shared_cli);
+    let mut device_telemetry = DeviceTelemetry::new(device_id.clone(), Arc::clone(&shared_cli));
 
     // Process incoming messages
     println!("Ready to process DAB requests");
@@ -308,91 +323,4 @@ pub fn run(mqtt_host: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>
             }
         }
     }
-}
-
-// Implement device-telemetry
-
-pub struct DeviceTelemetry {
-    enabled: Arc<AtomicBool>,
-    handle: Option<thread::JoinHandle<()>>,
-}
-
-impl DeviceTelemetry {
-    pub fn new( ) -> DeviceTelemetry {
-        DeviceTelemetry {
-            enabled: Arc::new(AtomicBool::new(false)),
-            handle: None,
-        }
-    }
-
-    pub fn start(&mut self, period: u64) {
-        // If it is already running, stop the instance before creating a new one
-        if self.enabled.load(Ordering::Relaxed) {
-            self.stop();
-        }
-
-        // Start the telemetry thread
-        self.enabled.store(true, Ordering::Relaxed);
-        let enabled = self.enabled.clone();
-        self.handle = Some(thread::spawn(move || {
-            while enabled.load(Ordering::Relaxed) {
-                println!("Printing from thread every {} ms", period);
-                thread::sleep(Duration::from_millis(period));
-            }
-        }));
-    }
-
-    pub fn stop(&mut self) {
-        // Stop the telemetry thread
-        self.enabled.store(false, Ordering::Relaxed);
-        if let Some(handle) = self.handle.take() {
-            handle.join().unwrap();
-        }
-    }
-}
-
-
-use serde_json::json;
-use crate::dab::device_telemetry::start::StartDeviceTelemetryRequest;
-use crate::dab::device_telemetry::start::StartDeviceTelemetryResponse;
-#[allow(non_snake_case)]
-pub fn device_telemetry_start_process(_packet: String, device_telemetry: &mut DeviceTelemetry) -> Result<String, String> {
-
-    let mut ResponseOperator = StartDeviceTelemetryResponse::default();
-
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        _ => (),
-    }
-
-    let Dab_Request: StartDeviceTelemetryRequest = IncomingMessage.unwrap();
-
-    device_telemetry.start(Dab_Request.duration);
-
-    ResponseOperator.duration = Dab_Request.duration;
-
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
-}
-
-use crate::dab::device_telemetry::stop::StopDeviceTelemetryResponse;
-#[allow(non_snake_case)]
-pub fn device_telemetry_stop_process(_packet: String, device_telemetry: &mut DeviceTelemetry) -> Result<String, String> {
-    let ResponseOperator = StopDeviceTelemetryResponse::default();
-
-    device_telemetry.stop();
-
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
 }

@@ -1,6 +1,6 @@
 use clap::Parser;
 mod device;
-use device::rdk as hw_specific;
+pub use device::rdk as hw_specific;
 mod dab;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};

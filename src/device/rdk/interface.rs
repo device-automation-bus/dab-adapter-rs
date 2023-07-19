@@ -222,3 +222,10 @@ pub fn get_rdk_keys() -> Vec<String> {
 pub fn get_keycode(keyname: String) -> Option<&'static u16> {
     RDK_KEYMAP.get(&keyname)
 }
+
+
+// Telemetry operations
+
+pub fn get_device_memory() -> Result<u32,String> {
+    Ok(0)
+}
