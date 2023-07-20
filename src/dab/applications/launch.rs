@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Serialize, Deserialize)]
 pub struct LaunchApplicationRequest {
     pub appId: String,
-    pub parameters: Vec<String>,
+    pub parameters: Option<Vec<String>>,
 }
 
 #[allow(non_snake_case)]

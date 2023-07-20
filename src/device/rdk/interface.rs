@@ -110,6 +110,9 @@ pub fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
+    println!("JSON string is {}", json_string);
+    println!("rdk_address is : {}", rdk_address);
+
     let response = block_on(async {
         client
             .post(rdk_address)
@@ -122,9 +125,11 @@ pub fn http_post(json_string: String) -> Result<String, String> {
     });
     match response {
         Ok(r) => {
+            println!("OK response is: {}", r.to_string());
             return Ok(r.to_string());
         }
         Err(err) => {
+            println!("Err response is: {}", err.to_string());
             return Err(err.to_string());
         }
     }

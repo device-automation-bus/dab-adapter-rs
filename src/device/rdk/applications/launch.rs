@@ -115,21 +115,27 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
     let mut app_created = false;
+    let mut is_suspended = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
         if app == Dab_Request.appId {
             app_created = true;
+            is_suspended = r.state == "suspended";
         }
     }
 
     let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
     let mut param_list = vec![];
-    if (Dab_Request.parameters.len() > 0) {
-        param_list.append(&mut Dab_Request.parameters);
+    if let Some(mut parameters) = Dab_Request.parameters.clone() {
+        if parameters.len() > 0 {
+            param_list.append(&mut parameters);
+        }
     }
+    println!("App created: {}", app_created);
+    println!("Is Cobalt: {}", is_cobalt);
     
     if !app_created {
-        if (is_cobalt) {
+        if is_cobalt {
             // ****************** org.rdk.RDKShell.launch with Cobalt parameters ********************
             #[derive(Serialize,Clone)]
             struct CobaltConfig {
@@ -138,7 +144,6 @@ pub fn process(_packet: String) -> Result<String, String> {
             #[derive(Serialize,Clone)]
             struct Param {
                 callsign: String,
-                r#type: String,
                 configuration: CobaltConfig,
             }
             #[derive(Serialize)]
@@ -150,10 +155,9 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
 
             let req_params = Param {
-                callsign: "Youtube".into(),
-                r#type: Dab_Request.appId,
+                callsign: Dab_Request.appId,
                 configuration: CobaltConfig {
-                    url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
+                    url: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
                 },
             };
             let request = RdkRequest {
@@ -163,6 +167,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 params: req_params.clone(),
             };
             let json_string = serde_json::to_string(&request).unwrap();
+            println!("posting");
             let response_json = http_post(json_string);
 
             match response_json {
@@ -173,6 +178,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
+            println!("response");
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             let request = RdkRequest {
@@ -205,18 +211,15 @@ pub fn process(_packet: String) -> Result<String, String> {
             jsonrpc: String,
             id: i32,
             method: String,
-            params: Param,
+            params: String,
         }
 
         // This is Cobalt only, we will need a switch statement for other apps. 
-        let req_params = Param {
-            url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
-        };
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
             method: Dab_Request.appId.clone() + ".1.deeplink".into(),
-            params: req_params,
+            params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
         };
         let json_string = serde_json::to_string(&request).unwrap();
         let response_json = http_post(json_string);
@@ -230,6 +233,30 @@ pub fn process(_packet: String) -> Result<String, String> {
             _ => (),
         }
     }
+
+    if is_suspended {
+        // ****************** org.rdk.RDKShell.resumeApplication ********************
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.launch".into(),
+            params: req_params.clone(),
+        };
+
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string);
+
+        match response_json {
+            Err(err) => {
+                println!("Erro: {}", err);
+
+                return Err(err);
+            }
+            _ => (),
+        }
+    }
+
+    println!("Moving to front");
 
     // ****************** org.rdk.RDKShell.moveToFront ********************
 
@@ -252,12 +279,13 @@ pub fn process(_packet: String) -> Result<String, String> {
         _ => (),
     }
 
+    println!("Set Focus");
     // ****************** org.rdk.RDKShell.setFocus ********************
 
     let request = RdkRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.RDKShell.moveToFront".into(),
+        method: "org.rdk.RDKShell.setFocus".into(),
         params: req_params.clone(),
     };
 

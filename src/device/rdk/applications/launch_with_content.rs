@@ -257,7 +257,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let request = RdkRequest {
         jsonrpc: "2.0".into(),
         id: 3,
-        method: "org.rdk.RDKShell.moveToFront".into(),
+        method: "org.rdk.RDKShell.setFocus".into(),
         params: req_params.clone(),
     };
 

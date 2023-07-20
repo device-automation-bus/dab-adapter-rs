@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Serialize, Deserialize)]
 pub struct ExitApplicationRequest {
     pub appId: String,
+    pub background: Option<bool>,
 }
 
 #[allow(non_snake_case)]

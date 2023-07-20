@@ -50,6 +50,11 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
+    let mut is_background = false;
+    if Dab_Request.background.is_some() && Dab_Request.background.unwrap() {
+        is_background = true;
+    }
+
 
     // RDK Request Common Structs
     #[derive(Serialize,Clone)]
@@ -125,25 +130,48 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
     
     if app_created {
+        
+        if is_background {
+            // ****************** org.rdk.RDKShell.suspend ********************
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: "org.rdk.RDKShell.suspend".into(),
+                params: req_params.clone(),
+            };
 
-        // ****************** org.rdk.RDKShell.destroy ********************
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.RDKShell.destroy".into(),
-            params: req_params.clone(),
-        };
+            let json_string = serde_json::to_string(&request).unwrap();
+            let response_json = http_post(json_string);
 
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
+            match response_json {
+                Err(err) => {
+                    println!("Erro: {}", err);
 
-        match response_json {
-            Err(err) => {
-                println!("Erro: {}", err);
-
-                return Err(err);
+                    return Err(err);
+                }
+                _ => (),
             }
-            _ => (),
+
+        } else {
+            // ****************** org.rdk.RDKShell.destroy ********************
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: "org.rdk.RDKShell.destroy".into(),
+                params: req_params.clone(),
+            };
+
+            let json_string = serde_json::to_string(&request).unwrap();
+            let response_json = http_post(json_string);
+
+            match response_json {
+                Err(err) => {
+                    println!("Erro: {}", err);
+
+                    return Err(err);
+                }
+                _ => (),
+            }
         }
     }
 
