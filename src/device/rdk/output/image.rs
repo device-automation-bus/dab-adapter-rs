@@ -12,24 +12,23 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::output::image::OutputImageRequest;
-use crate::dab::output::image::OutputImageResponse;
+use crate::dab::structs::OutputImageRequest;
+use crate::dab::structs::OutputImageResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::service_activate;
-use crate::device::rdk::interface::upload_image;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use hyper::{Body, Request, Response};
+// use hyper::{Body, Request, Response};
 use local_ip_address::local_ip;
-use std::convert::Infallible;
-use std::fs::File;
-use std::io::prelude::*;
+// use std::convert::Infallible;
+// use std::fs::File;
+// use std::io::prelude::*;
 use std::thread;
 use std::time::Duration;
-use tiff::encoder::{colortype, compression::*, TiffEncoder};
+// use tiff::encoder::{colortype, compression::*, TiffEncoder};
 
 use image::{GenericImageView, ImageResult};
 
@@ -149,18 +148,18 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&error).unwrap());
     }
 
-    let result_upload = upload_image(Dab_Request.outputLocation.clone());
+    // let result_upload = upload_image(Dab_Request.outputLocation.clone());
 
-    match result_upload {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => {}
-    }
+    // match result_upload {
+    //     Err(err) => {
+    //         let error = ErrorResponse {
+    //             status: 500,
+    //             error: err,
+    //         };
+    //         return Err(serde_json::to_string(&error).unwrap());
+    //     }
+    //     Ok(_) => {}
+    // }
 
     //######### Correlate Fields #########
     ResponseOperator.format = "tiff".to_string();
@@ -172,37 +171,37 @@ pub fn process(_packet: String) -> Result<String, String> {
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
 }
 
-pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    // Get the body of the request and save the body to a file
-    let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
-    let mut file = File::create("/tmp/screenshot.png").unwrap();
-    file.write_all(&body).unwrap();
+// pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+//     // Get the body of the request and save the body to a file
+//     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
+//     let mut file = File::create("/tmp/screenshot.png").unwrap();
+//     file.write_all(&body).unwrap();
 
-    // Open the image
-    let input_png = image::open("/tmp/screenshot.png").unwrap();
-    let rgb_image = input_png.clone().into_rgba8();
-    let buffer = rgb_image.clone().into_raw();
+//     // Open the image
+//     let input_png = image::open("/tmp/screenshot.png").unwrap();
+//     let rgb_image = input_png.clone().into_rgba8();
+//     let buffer = rgb_image.clone().into_raw();
 
-    // Decode to tiff
-    let mut file = File::create("/tmp/screenshot.tiff").unwrap();
-    let mut tiff_encodder = TiffEncoder::new(&mut file).unwrap();
-    let mut output_image = tiff_encodder
-        .new_image_with_compression::<colortype::RGBA8, Uncompressed>(
-            1920,
-            1080,
-            Uncompressed::default(),
-        )
-        .unwrap();
+//     // Decode to tiff
+//     let mut file = File::create("/tmp/screenshot.tiff").unwrap();
+//     let mut tiff_encodder = TiffEncoder::new(&mut file).unwrap();
+//     let mut output_image = tiff_encodder
+//         .new_image_with_compression::<colortype::RGBA8, Uncompressed>(
+//             1920,
+//             1080,
+//             Uncompressed::default(),
+//         )
+//         .unwrap();
 
-    let mut idx = 0;
-    while output_image.next_strip_sample_count() > 0 {
-        let sample_count = output_image.next_strip_sample_count() as usize;
-        output_image
-            .write_strip(&buffer[idx..idx + sample_count])
-            .unwrap();
-        idx += sample_count;
-    }
-    output_image.finish().unwrap();
+//     let mut idx = 0;
+//     while output_image.next_strip_sample_count() > 0 {
+//         let sample_count = output_image.next_strip_sample_count() as usize;
+//         output_image
+//             .write_strip(&buffer[idx..idx + sample_count])
+//             .unwrap();
+//         idx += sample_count;
+//     }
+//     output_image.finish().unwrap();
 
-    Ok(Response::new(Body::empty()))
-}
+//     Ok(Response::new(Body::empty()))
+// }

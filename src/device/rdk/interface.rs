@@ -1,42 +1,22 @@
-use crate::dab::ErrorResponse;
-use crate::device::rdk::output::image::save_image;
+use crate::dab::structs::ErrorResponse;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::Infallible;
 use std::fs::File;
-use std::io::Read;
 use std::io::Write;
 use surf::Client;
-use tokio;
 static mut DEVICE_ADDRESS: String = String::new();
 
-pub async fn init(device_ip: &str) {
+pub fn init(device_ip: &str) {
     unsafe {
         DEVICE_ADDRESS.push_str(&device_ip);
     }
-    tokio::spawn(start_http_server());
-}
-
-async fn start_http_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    use hyper::server::Server;
-    use hyper::service::{make_service_fn, service_fn};
-
-    let make_service =
-        make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(save_image)) });
-
-    let addr = ([0, 0, 0, 0], 7878).into();
-    let http_server = Server::bind(&addr).serve(make_service);
-    println!("Started http server at port 7878 for dab/output/image operator");
-    http_server.await?;
-    Ok(())
 }
 
 pub fn get_device_id() -> String {
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}"
-            .to_string();
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
@@ -52,44 +32,6 @@ pub fn get_device_id() -> String {
     }
 }
 
-pub fn upload_image(url: String) -> Result<(), String> {
-    // Read the TIFF image file into a Vec<u8>
-    let filepath = "/tmp/screenshot.tiff";
-    let mut file = File::open(filepath).unwrap();
-    let mut buffer = Vec::new();
-    let result = file.read_to_end(&mut buffer);
-    match result {
-        Ok(_) => {}
-        Err(err) => {
-            return Err(err.to_string());
-        }
-    }
-
-    // Create a surf::Client
-    let client = Client::new();
-
-    // Create a PUT request
-    let response = block_on(async {
-        client
-            .put(url)
-            .body_bytes(&buffer)
-            .header("Content-Type", "image/tiff")
-            .await
-            .unwrap()
-            .body_string()
-            .await
-    });
-
-    match response {
-        Ok(_) => {
-            return Ok(());
-        }
-        Err(err) => {
-            return Err(err.to_string());
-        }
-    }
-}
-
 pub fn http_download(url: String) -> Result<(), String> {
     let client = Client::new();
 
@@ -98,7 +40,7 @@ pub fn http_download(url: String) -> Result<(), String> {
     match response {
         Ok(mut r) => {
             let mut file = File::create("/tmp/tts.wav").unwrap();
-            let body = block_on(async { r.body_bytes().await.unwrap() });
+            let body = block_on(r.body_bytes()).unwrap();
             file.write_all(&body).unwrap();
             return Ok(());
         }
@@ -282,4 +224,10 @@ pub fn get_rdk_keys() -> Vec<String> {
 
 pub fn get_keycode(keyname: String) -> Option<&'static u16> {
     RDK_KEYMAP.get(&keyname)
+}
+
+// Telemetry operations
+
+pub fn get_device_memory() -> Result<u32, String> {
+    Ok(0)
 }

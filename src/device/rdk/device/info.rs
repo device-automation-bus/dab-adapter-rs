@@ -44,13 +44,13 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::device::info::DeviceInfoRequest;
-use crate::dab::device::info::DeviceInformation;
-use crate::dab::device::info::DisplayType;
+use crate::dab::structs::DeviceInfoRequest;
+use crate::dab::structs::GetDeviceInformationResponse;
+use crate::dab::structs::DisplayType;
 #[allow(unused_imports)]
-use crate::dab::device::info::NetworkInterface;
-use crate::dab::device::info::NetworkInterfaceType;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::NetworkInterface;
+use crate::dab::structs::NetworkInterfaceType;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -59,7 +59,7 @@ use serde_json::json;
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = DeviceInformation::default();
+    let mut ResponseOperator = GetDeviceInformationResponse::default();
     // *** Fill in the fields of the struct DeviceInformation here ***
 
     //#########org.rdk.DisplaySettings.getConnectedVideoDisplays#########

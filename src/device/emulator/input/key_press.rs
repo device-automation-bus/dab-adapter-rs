@@ -9,8 +9,8 @@
 // pub struct KeyPressResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::input::key_press::KeyPressRequest;
-use crate::dab::input::key_press::KeyPressResponse;
+use crate::dab::structs::KeyPressRequest;
+use crate::dab::structs::KeyPressResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

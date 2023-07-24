@@ -8,9 +8,9 @@
 // pub keyCodes: Vec<String>,
 // }
 
-use crate::dab::input::key::list::KeyList;
+use crate::dab::structs::KeyList;
 #[allow(unused_imports)]
-use crate::dab::input::key::list::KeyListRequest;
+use crate::dab::structs::KeyListRequest;
 use serde_json::json;
 
 #[allow(non_snake_case)]

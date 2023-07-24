@@ -102,15 +102,15 @@
 
 // use super::LANGUAGES;
 // use super::RESOLUTIONS;
-use crate::dab::system::settings::list::AudioOutputMode;
-use crate::dab::system::settings::list::AudioOutputSource;
-use crate::dab::system::settings::list::AudioVolume;
-use crate::dab::system::settings::list::HdrOutputMode;
-use crate::dab::system::settings::list::ListSystemSettings;
-use crate::dab::system::settings::list::MatchContentFrameRate;
-use crate::dab::system::settings::list::OutputResolution;
-use crate::dab::system::settings::list::PictureMode;
-use crate::dab::system::settings::list::VideoInputSource;
+use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::AudioOutputSource;
+use crate::dab::structs::AudioVolume;
+use crate::dab::structs::HdrOutputMode;
+use crate::dab::structs::ListSystemSettings;
+use crate::dab::structs::MatchContentFrameRate;
+use crate::dab::structs::OutputResolution;
+use crate::dab::structs::PictureMode;
+use crate::dab::structs::VideoInputSource;
 use serde_json::json;
 
 #[allow(non_snake_case)]

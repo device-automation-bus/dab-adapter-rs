@@ -9,8 +9,8 @@
 // pub struct LaunchApplicationResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::applications::launch::LaunchApplicationRequest;
-use crate::dab::applications::launch::LaunchApplicationResponse;
+use crate::dab::structs::LaunchApplicationRequest;
+use crate::dab::structs::LaunchApplicationResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

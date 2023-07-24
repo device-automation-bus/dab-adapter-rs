@@ -9,11 +9,11 @@
 // pub struct LaunchApplicationResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::applications::launch::LaunchApplicationRequest;
-use crate::dab::applications::launch::LaunchApplicationResponse;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::LaunchApplicationRequest;
+use crate::dab::structs::LaunchApplicationResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[allow(non_snake_case)]
@@ -48,9 +48,8 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-
     // RDK Request Common Structs
-    #[derive(Serialize,Clone)]
+    #[derive(Serialize, Clone)]
     struct RequestParams {
         callsign: String,
     }

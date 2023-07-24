@@ -12,8 +12,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::output::image::OutputImageRequest;
-use crate::dab::output::image::OutputImageResponse;
+use crate::dab::structs::OutputImageRequest;
+use crate::dab::structs::OutputImageResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

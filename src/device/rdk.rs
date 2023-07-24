@@ -1,7 +1,5 @@
-pub mod app_telemetry;
 pub mod applications;
 pub mod device;
-pub mod device_telemetry;
 pub mod health_check;
 pub mod input;
 pub mod interface;

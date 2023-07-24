@@ -11,8 +11,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::applications::exit::ExitApplicationRequest;
-use crate::dab::applications::exit::ExitApplicationResponse;
+use crate::dab::structs::ExitApplicationRequest;
+use crate::dab::structs::ExitApplicationResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]
