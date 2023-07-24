@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     time::{SystemTime, UNIX_EPOCH},
-    sync::{Arc, RwLock},
 };
 
 #[allow(non_snake_case)]
@@ -98,7 +97,7 @@ pub type SharedMap =
 
 use device_telemetry::DeviceTelemetry;
 
-pub fn run(mqtt_server: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap>>) {
+pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     // Get the device ID
     let device_id = hw_specific::interface::get_device_id();
 
@@ -162,8 +161,8 @@ pub fn run(mqtt_server: String, mqtt_port: u16, shared_map: Arc<RwLock<SharedMap
                 if &operation == "messages"{
                     continue;
                 }
-                let mut write_map = shared_map.write().unwrap();
-                match write_map.get_mut(&operation) {
+
+                match function_map.get_mut(&operation) {
                     // If we get the proper handler, then call it
                     Some(callback) => {
                         println!("OK: {}", operation);

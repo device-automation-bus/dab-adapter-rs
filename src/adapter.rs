@@ -3,7 +3,6 @@ mod device;
 pub use device::rdk as hw_specific;
 mod dab;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -77,10 +76,7 @@ pub fn main() {
     hw_specific::interface::init(&device_ip);
 
     // Register the handlers
-    let handlers: SharedMap = HashMap::new();
-    let shared_map = Arc::new(RwLock::new(handlers));
-    let shared_map_main = Arc::clone(&shared_map);
-    let mut handlers = shared_map_main.write().unwrap();
+    let mut handlers: SharedMap = HashMap::new();
 
     handlers.insert(
         "operations/list".to_string(),
@@ -175,6 +171,5 @@ pub fn main() {
         Box::new(hw_specific::version::process),
     );
 
-    drop(handlers);
-    dab::run(mqtt_host, mqtt_port, shared_map);
+    dab::run(mqtt_host, mqtt_port, handlers);
 }
