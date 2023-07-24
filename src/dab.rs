@@ -48,10 +48,13 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     })
     .unwrap();
 
+    let mut zero_vector: Vec<u8> = Vec::new();
+    zero_vector.push(0);
+
     let msg_tx = MqttMessage {
         function_topic: "dab/".to_string() + &device_id.clone() + "/messages",
         response_topic: "".to_string(),
-        correlation_data: "".to_string(),
+        correlation_data: zero_vector,
         payload: payload.clone(),
     };
     mqtt_client.publish(msg_tx);

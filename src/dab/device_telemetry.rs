@@ -79,11 +79,13 @@ impl DeviceTelemetry {
                     value: memory,
                 })
                 .unwrap();
+                let mut zero_vector: Vec<u8> = Vec::new();
+                zero_vector.push(0);
 
                 let msg_tx = MqttMessage {
                     function_topic: "dab/".to_string() + &device_id + "/telemetry",
                     response_topic: "".to_string(),
-                    correlation_data: "".to_string(),
+                    correlation_data: zero_vector,
                     payload: payload.clone(),
                 };
 

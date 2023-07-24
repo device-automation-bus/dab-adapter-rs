@@ -7,7 +7,7 @@ use std::thread;
 pub struct MqttMessage {
     pub function_topic: String,
     pub response_topic: String,
-    pub correlation_data: String,
+    pub correlation_data: Vec<u8>,
     pub payload: String,
 }
 
@@ -101,10 +101,14 @@ impl MqttClient {
                     };
                 let correlation_data = match packet
                     .properties()
-                    .get_string(PropertyCode::CorrelationData)
+                    .get_binary(PropertyCode::CorrelationData)
                 {
                     Some(data) => data,
-                    None => "".to_string(),
+                    None => {
+                        let mut v: Vec<u8> = Vec::new();
+                        v.push(0);
+                        v
+                    }
                 };
 
                 let function_topic = std::string::String::from(packet.topic());
