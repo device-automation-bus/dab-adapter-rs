@@ -1,9 +1,32 @@
-pub mod start;
-pub mod stop;
 use crate::hw_specific::interface::get_device_memory;
-use crate::dab::{TelemetryMessage, mqtt_publish, RwLock, Client};
+use crate::dab::{   mqtt_client::MqttMessage,
+                    ErrorResponse,
+                    TelemetryMessage,
+                    MqttClient
+                };
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 // Implement device-telemetry
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopDeviceTelemetryRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopDeviceTelemetryResponse {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartDeviceTelemetryRequest {
+    pub duration: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartDeviceTelemetryResponse {
+    pub duration: u64,
+}
 
 use std::{
 	sync::{Arc, atomic::{AtomicBool, Ordering}},
@@ -11,34 +34,36 @@ use std::{
    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-pub struct DeviceTelemetry {
-	device_id: String,
-	shared_cli: Arc<RwLock<Client>>,
+pub struct DeviceTelemetry{
    enabled: Arc<AtomicBool>,
-   handle: Option<thread::JoinHandle<()>>,
+   handle : Option<thread::JoinHandle<()>>,
+   mqtt_client: MqttClient,
+   device_id: String,
 }
 
 impl DeviceTelemetry {
-    pub fn new(device_id: String, shared_cli: Arc<RwLock<Client>> ) -> DeviceTelemetry {
+    pub fn new(mqtt_client: MqttClient, device_id: String) -> DeviceTelemetry {
         DeviceTelemetry {
-				device_id: device_id,
-				shared_cli:	shared_cli,
             enabled: Arc::new(AtomicBool::new(false)),
             handle: None,
+            mqtt_client: mqtt_client,
+            device_id: device_id,
         }
     }
 
-    pub fn start(&mut self, period: u64) {
+    pub fn start<'a>(&'a mut self, period: u64) {
         // If it is already running, stop the instance before creating a new one
-        if self.enabled.load(Ordering::Relaxed) {
+        let enabled = self.enabled.clone();
+        if enabled.load(Ordering::Relaxed) {
             self.stop();
         }
 
         // Start the telemetry thread
         self.enabled.store(true, Ordering::Relaxed);
         let enabled = self.enabled.clone();
-		  let cli = self.shared_cli.clone();
-		  let device_id = self.device_id.clone();
+        let device_id = self.device_id.clone();
+        let mqtt_client = self.mqtt_client.clone();
+		  
         self.handle = Some(thread::spawn(move || {
             while enabled.load(Ordering::Relaxed) {
 					
@@ -47,13 +72,20 @@ impl DeviceTelemetry {
 						_ => 0,
 					};
 
-					let msg = serde_json::to_string(&TelemetryMessage {
+					let payload = serde_json::to_string(&TelemetryMessage {
 						timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
 						metric: "memory".to_string(),
 						value: memory,
 					}).unwrap();
 
-					mqtt_publish(&cli, "dab/".to_string() + &device_id + "/device-telemetry/metrics", "".to_string(), msg);
+                    let msg_tx = MqttMessage {
+                        function_topic: "dab/".to_string() + &device_id + "/telemetry",
+                        response_topic: "".to_string(),
+                        correlation_data: "".to_string(),
+                        payload: payload.clone(),
+                    };
+
+					mqtt_client.publish(msg_tx);
                thread::sleep(Duration::from_millis(period));
             }
         }));
@@ -66,5 +98,45 @@ impl DeviceTelemetry {
             handle.join().unwrap();
         }
     }
-}
 
+    #[allow(non_snake_case)]
+    pub fn device_telemetry_start_process(&mut self, packet: String) -> Result<String, String> {
+
+        let mut ResponseOperator = StartDeviceTelemetryResponse::default();
+
+        let IncomingMessage = serde_json::from_str(&packet);
+
+        match IncomingMessage {
+            Err(err) => {
+                let response = ErrorResponse {
+                    status: 400,
+                    error: "Error parsing request: ".to_string() + err.to_string().as_str(),
+                };
+                let Response_json = json!(response);
+                return Err(serde_json::to_string(&Response_json).unwrap());
+            }
+            _ => (),
+        }
+
+        let Dab_Request: StartDeviceTelemetryRequest = IncomingMessage.unwrap();
+
+        self.start(Dab_Request.duration);
+
+        ResponseOperator.duration = Dab_Request.duration;
+
+        let mut ResponseOperator_json = json!(ResponseOperator);
+        ResponseOperator_json["status"] = json!(200);
+        Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn device_telemetry_stop_process(&mut self, _packet: String) -> Result<String, String> {
+        let ResponseOperator = StopDeviceTelemetryResponse::default();
+
+        self.stop();
+
+        let mut ResponseOperator_json = json!(ResponseOperator);
+        ResponseOperator_json["status"] = json!(200);
+        Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    }
+}
