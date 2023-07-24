@@ -1,7 +1,7 @@
-use crossbeam::channel::{self, Sender, Receiver};
+use crossbeam::channel::{self, Receiver, Sender};
 use paho_mqtt as mqtt;
-use std::thread;
 use paho_mqtt::properties::PropertyCode;
+use std::thread;
 
 #[derive(Debug)]
 pub struct MqttMessage {
@@ -14,7 +14,7 @@ pub struct MqttMessage {
 #[derive(Clone)]
 pub struct MqttClient {
     paho_client: mqtt::Client,
-    ipc_channel: (Sender<MqttMessage>,Receiver<MqttMessage>),
+    ipc_channel: (Sender<MqttMessage>, Receiver<MqttMessage>),
     paho_receiver: mqtt::Receiver<Option<mqtt::Message>>,
 }
 
@@ -37,45 +37,47 @@ impl MqttClient {
         if let Err(e) = paho_client.connect(conn_opts) {
             println!("Error connecting: {:?}", e);
         }
-        
-        let paho_receiver = paho_client.start_consuming(); 
+
+        let paho_receiver = paho_client.start_consuming();
         let ipc_channel = channel::unbounded();
 
-        MqttClient { paho_client,ipc_channel,paho_receiver}
+        MqttClient {
+            paho_client,
+            ipc_channel,
+            paho_receiver,
+        }
     }
 
     pub fn start(&mut self) {
         // Start another thread to process messages to be sent
         let paho_client = self.paho_client.clone();
         let channel_receiver = self.ipc_channel.1.clone();
-        thread::spawn(move || 
-            loop {
-                let msg_tx = match channel_receiver.recv(){
-                    Ok(msg) => msg,
-                    Err(e) => {
-                        println!("Error channel tx: {:?}", e);
-                        return;
-                    }
-                };
-                let function_topic = msg_tx.function_topic;
-                let correlation_data = msg_tx.correlation_data;
-                let payload = msg_tx.payload;
-                let mut msg_prop = mqtt::properties::Properties::new();
-                if let Err(e) = msg_prop.push_val(PropertyCode::CorrelationData, correlation_data) {
-                    println!("Error setting correlation data: {:?}", e);
+        thread::spawn(move || loop {
+            let msg_tx = match channel_receiver.recv() {
+                Ok(msg) => msg,
+                Err(e) => {
+                    println!("Error channel tx: {:?}", e);
+                    return;
                 }
-                let message = mqtt::MessageBuilder::new()
-                    .topic(function_topic)
-                    .payload(payload)
-                    .qos(1)
-                    .properties(msg_prop)
-                    .finalize();
-
-                if let Err(e) = paho_client.publish(message) {
-                    println!("Error sending message: {:?}", e);
-                }
+            };
+            let function_topic = msg_tx.function_topic;
+            let correlation_data = msg_tx.correlation_data;
+            let payload = msg_tx.payload;
+            let mut msg_prop = mqtt::properties::Properties::new();
+            if let Err(e) = msg_prop.push_val(PropertyCode::CorrelationData, correlation_data) {
+                println!("Error setting correlation data: {:?}", e);
             }
-        );
+            let message = mqtt::MessageBuilder::new()
+                .topic(function_topic)
+                .payload(payload)
+                .qos(1)
+                .properties(msg_prop)
+                .finalize();
+
+            if let Err(e) = paho_client.publish(message) {
+                println!("Error sending message: {:?}", e);
+            }
+        });
 
         println!("Ready to process DAB requests");
     }
@@ -92,11 +94,15 @@ impl MqttClient {
         match self.paho_receiver.recv() {
             Ok(Some(packet)) => {
                 let payload_str = packet.payload_str();
-                let response_topic = match packet.properties().get_string(PropertyCode::ResponseTopic){
-                    Some(topic) => topic,
-                    None => "".to_string(),
-                };
-                let correlation_data = match packet.properties().get_string(PropertyCode::CorrelationData){
+                let response_topic =
+                    match packet.properties().get_string(PropertyCode::ResponseTopic) {
+                        Some(topic) => topic,
+                        None => "".to_string(),
+                    };
+                let correlation_data = match packet
+                    .properties()
+                    .get_string(PropertyCode::CorrelationData)
+                {
                     Some(data) => data,
                     None => "".to_string(),
                 };
@@ -110,13 +116,9 @@ impl MqttClient {
                     payload: payload_str.to_string(),
                 };
                 return Ok(rx_msg);
-            },
-            Ok(None) => {
-                Err("No message received".to_string())
-            },
-            Err(e) => {
-                Err(e.to_string())
             }
+            Ok(None) => Err("No message received".to_string()),
+            Err(e) => Err(e.to_string()),
         }
     }
 }

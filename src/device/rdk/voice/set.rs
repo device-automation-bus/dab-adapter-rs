@@ -11,10 +11,10 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::voice::set::SetVoiceSystemRequest;
-use crate::dab::voice::set::SetVoiceSystemResponse;
+use crate::dab::structs::SetVoiceSystemRequest;
+use crate::dab::structs::SetVoiceSystemResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

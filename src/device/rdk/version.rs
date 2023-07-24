@@ -8,11 +8,11 @@
 // pub versions: Vec<String>,
 // }
 
-use crate::dab::version::Version;
+use crate::dab::structs::Version;
 #[allow(unused_imports)]
-use crate::dab::version::VersionRequest;
+use crate::dab::structs::VersionRequest;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

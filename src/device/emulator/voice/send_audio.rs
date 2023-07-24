@@ -9,8 +9,8 @@
 // pub struct VoiceRequestResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::voice::send_audio::SendAudioRequest;
-use crate::dab::voice::send_audio::VoiceRequestResponse;
+use crate::dab::structs::SendAudioRequest;
+use crate::dab::structs::VoiceRequestResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

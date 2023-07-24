@@ -22,10 +22,10 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::system::settings::get::GetSystemSettingsRequest;
-use crate::dab::system::settings::get::GetSystemSettingsResponse;
+use crate::dab::structs::GetSystemSettingsRequest;
+use crate::dab::structs::GetSystemSettingsResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;

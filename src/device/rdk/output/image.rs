@@ -12,10 +12,10 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::output::image::OutputImageRequest;
-use crate::dab::output::image::OutputImageResponse;
+use crate::dab::structs::OutputImageRequest;
+use crate::dab::structs::OutputImageResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::service_activate;
 use serde::{Deserialize, Serialize};

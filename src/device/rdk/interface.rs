@@ -1,4 +1,4 @@
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -16,8 +16,7 @@ pub fn init(device_ip: &str) {
 
 pub fn get_device_id() -> String {
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}"
-            .to_string();
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
@@ -62,7 +61,6 @@ pub fn http_post(json_string: String) -> Result<String, String> {
             .unwrap()
             .body_string()
             .await
-            
     });
     match response {
         Ok(r) => {
@@ -223,9 +221,8 @@ pub fn get_keycode(keyname: String) -> Option<&'static u16> {
     RDK_KEYMAP.get(&keyname)
 }
 
-
 // Telemetry operations
 
-pub fn get_device_memory() -> Result<u32,String> {
+pub fn get_device_memory() -> Result<u32, String> {
     Ok(0)
 }

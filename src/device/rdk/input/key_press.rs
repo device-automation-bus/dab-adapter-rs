@@ -9,10 +9,10 @@
 // pub struct KeyPressResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::input::key_press::KeyPressRequest;
-use crate::dab::input::key_press::KeyPressResponse;
+use crate::dab::structs::KeyPressRequest;
+use crate::dab::structs::KeyPressResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};

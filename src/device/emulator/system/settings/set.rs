@@ -16,8 +16,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::system::settings::set::SetSystemSettingsRequest;
-use crate::dab::system::settings::set::SetSystemSettingsResponse;
+use crate::dab::structs::SetSystemSettingsRequest;
+use crate::dab::structs::SetSystemSettingsResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

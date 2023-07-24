@@ -1,9 +1,5 @@
+use crate::dab::{mqtt_client::MqttMessage, ErrorResponse, MqttClient, TelemetryMessage};
 use crate::hw_specific::interface::get_device_memory;
-use crate::dab::{   mqtt_client::MqttMessage,
-                    ErrorResponse,
-                    TelemetryMessage,
-                    MqttClient
-                };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -29,16 +25,19 @@ pub struct StartDeviceTelemetryResponse {
 }
 
 use std::{
-	sync::{Arc, atomic::{AtomicBool, Ordering}},
-   thread,
-   time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-pub struct DeviceTelemetry{
-   enabled: Arc<AtomicBool>,
-   handle : Option<thread::JoinHandle<()>>,
-   mqtt_client: MqttClient,
-   device_id: String,
+pub struct DeviceTelemetry {
+    enabled: Arc<AtomicBool>,
+    handle: Option<thread::JoinHandle<()>>,
+    mqtt_client: MqttClient,
+    device_id: String,
 }
 
 impl DeviceTelemetry {
@@ -63,30 +62,33 @@ impl DeviceTelemetry {
         let enabled = self.enabled.clone();
         let device_id = self.device_id.clone();
         let mqtt_client = self.mqtt_client.clone();
-		  
+
         self.handle = Some(thread::spawn(move || {
             while enabled.load(Ordering::Relaxed) {
-					
-					let memory = match get_device_memory() {
-						Ok(mem) => mem,
-						_ => 0,
-					};
+                let memory = match get_device_memory() {
+                    Ok(mem) => mem,
+                    _ => 0,
+                };
 
-					let payload = serde_json::to_string(&TelemetryMessage {
-						timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
-						metric: "memory".to_string(),
-						value: memory,
-					}).unwrap();
+                let payload = serde_json::to_string(&TelemetryMessage {
+                    timestamp: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                    metric: "memory".to_string(),
+                    value: memory,
+                })
+                .unwrap();
 
-                    let msg_tx = MqttMessage {
-                        function_topic: "dab/".to_string() + &device_id + "/telemetry",
-                        response_topic: "".to_string(),
-                        correlation_data: "".to_string(),
-                        payload: payload.clone(),
-                    };
+                let msg_tx = MqttMessage {
+                    function_topic: "dab/".to_string() + &device_id + "/telemetry",
+                    response_topic: "".to_string(),
+                    correlation_data: "".to_string(),
+                    payload: payload.clone(),
+                };
 
-					mqtt_client.publish(msg_tx);
-               thread::sleep(Duration::from_millis(period));
+                mqtt_client.publish(msg_tx);
+                thread::sleep(Duration::from_millis(period));
             }
         }));
     }
@@ -101,7 +103,6 @@ impl DeviceTelemetry {
 
     #[allow(non_snake_case)]
     pub fn device_telemetry_start_process(&mut self, packet: String) -> Result<String, String> {
-
         let mut ResponseOperator = StartDeviceTelemetryResponse::default();
 
         let IncomingMessage = serde_json::from_str(&packet);

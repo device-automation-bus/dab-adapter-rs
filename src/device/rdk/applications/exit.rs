@@ -11,9 +11,9 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::applications::exit::ExitApplicationRequest;
-use crate::dab::applications::exit::ExitApplicationResponse;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ExitApplicationRequest;
+use crate::dab::structs::ExitApplicationResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -50,9 +50,8 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-
     // RDK Request Common Structs
-    #[derive(Serialize,Clone)]
+    #[derive(Serialize, Clone)]
     struct RequestParams {
         callsign: String,
     }
@@ -123,9 +122,8 @@ pub fn process(_packet: String) -> Result<String, String> {
             app_created = true;
         }
     }
-    
-    if app_created {
 
+    if app_created {
         // ****************** org.rdk.RDKShell.destroy ********************
         let request = RdkRequest {
             jsonrpc: "2.0".into(),

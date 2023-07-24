@@ -11,8 +11,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::voice::set::SetVoiceSystemRequest;
-use crate::dab::voice::set::SetVoiceSystemResponse;
+use crate::dab::structs::SetVoiceSystemRequest;
+use crate::dab::structs::SetVoiceSystemResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

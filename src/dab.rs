@@ -1,96 +1,21 @@
-pub mod app_telemetry;
-pub mod applications;
-pub mod device;
-pub mod device_telemetry;
-pub mod health_check;
-pub mod input;
-pub mod operations;
-pub mod output;
-pub mod system;
-pub mod version;
-pub mod voice;
+pub mod structs;
 pub mod mqtt_client;
+pub mod device_telemetry;
 
+use structs::DiscoveryResponse;
+use structs::ErrorResponse;
+use structs::Messages;
+use structs::NotImplemented;
+use structs::NotificationLevel;
+use structs::TelemetryMessage;
 use mqtt_client::MqttClient;
 use mqtt_client::MqttMessage;
 
 use crate::device::rdk as hw_specific;
-use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     time::{SystemTime, UNIX_EPOCH},
 };
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
-struct Request {
-    appId: Option<String>,
-    force: Option<bool>,
-    keyCode: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct NotImplemented {
-    pub status: u16,
-    pub error: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct DabResponse {
-    pub status: u16,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct DiscoveryResponse {
-    pub status: u16,
-    pub ip: String,
-    pub deviceId: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct DeviceTelemetryStartResponse{
-    pub status: u16,
-    pub duration: u64,
-}
-
-#[allow(dead_code)]
-#[allow(non_camel_case_types)]
-#[derive(Default, Serialize, Deserialize)]
-pub enum NotificationLevel {
-    #[default]
-    info,
-    warn,
-    debug,
-    trace,
-    error,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-pub struct Messages {
-    pub timestamp: u64,
-    level: NotificationLevel,
-    ip: String,
-    message: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ErrorResponse {
-    pub status: u16,
-    pub error: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TelemetryMessage{
-    pub timestamp: u64,
-    pub metric: String,
-    pub value: u32,
-}
-
-
-
 
 pub type SharedMap =
     HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
@@ -144,7 +69,7 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
             let correlation_data = msg_received.correlation_data;
             let payload = msg_received.payload;
             // let response: String;
-            
+
             // Process the message
             let response = if function_topic == "dab/discovery" {
                 serde_json::to_string(&DiscoveryResponse {
@@ -153,12 +78,11 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                     deviceId: device_id.clone(),
                 })
                 .unwrap()
-            } 
-            else{
+            } else {
                 let substring = "dab/".to_owned() + &device_id + "/";
                 let operation = function_topic.replace(&substring, "");
 
-                if &operation == "messages"{
+                if &operation == "messages" {
                     continue;
                 }
 
@@ -172,22 +96,28 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                             Err(e) => serde_json::to_string(&ErrorResponse {
                                 status: 500,
                                 error: e,
-                            }).unwrap(),
+                            })
+                            .unwrap(),
                         }
                     }
                     // If we can't get the proper handler, then this is a telemetry operation or is not implemented
                     _ => {
                         // If the operation is device-telemetry/start, then start the device telemetry thread
                         if &operation == "device-telemetry/start" {
-                            device_telemetry.device_telemetry_start_process(payload).unwrap()
+                            device_telemetry
+                                .device_telemetry_start_process(payload)
+                                .unwrap()
                         } else if &operation == "device-telemetry/stop" {
-                            device_telemetry.device_telemetry_stop_process(payload).unwrap()
+                            device_telemetry
+                                .device_telemetry_stop_process(payload)
+                                .unwrap()
                         } else {
                             println!("ERROR: {}", operation);
                             serde_json::to_string(&NotImplemented {
                                 status: 501,
                                 error: "Not implemented".to_string(),
-                            }).unwrap()
+                            })
+                            .unwrap()
                         }
                     }
                 }
