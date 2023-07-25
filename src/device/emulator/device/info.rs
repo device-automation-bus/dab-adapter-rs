@@ -46,10 +46,10 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::device::info::DeviceInfoRequest;
-use crate::dab::device::info::DeviceInformation;
+use crate::dab::structs::DeviceInfoRequest;
+use crate::dab::structs::DeviceInformation;
 #[allow(unused_imports)]
-use crate::dab::device::info::NetworkInterface;
+use crate::dab::structs::NetworkInterface;
 use serde_json::json;
 
 #[allow(non_snake_case)]

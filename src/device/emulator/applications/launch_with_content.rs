@@ -10,8 +10,8 @@
 // pub struct LaunchApplicationWithContentResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::applications::launch_with_content::LaunchApplicationWithContentRequest;
-use crate::dab::applications::launch_with_content::LaunchApplicationWithContentResponse;
+use crate::dab::structs::LaunchApplicationWithContentRequest;
+use crate::dab::structs::LaunchApplicationWithContentResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

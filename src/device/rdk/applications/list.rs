@@ -14,9 +14,9 @@
 //     pub applications: Vec<Application>,
 // }
 
-use crate::dab::applications::list::Application;
-use crate::dab::applications::list::ListApplicationsResponse;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::Application;
+use crate::dab::structs::ListApplicationsResponse;
+use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};

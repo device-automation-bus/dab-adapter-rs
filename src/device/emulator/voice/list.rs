@@ -10,8 +10,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::voice::list::VoiceListRequest;
-use crate::dab::voice::list::VoiceSystem;
+use crate::dab::structs::VoiceListRequest;
+use crate::dab::structs::VoiceSystem;
 use serde_json::json;
 
 #[allow(non_snake_case)]

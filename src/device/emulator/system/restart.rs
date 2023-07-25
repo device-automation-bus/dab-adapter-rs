@@ -7,8 +7,8 @@
 // pub struct RestartResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::system::restart::RestartRequest;
-use crate::dab::system::restart::RestartResponse;
+use crate::dab::structs::RestartRequest;
+use crate::dab::structs::RestartResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

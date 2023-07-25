@@ -101,12 +101,12 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::system::settings::list::AudioVolume;
-use crate::dab::system::settings::list::ListSystemSettings;
+use crate::dab::structs::AudioVolume;
+use crate::dab::structs::ListSystemSettings;
 #[allow(unused_imports)]
-use crate::dab::system::settings::list::OutputResolution;
+use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
-use crate::dab::system::settings::list::SettingsListRequest;
+use crate::dab::structs::SettingsListRequest;
 use serde_json::json;
 
 #[allow(non_snake_case)]

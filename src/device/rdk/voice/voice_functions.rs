@@ -1,8 +1,8 @@
 #[allow(unused_imports)]
-use crate::dab::voice::send_text::SendTextRequest;
-use crate::dab::voice::send_text::VoiceTextRequestResponse;
+use crate::dab::structs::SendTextRequest;
+use crate::dab::structs::VoiceTextRequestResponse;
 #[allow(unused_imports)]
-use crate::dab::ErrorResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

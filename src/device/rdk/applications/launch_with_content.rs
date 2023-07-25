@@ -10,9 +10,9 @@
 // pub struct LaunchApplicationWithContentResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::applications::launch_with_content::LaunchApplicationWithContentRequest;
-use crate::dab::applications::launch_with_content::LaunchApplicationWithContentResponse;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::LaunchApplicationWithContentRequest;
+use crate::dab::structs::LaunchApplicationWithContentResponse;
+use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -60,7 +60,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     // ****** RDK Request Common Structs ********
 
-    #[derive(Serialize,Clone)]
+    #[derive(Serialize, Clone)]
     struct RequestParams {
         callsign: String,
     }
@@ -77,8 +77,6 @@ pub fn process(_packet: String) -> Result<String, String> {
         callsign: Dab_Request.appId.clone(),
     };
 
-
-    
     // ****************** org.rdk.RDKShell.getState ********************
     #[derive(Serialize)]
     struct RdkRequestGetState {

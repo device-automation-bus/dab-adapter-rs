@@ -9,9 +9,9 @@
 // #[derive(Default,Serialize)]
 // pub struct KeyPressResponse {}
 
-use crate::dab::input::long_key_press::KeyPressResponse;
+use crate::dab::structs::KeyPressResponse;
 #[allow(unused_imports)]
-use crate::dab::input::long_key_press::LongKeyPressRequest;
+use crate::dab::structs::LongKeyPressRequest;
 use serde_json::json;
 
 #[allow(non_snake_case)]

@@ -10,8 +10,8 @@
 // pub struct VoiceTextRequestResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::voice::send_text::SendTextRequest;
-use crate::dab::voice::send_text::VoiceTextRequestResponse;
+use crate::dab::structs::SendTextRequest;
+use crate::dab::structs::VoiceTextRequestResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

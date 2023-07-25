@@ -8,9 +8,9 @@
 // pub operations: Vec<String>,
 // }
 
-use crate::dab::operations::list::ListSupportedOperation;
+use crate::dab::structs::ListSupportedOperation;
 #[allow(unused_imports)]
-use crate::dab::operations::list::OperationsListRequest;
+use crate::dab::structs::OperationsListRequest;
 use serde_json::json;
 
 #[allow(non_snake_case)]

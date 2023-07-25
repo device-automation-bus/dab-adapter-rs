@@ -11,8 +11,8 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::applications::get_state::GetApplicationStateRequest;
-use crate::dab::applications::get_state::GetApplicationStateResponse;
+use crate::dab::structs::GetApplicationStateRequest;
+use crate::dab::structs::GetApplicationStateResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

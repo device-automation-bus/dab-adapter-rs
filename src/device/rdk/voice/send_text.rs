@@ -9,8 +9,8 @@
 // #[derive(Default,Serialize,Deserialize)]
 // pub struct VoiceTextRequestResponse {}
 
-use crate::dab::voice::send_text::SendTextRequest;
-use crate::dab::ErrorResponse;
+use crate::dab::structs::SendTextRequest;
+use crate::dab::structs::ErrorResponse;
 use serde_json::json;
 
 use super::voice_functions::sendVoiceCommand;

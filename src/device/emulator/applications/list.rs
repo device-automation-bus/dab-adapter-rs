@@ -8,9 +8,9 @@
 // pub appId: String,
 // }
 
-use crate::dab::applications::list::Application;
+use crate::dab::structs::Application;
 #[allow(unused_imports)]
-use crate::dab::applications::list::ApplicationListRequest;
+use crate::dab::structs::ApplicationListRequest;
 use serde_json::json;
 
 #[allow(non_snake_case)]
