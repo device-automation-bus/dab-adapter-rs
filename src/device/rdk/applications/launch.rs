@@ -164,7 +164,6 @@ pub fn process(_packet: String) -> Result<String, String> {
                 params: req_params.clone(),
             };
             let json_string = serde_json::to_string(&request).unwrap();
-            println!("posting");
             let response_json = http_post(json_string);
 
             match response_json {
@@ -175,7 +174,6 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-            println!("response");
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             let request = RdkRequest {
