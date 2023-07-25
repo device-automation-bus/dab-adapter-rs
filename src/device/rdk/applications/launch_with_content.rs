@@ -136,18 +136,18 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
     let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
     let mut param_list = vec![];
-    if (is_cobalt) {
+    if is_cobalt {
         if !(Dab_Request.contentId.is_empty()) {
             param_list.push(format!("v={}",Dab_Request.contentId.clone()));
         }
     }
 
 
-    if (Dab_Request.parameters.len() > 0) {
+    if Dab_Request.parameters.len() > 0 {
         param_list.append(&mut Dab_Request.parameters);
     }
     
-    if (is_cobalt) {
+    if is_cobalt {
         if app_created {
             // ****************** Youtube.1.deeplink ********************
             #[derive(Serialize)]

@@ -124,15 +124,13 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
+    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube" || Dab_Request.appId == "YouTube";
     let mut param_list = vec![];
     if let Some(mut parameters) = Dab_Request.parameters.clone() {
         if parameters.len() > 0 {
             param_list.append(&mut parameters);
         }
     }
-    println!("App created: {}", app_created);
-    println!("Is Cobalt: {}", is_cobalt);
     
     if !app_created {
         if is_cobalt {
@@ -256,7 +254,6 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    println!("Moving to front");
 
     // ****************** org.rdk.RDKShell.moveToFront ********************
 
@@ -279,7 +276,6 @@ pub fn process(_packet: String) -> Result<String, String> {
         _ => (),
     }
 
-    println!("Set Focus");
     // ****************** org.rdk.RDKShell.setFocus ********************
 
     let request = RdkRequest {
