@@ -49,7 +49,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-    if !(Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube") {
+    if !(Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube" || Dab_Request.appId == "YouTube") {
         let response = ErrorResponse {
             status: 500,
             error: "This operator currently only supports Youtube".to_string(),
