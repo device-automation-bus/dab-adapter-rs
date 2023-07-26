@@ -184,6 +184,11 @@ pub fn process(_packet: String) -> Result<String, String> {
                 _ => (),
             }
 
+            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            if rdkresponse.result.success == false {
+                return Err(rdkresponse.result.message)
+            }
+
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             #[derive(Serialize)]
@@ -229,6 +234,10 @@ pub fn process(_packet: String) -> Result<String, String> {
                     return Err(err);
                 }
                 _ => (),
+            }
+            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            if rdkresponse.result.success == false {
+                return Err(rdkresponse.result.message)
             }
         }
     }

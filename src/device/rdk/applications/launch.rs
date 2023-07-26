@@ -100,6 +100,19 @@ pub fn process(_packet: String) -> Result<String, String> {
         result: GetStateResult,
     }
 
+    #[derive(Deserialize)]
+    struct LaunchResult {
+        message: String,
+        success: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct RdkResponseLaunch {
+        jsonrpc: String,
+        id: i32,
+        result: LaunchResult,
+    }
+
     let json_string = serde_json::to_string(&request).unwrap();
     let response_json = http_post(json_string);
 
@@ -174,6 +187,11 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
+
+            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            if rdkresponse.result.success == false {
+                return Err(rdkresponse.result.message)
+            }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             let request = RdkRequest {
@@ -193,6 +211,10 @@ pub fn process(_packet: String) -> Result<String, String> {
                     return Err(err);
                 }
                 _ => (),
+            }
+            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            if rdkresponse.result.success == false {
+                return Err(rdkresponse.result.message)
             }
         }
     } else {
