@@ -251,49 +251,6 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-
-    // ****************** org.rdk.RDKShell.moveToFront ********************
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.moveToFront".into(),
-        params: req_params.clone(),
-    };
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
-    // ****************** org.rdk.RDKShell.setFocus ********************
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.setFocus".into(),
-        params: req_params.clone(),
-    };
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);

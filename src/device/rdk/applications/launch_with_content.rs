@@ -126,10 +126,12 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
     let mut app_created = false;
+    let mut is_suspended = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
         if app == Dab_Request.appId {
             app_created = true;
+            is_suspended = r.state == "suspended";
         }
     }
     let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
@@ -193,6 +195,8 @@ pub fn process(_packet: String) -> Result<String, String> {
                 callsign: String,
                 r#type: String,
                 configuration: CobaltConfig,
+                visible: bool,
+                focused: bool,
             }
             #[derive(Serialize)]
             struct RdkRequest {
@@ -229,46 +233,27 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    // ****************** org.rdk.RDKShell.moveToFront ********************
 
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.moveToFront".into(),
-        params: req_params.clone(),
-    };
+    if is_suspended {
+        // ****************** org.rdk.RDKShell.resumeApplication ********************
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.launch".into(),
+            params: req_params.clone(),
+        };
 
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string);
 
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
+        match response_json {
+            Err(err) => {
+                println!("Erro: {}", err);
 
-            return Err(err);
+                return Err(err);
+            }
+            _ => (),
         }
-        _ => (),
-    }
-
-    // ****************** org.rdk.RDKShell.setFocus ********************
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.setFocus".into(),
-        params: req_params.clone(),
-    };
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
     }
 
     // *******************************************************************
