@@ -404,6 +404,7 @@ pub struct GetApplicationStateResponse {
 pub struct LaunchApplicationWithContentRequest {
     pub appId: String,
     pub contentId: String,
+    pub parameters: Vec<String>,
 }
 
 #[allow(non_snake_case)]
@@ -414,6 +415,7 @@ pub struct LaunchApplicationWithContentResponse {}
 #[derive(Default, Serialize, Deserialize)]
 pub struct LaunchApplicationRequest {
     pub appId: String,
+    pub parameters: Option<Vec<String>>,
 }
 
 #[allow(non_snake_case)]
@@ -440,6 +442,7 @@ pub struct ListApplicationsResponse {
 #[derive(Default, Serialize, Deserialize)]
 pub struct ExitApplicationRequest {
     pub appId: String,
+    pub background: Option<bool>,
 }
 
 #[allow(non_snake_case)]
