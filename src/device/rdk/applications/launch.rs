@@ -188,7 +188,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 _ => (),
             }
 
-            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
                 return Err(rdkresponse.result.message)
             }
@@ -212,7 +212,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-            let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
                 return Err(rdkresponse.result.message)
             }
