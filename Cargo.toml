@@ -33,6 +33,8 @@ tts_rust = "0.3.5"
 hound = "3.5.0"
 built = { version = "0.6", features = ["chrono", "semver"] }
 crossbeam = "0.8.1"
+base64 = "0.21.0"
+
 
 [build-dependencies]
 built = { version = "0.6", features = ["git2", "chrono", "semver"] }

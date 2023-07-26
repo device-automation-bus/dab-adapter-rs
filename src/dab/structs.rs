@@ -481,15 +481,13 @@ pub struct LongKeyPressResponse {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct OutputImageRequest {
-    pub outputLocation: String,
+pub struct CaptureScreenshotRequest {
 }
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct OutputImageResponse {
-    pub outputFile: String,
-    pub format: String,
+pub struct CaptureScreenshotResponse {
+    pub outputImage: String,
 }
 
 // Implement device-telemetry
