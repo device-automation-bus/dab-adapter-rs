@@ -1,19 +1,18 @@
 // #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct OutputImageRequest{
-// pub outputLocation: String,
+// #[derive(Default, Serialize, Deserialize)]
+// pub struct CaptureScreenshotRequest {
 // }
 
 // #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct OutputImageResponse{
-// pub outputFile: String,
-// pub format: String,
+// #[derive(Default, Serialize, Deserialize)]
+// pub struct CaptureScreenshotResponse {
+//     pub outputImage: String,
 // }
 
+
 #[allow(unused_imports)]
-use crate::dab::structs::OutputImageRequest;
-use crate::dab::structs::OutputImageResponse;
+use crate::dab::structs::CaptureScreenshotRequest;
+use crate::dab::structs::CaptureScreenshotResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
@@ -21,187 +20,142 @@ use crate::device::rdk::interface::service_activate;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-// use hyper::{Body, Request, Response};
+use hyper::{Body, Request, Response};
+use hyper::server::Server;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Method, StatusCode};
+use tokio::runtime::Runtime;
+use tokio::time::{self, Duration};
+use std::convert::Infallible;
+use bytes::Bytes;
+use base64::{Engine as _, engine::general_purpose};
+use std::net::SocketAddr;
+use tokio::sync::{mpsc, oneshot};
 use local_ip_address::local_ip;
-// use std::convert::Infallible;
-// use std::fs::File;
-// use std::io::prelude::*;
-use std::thread;
-use std::time::Duration;
-// use tiff::encoder::{colortype, compression::*, TiffEncoder};
-
-use image::{GenericImageView, ImageResult};
-
-fn is_png_empty(file_path: &str) -> ImageResult<bool> {
-    let img = image::open(file_path)?;
-    let (width, height) = img.dimensions();
-    for x in 0..width {
-        for y in 0..height {
-            let pixel = img.get_pixel(x, y);
-            if pixel.0[3] != 0 {
-                return Ok(false);
-            }
-        }
-    }
-    Ok(true)
-}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = OutputImageResponse::default();
-    // *** Fill in the fields of the struct OutputImageResponse here ***
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        let mut ResponseOperator = CaptureScreenshotResponse::default();
+        // *** Fill in the fields of the struct CaptureScreenshotResponse here ***
+        
+        //######### Enable the Http server #########
+        let my_local_ip = local_ip().unwrap();
+        let my_server: String = "http://".to_string() + &my_local_ip.to_string() + &":7878/upload".to_string();
+        let addr = SocketAddr::from(([0, 0, 0, 0], 7878));
+        let (tx, mut rx) = mpsc::channel(10);
 
-    let my_local_ip = local_ip().unwrap();
-    let my_server: String = "http://".to_string() + &my_local_ip.to_string() + &":7878".to_string();
+        let make_svc = make_service_fn(move |_conn| {
+            let tx = tx.clone();
+            async move { Ok::<_, Infallible>(service_fn(move |req| handle_req(req, tx.clone()))) }
+        });
 
-    let IncomingMessage = serde_json::from_str(&_packet);
+        let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
+        let server = Server::bind(&addr).serve(make_svc);
+        let graceful = server.with_graceful_shutdown(async {
+            shutdown_rx.await.ok();
+        });
+
+        tokio::spawn(graceful);
+
+
+        //######### Activate org.rdk.ScreenCapture #########
+        service_activate("org.rdk.ScreenCapture".to_string()).unwrap();
+
+        //#########org.rdk.ScreenCapture.uploadScreenCapture#########
+        #[derive(Serialize)]
+        struct UploadScreenCaptureRequest {
+            jsonrpc: String,
+            id: i32,
+            method: String,
+            params: UploadScreenCaptureRequestParams,
         }
-        Ok(_) => (),
-    }
 
-    let Dab_Request: OutputImageRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.outputLocation.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'outputLocation' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
-    }
-
-    service_activate("org.rdk.ScreenCapture".to_string()).unwrap();
-
-    //#########org.rdk.ScreenCapture.uploadScreenCapture#########
-    #[derive(Serialize)]
-    struct UploadScreenCaptureRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: UploadScreenCaptureRequestParams,
-    }
-
-    #[derive(Serialize)]
-    struct UploadScreenCaptureRequestParams {
-        url: String,
-        callGUID: String,
-    }
-
-    let req_params = UploadScreenCaptureRequestParams {
-        url: my_server,
-        callGUID: "12345".to_string(),
-    };
-
-    let request = UploadScreenCaptureRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.ScreenCapture.uploadScreenCapture".into(),
-        params: req_params,
-    };
-
-    #[derive(Deserialize)]
-    struct UploadScreenCaptureResponse {
-        jsonrpc: String,
-        id: i32,
-        result: UploadScreenCaptureResult,
-    }
-
-    #[derive(Deserialize)]
-    struct UploadScreenCaptureResult {
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string.clone());
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
+        #[derive(Serialize)]
+        struct UploadScreenCaptureRequestParams {
+            url: String,
+            callGUID: String,
         }
-        Ok(_) => {}
-    }
 
-    thread::sleep(Duration::from_secs(10));
-
-    let file_path = "/tmp/screenshot.png";
-    let is_empty = is_png_empty(file_path).unwrap();
-    if is_empty {
-        let error = ErrorResponse {
-            status: 500,
-            error: "Screenshot is empty. Maybe DRM protected?".to_string(),
+        let req_params = UploadScreenCaptureRequestParams {
+            url: my_server,
+            callGUID: "12345".to_string(),
         };
-        return Err(serde_json::to_string(&error).unwrap());
-    }
 
-    // let result_upload = upload_image(Dab_Request.outputLocation.clone());
+        let request = UploadScreenCaptureRequest {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.ScreenCapture.uploadScreenCapture".into(),
+            params: req_params,
+        };
 
-    // match result_upload {
-    //     Err(err) => {
-    //         let error = ErrorResponse {
-    //             status: 500,
-    //             error: err,
-    //         };
-    //         return Err(serde_json::to_string(&error).unwrap());
-    //     }
-    //     Ok(_) => {}
-    // }
+        #[derive(Deserialize)]
+        struct UploadScreenCaptureResponse {
+            jsonrpc: String,
+            id: i32,
+            result: UploadScreenCaptureResult,
+        }
 
-    //######### Correlate Fields #########
-    ResponseOperator.format = "tiff".to_string();
-    ResponseOperator.outputFile = Dab_Request.outputLocation;
+        #[derive(Deserialize)]
+        struct UploadScreenCaptureResult {
+            success: bool,
+        }
 
-    // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response_json = http_post(json_string.clone());
+
+        match response_json {
+            Err(err) => {
+                let error = ErrorResponse {
+                    status: 500,
+                    error: err,
+                };
+                return Err(serde_json::to_string(&error).unwrap());
+            }
+            Ok(_) => {}
+        }
+
+        //######### Listen for the base64 string from the request handler with a timeout. #########
+        match time::timeout(Duration::from_secs(30), rx.recv()).await {
+            Ok(Some(data)) => {
+
+                let b64 = general_purpose::STANDARD.encode(&data);
+                let b64 = format!("data:image/png;base64,{}", b64);
+                // After receiving the base64 string, signalize to close the server.
+                let _ = shutdown_tx.send(());
+                
+                //######### Correlate Fields #########
+                ResponseOperator.outputImage = b64;
+
+                // *******************************************************************
+                let mut ResponseOperator_json = json!(ResponseOperator);
+                ResponseOperator_json["status"] = json!(200);
+                Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+            },
+            Ok(None) => Err("The channel was closed before a message was received".to_string()),
+            Err(_) => Err("Timed out waiting for a message from the channel".to_string()),
+        }
+    })
 }
 
-// pub async fn save_image(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-//     // Get the body of the request and save the body to a file
-//     let body = hyper::body::to_bytes(req.into_body()).await.unwrap();
-//     let mut file = File::create("/tmp/screenshot.png").unwrap();
-//     file.write_all(&body).unwrap();
+async fn handle_req(req: Request<Body>, tx: mpsc::Sender<Bytes>) -> Result<Response<Body>, Infallible> {
+    match (req.method(), req.uri().path()) {
+        (&Method::POST, "/upload") => {
+            let whole_body = hyper::body::to_bytes(req.into_body()).await.unwrap();
 
-//     // Open the image
-//     let input_png = image::open("/tmp/screenshot.png").unwrap();
-//     let rgb_image = input_png.clone().into_rgba8();
-//     let buffer = rgb_image.clone().into_raw();
-
-//     // Decode to tiff
-//     let mut file = File::create("/tmp/screenshot.tiff").unwrap();
-//     let mut tiff_encodder = TiffEncoder::new(&mut file).unwrap();
-//     let mut output_image = tiff_encodder
-//         .new_image_with_compression::<colortype::RGBA8, Uncompressed>(
-//             1920,
-//             1080,
-//             Uncompressed::default(),
-//         )
-//         .unwrap();
-
-//     let mut idx = 0;
-//     while output_image.next_strip_sample_count() > 0 {
-//         let sample_count = output_image.next_strip_sample_count() as usize;
-//         output_image
-//             .write_strip(&buffer[idx..idx + sample_count])
-//             .unwrap();
-//         idx += sample_count;
-//     }
-//     output_image.finish().unwrap();
-
-//     Ok(Response::new(Body::empty()))
-// }
+            if tx.send(whole_body).await.is_err() {
+                return Ok(Response::new(Body::from("Error processing the request")));
+            }
+            Ok(Response::new(Body::from("File processed successfully")))
+        },
+        _ => {
+            let mut not_found = Response::default();
+            *not_found.status_mut() = StatusCode::NOT_FOUND;
+            Ok(not_found)
+        }
+    }
+}
