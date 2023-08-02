@@ -216,7 +216,7 @@ pub fn main() {
         Box::new(hw_specific::version::process),
     );
     if create_retire_thread {
-        let handler = thread::Builder::new().name("ExitPathMonitor".to_string()).spawn(move || { fd_monitor_thread(); });
+        let _handle = thread::Builder::new().name("ExitPathMonitor".to_string()).spawn(move || { fd_monitor_thread(); });
     }
     dab::run(mqtt_host, mqtt_port, handlers);
 }
