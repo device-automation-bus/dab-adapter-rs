@@ -3,6 +3,7 @@ mod device;
 pub use device::rdk as hw_specific;
 mod dab;
 use std::collections::HashMap;
+use std::thread;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -19,11 +20,54 @@ struct Opt {
     /// Print the version information
     #[clap(short, long, value_parser, value_name = "VERSION")]
     version: bool,
+    /// To exit based on path file (/run/dab-enable) status.
+    #[clap(short, long, value_parser, value_name = "RETIRE")]
+    retire: Option<bool>,
 }
 
 // The file `built.rs` was placed there by cargo and `build.rs`
 mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+
+fn fd_monitor_thread() {
+    use std::process;
+    use std::path::Path;
+    use notify::{ Config, event, EventKind, RecommendedWatcher, RecursiveMode, Watcher };
+    use std::time::Duration;
+
+    static MONITORPATH: &str = "/run";
+    println!("Monitoring changes of {}/dab-enable", MONITORPATH);
+    let monitor_path = Path::new(MONITORPATH);
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    let config = Config::default().with_poll_interval(Duration::from_secs(5));
+    let mut watcher: Box<dyn Watcher> = Box::new(RecommendedWatcher::new(tx, config).unwrap());
+
+    watcher
+        .watch(&monitor_path, RecursiveMode::Recursive)
+        .unwrap();
+
+    'fd_wait_loop: for data in rx {
+        match data {
+            Ok (event) => {
+                if event.kind == EventKind::Remove(event::RemoveKind::File) && (event.paths.len() > 0) {
+                    for i in &event.paths {
+                        let rm_file = i.as_path().display().to_string();
+                        let monitor_file = monitor_path.display().to_string()+"/dab-enable";
+                        if monitor_file.eq(&rm_file) {
+                            println!("MATCH: {:?} {:?}", rm_file, monitor_file);
+                            break 'fd_wait_loop;
+                        }
+                    }
+                }
+            },
+            Err(error) => println!("DATA_ER error: {:?}", error),
+        }
+    }
+    println!("Clean-Up triggered.");
+    let _ = watcher.unwatch(&monitor_path);
+    process::exit(0x00);
 }
 
 fn display_version() {
@@ -66,6 +110,7 @@ pub fn main() {
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
     let mqtt_port = opt.port.unwrap_or(1883);
     let device_ip = opt.device.unwrap_or(String::from("localhost"));
+    let create_retire_thread = opt.retire.unwrap_or(false);
 
     if opt.version {
         display_version();
@@ -170,6 +215,8 @@ pub fn main() {
         "version".to_string(),
         Box::new(hw_specific::version::process),
     );
-
+    if create_retire_thread {
+        let handler = thread::Builder::new().name("ExitPathMonitor".to_string()).spawn(move || { fd_monitor_thread(); });
+    }
     dab::run(mqtt_host, mqtt_port, handlers);
 }
