@@ -7,10 +7,10 @@
 // pub struct RestartResponse {}
 
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
+#[allow(unused_imports)]
 use crate::dab::structs::RestartRequest;
 use crate::dab::structs::RestartResponse;
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;

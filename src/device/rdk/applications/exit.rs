@@ -10,10 +10,10 @@
 // pub state: String,
 // }
 
+use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -54,7 +54,6 @@ pub fn process(_packet: String) -> Result<String, String> {
     if Dab_Request.background.is_some() && Dab_Request.background.unwrap() {
         is_background = true;
     }
-
 
     // RDK Request Common Structs
     #[derive(Serialize, Clone)]
@@ -128,9 +127,8 @@ pub fn process(_packet: String) -> Result<String, String> {
             app_created = true;
         }
     }
-    
+
     if app_created {
-        
         if is_background {
             // ****************** org.rdk.RDKShell.suspend ********************
             let request = RdkRequest {
@@ -151,7 +149,6 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-
         } else {
             // ****************** org.rdk.RDKShell.destroy ********************
             let request = RdkRequest {

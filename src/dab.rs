@@ -1,15 +1,15 @@
-pub mod structs;
-pub mod mqtt_client;
 pub mod device_telemetry;
+pub mod mqtt_client;
+pub mod structs;
 
+use mqtt_client::MqttClient;
+use mqtt_client::MqttMessage;
 use structs::DiscoveryResponse;
 use structs::ErrorResponse;
 use structs::Messages;
 use structs::NotImplemented;
 use structs::NotificationLevel;
 use structs::TelemetryMessage;
-use mqtt_client::MqttClient;
-use mqtt_client::MqttMessage;
 
 use crate::device::rdk as hw_specific;
 use std::{

@@ -99,7 +99,7 @@ pub enum DisplayType {
     #[default]
     Native,
     External,
-} 
+}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
@@ -484,8 +484,7 @@ pub struct LongKeyPressResponse {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct CaptureScreenshotRequest {
-}
+pub struct CaptureScreenshotRequest {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]

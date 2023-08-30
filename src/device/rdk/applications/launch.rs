@@ -8,10 +8,10 @@
 // #[derive(Default,Serialize)]
 // pub struct LaunchApplicationResponse {}
 
+use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::LaunchApplicationRequest;
 use crate::dab::structs::LaunchApplicationResponse;
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -136,22 +136,24 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube" || Dab_Request.appId == "YouTube";
+    let is_cobalt = Dab_Request.appId == "Cobalt"
+        || Dab_Request.appId == "Youtube"
+        || Dab_Request.appId == "YouTube";
     let mut param_list = vec![];
     if let Some(mut parameters) = Dab_Request.parameters.clone() {
         if parameters.len() > 0 {
             param_list.append(&mut parameters);
         }
     }
-    
+
     if !app_created {
         if is_cobalt {
             // ****************** org.rdk.RDKShell.launch with Cobalt parameters ********************
-            #[derive(Serialize,Clone)]
+            #[derive(Serialize, Clone)]
             struct CobaltConfig {
                 url: String,
             }
-            #[derive(Serialize,Clone)]
+            #[derive(Serialize, Clone)]
             struct Param {
                 callsign: String,
                 configuration: CobaltConfig,
@@ -188,9 +190,10 @@ pub fn process(_packet: String) -> Result<String, String> {
                 _ => (),
             }
 
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch =
+                serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message)
+                return Err(rdkresponse.result.message);
             }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
@@ -212,9 +215,10 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch =
+                serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message)
+                return Err(rdkresponse.result.message);
             }
         }
     } else {
@@ -231,7 +235,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             params: String,
         }
 
-        // This is Cobalt only, we will need a switch statement for other apps. 
+        // This is Cobalt only, we will need a switch statement for other apps.
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,

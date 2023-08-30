@@ -15,8 +15,8 @@
 // }
 
 use crate::dab::structs::Application;
-use crate::dab::structs::ListApplicationsResponse;
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::ListApplicationsResponse;
 #[allow(unused_imports)]
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};

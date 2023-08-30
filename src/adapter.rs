@@ -31,9 +31,9 @@ mod built_info {
 }
 
 fn fd_monitor_thread() {
-    use std::process;
+    use notify::{event, Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
     use std::path::Path;
-    use notify::{ Config, event, EventKind, RecommendedWatcher, RecursiveMode, Watcher };
+    use std::process;
     use std::time::Duration;
 
     static MONITORPATH: &str = "/run";
@@ -50,18 +50,20 @@ fn fd_monitor_thread() {
 
     'fd_wait_loop: for data in rx {
         match data {
-            Ok (event) => {
-                if event.kind == EventKind::Remove(event::RemoveKind::File) && (event.paths.len() > 0) {
+            Ok(event) => {
+                if event.kind == EventKind::Remove(event::RemoveKind::File)
+                    && (event.paths.len() > 0)
+                {
                     for i in &event.paths {
                         let rm_file = i.as_path().display().to_string();
-                        let monitor_file = monitor_path.display().to_string()+"/dab-enable";
+                        let monitor_file = monitor_path.display().to_string() + "/dab-enable";
                         if monitor_file.eq(&rm_file) {
                             println!("MATCH: {:?} {:?}", rm_file, monitor_file);
                             break 'fd_wait_loop;
                         }
                     }
                 }
-            },
+            }
             Err(error) => println!("DATA_ER error: {:?}", error),
         }
     }
@@ -216,7 +218,11 @@ pub fn main() {
         Box::new(hw_specific::version::process),
     );
     if create_retire_thread {
-        let _handle = thread::Builder::new().name("ExitPathMonitor".to_string()).spawn(move || { fd_monitor_thread(); });
+        let _handle = thread::Builder::new()
+            .name("ExitPathMonitor".to_string())
+            .spawn(move || {
+                fd_monitor_thread();
+            });
     }
     dab::run(mqtt_host, mqtt_port, handlers);
 }

@@ -9,10 +9,10 @@
 // }
 
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
+#[allow(unused_imports)]
 use crate::dab::structs::HealthCheckRequest;
 use crate::dab::structs::HealthCheckResponse;
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use serde_json::json;
 
 #[allow(non_snake_case)]

@@ -9,10 +9,10 @@
 // #[derive(Default,Serialize)]
 // pub struct LaunchApplicationWithContentResponse {}
 
+use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -49,7 +49,10 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-    if !(Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube" || Dab_Request.appId == "YouTube") {
+    if !(Dab_Request.appId == "Cobalt"
+        || Dab_Request.appId == "Youtube"
+        || Dab_Request.appId == "YouTube")
+    {
         let response = ErrorResponse {
             status: 500,
             error: "This operator currently only supports Youtube".to_string(),
@@ -151,15 +154,14 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut param_list = vec![];
     if is_cobalt {
         if !(Dab_Request.contentId.is_empty()) {
-            param_list.push(format!("v={}",Dab_Request.contentId.clone()));
+            param_list.push(format!("v={}", Dab_Request.contentId.clone()));
         }
     }
-
 
     if Dab_Request.parameters.len() > 0 {
         param_list.append(&mut Dab_Request.parameters);
     }
-    
+
     if is_cobalt {
         if app_created {
             // ****************** Youtube.1.deeplink ********************
@@ -175,7 +177,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 params: Param,
             }
 
-            // This is Cobalt only, we will need a switch statement for other apps. 
+            // This is Cobalt only, we will need a switch statement for other apps.
             let req_params = Param {
                 url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
             };
@@ -197,11 +199,11 @@ pub fn process(_packet: String) -> Result<String, String> {
                 _ => (),
             }
 
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch =
+                serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message)
+                return Err(rdkresponse.result.message);
             }
-
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             #[derive(Serialize)]
@@ -246,13 +248,13 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch =
+                serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message)
+                return Err(rdkresponse.result.message);
             }
         }
     }
-
 
     if is_suspended {
         // ****************** org.rdk.RDKShell.resumeApplication ********************

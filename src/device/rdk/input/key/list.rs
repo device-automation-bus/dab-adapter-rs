@@ -8,11 +8,11 @@
 // pub keyCodes: Vec<String>,
 // }
 
+#[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::KeyList;
 #[allow(unused_imports)]
 use crate::dab::structs::KeyListRequest;
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::get_rdk_keys;
 use serde_json::json;
 

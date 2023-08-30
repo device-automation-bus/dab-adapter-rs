@@ -45,12 +45,12 @@
 
 #[allow(unused_imports)]
 use crate::dab::structs::DeviceInfoRequest;
-use crate::dab::structs::GetDeviceInformationResponse;
 use crate::dab::structs::DisplayType;
+use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::GetDeviceInformationResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
-use crate::dab::structs::ErrorResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
