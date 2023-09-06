@@ -28,9 +28,9 @@ impl MqttClient {
 
         let paho_client = mqtt::Client::new(create_opts).unwrap();
 
-        let conn_opts = mqtt::ConnectOptionsBuilder::new()
+        let conn_opts = mqtt::ConnectOptionsBuilder::new_v5()
             .keep_alive_interval(std::time::Duration::from_secs(20))
-            .clean_session(true)
+            .clean_start(true)
             .finalize();
 
         // Connect and wait for it to complete or fail
