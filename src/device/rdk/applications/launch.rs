@@ -102,7 +102,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     #[derive(Deserialize)]
     struct LaunchResult {
-        message: String,
+        launchType: String,
         success: bool,
     }
 
@@ -193,7 +193,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message);
+                return Err("Error calling org.rdk.RDKShell.launch".to_string());
             }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
@@ -218,7 +218,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message);
+                return Err("Error calling org.rdk.RDKShell.launch".to_string());
             }
         }
     } else {
