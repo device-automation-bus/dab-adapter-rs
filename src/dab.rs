@@ -66,74 +66,81 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     // Infinite loop
     loop {
         // Check for messages
-        if let Ok(msg_received) = mqtt_client.receive() {
-            let function_topic = msg_received.function_topic;
-            let response_topic = msg_received.response_topic;
-            let correlation_data = msg_received.correlation_data;
-            let payload = msg_received.payload;
-            // let response: String;
+        match mqtt_client.receive() {
+            Ok(msg_received) => {
+                let function_topic = msg_received.function_topic;
+                let response_topic = msg_received.response_topic;
+                let correlation_data = msg_received.correlation_data;
+                let payload = msg_received.payload;
+                // let response: String;
 
-            // Process the message
-            let response = if function_topic == "dab/discovery" {
-                serde_json::to_string(&DiscoveryResponse {
-                    status: 200,
-                    ip: ip_address.clone(),
-                    deviceId: device_id.clone(),
-                })
-                .unwrap()
-            } else {
-                let substring = "dab/".to_owned() + &device_id + "/";
-                let operation = function_topic.replace(&substring, "");
+                // Process the message
+                let response = if function_topic == "dab/discovery" {
+                    serde_json::to_string(&DiscoveryResponse {
+                        status: 200,
+                        ip: ip_address.clone(),
+                        deviceId: device_id.clone(),
+                    })
+                    .unwrap()
+                } else {
+                    let substring = "dab/".to_owned() + &device_id + "/";
+                    let operation = function_topic.replace(&substring, "");
 
-                if &operation == "messages" {
-                    continue;
-                }
+                    if &operation == "messages" {
+                        continue;
+                    }
 
-                match function_map.get_mut(&operation) {
-                    // If we get the proper handler, then call it
-                    Some(callback) => {
-                        println!("OK: {}", operation);
+                    match function_map.get_mut(&operation) {
+                        // If we get the proper handler, then call it
+                        Some(callback) => {
+                            println!("OK: {}", operation);
 
-                        match callback(payload) {
-                            Ok(r) => r,
-                            Err(e) => serde_json::to_string(&ErrorResponse {
-                                status: 500,
-                                error: e,
-                            })
-                            .unwrap(),
+                            match callback(payload) {
+                                Ok(r) => r,
+                                Err(e) => serde_json::to_string(&ErrorResponse {
+                                    status: 500,
+                                    error: e,
+                                })
+                                .unwrap(),
+                            }
+                        }
+                        // If we can't get the proper handler, then this is a telemetry operation or is not implemented
+                        _ => {
+                            // If the operation is device-telemetry/start, then start the device telemetry thread
+                            if &operation == "device-telemetry/start" {
+                                device_telemetry
+                                    .device_telemetry_start_process(payload)
+                                    .unwrap()
+                            } else if &operation == "device-telemetry/stop" {
+                                device_telemetry
+                                    .device_telemetry_stop_process(payload)
+                                    .unwrap()
+                            } else {
+                                println!("ERROR: {}", operation);
+                                serde_json::to_string(&NotImplemented {
+                                    status: 501,
+                                    error: "Not implemented".to_string(),
+                                })
+                                .unwrap()
+                            }
                         }
                     }
-                    // If we can't get the proper handler, then this is a telemetry operation or is not implemented
-                    _ => {
-                        // If the operation is device-telemetry/start, then start the device telemetry thread
-                        if &operation == "device-telemetry/start" {
-                            device_telemetry
-                                .device_telemetry_start_process(payload)
-                                .unwrap()
-                        } else if &operation == "device-telemetry/stop" {
-                            device_telemetry
-                                .device_telemetry_stop_process(payload)
-                                .unwrap()
-                        } else {
-                            println!("ERROR: {}", operation);
-                            serde_json::to_string(&NotImplemented {
-                                status: 501,
-                                error: "Not implemented".to_string(),
-                            })
-                            .unwrap()
-                        }
-                    }
-                }
-            };
+                };
 
-            let msg_tx = MqttMessage {
-                function_topic: response_topic.clone(),
-                response_topic: "".to_string(),
-                correlation_data: correlation_data.clone(),
-                payload: response.clone(),
-            };
-            // Publish the response
-            mqtt_client.publish(msg_tx);
+                let msg_tx = MqttMessage {
+                    function_topic: response_topic.clone(),
+                    response_topic: "".to_string(),
+                    correlation_data: correlation_data.clone(),
+                    payload: response.clone(),
+                };
+                // Publish the response
+                mqtt_client.publish(msg_tx);
+            }
+            Err(err) => {
+                if let Some(msg) = err {
+                    println!("Error: {}", msg);
+                }
+            }
         }
     }
 }

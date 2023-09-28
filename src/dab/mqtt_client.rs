@@ -90,39 +90,44 @@ impl MqttClient {
     pub fn publish(&self, msg_tx: MqttMessage) {
         self.ipc_channel.0.send(msg_tx).unwrap();
     }
-    pub fn receive(&mut self) -> Result<MqttMessage, String> {
+    pub fn receive(&mut self) -> Result<MqttMessage, Option<String>> {
         match self.paho_receiver.recv() {
             Ok(Some(packet)) => {
-                let payload_str = packet.payload_str();
-                let response_topic =
-                    match packet.properties().get_string(PropertyCode::ResponseTopic) {
-                        Some(topic) => topic,
-                        None => "".to_string(),
-                    };
-                let correlation_data = match packet
-                    .properties()
-                    .get_binary(PropertyCode::CorrelationData)
-                {
-                    Some(data) => data,
-                    None => {
-                        let mut v: Vec<u8> = Vec::new();
-                        v.push(0);
-                        v
-                    }
-                };
-
                 let function_topic = std::string::String::from(packet.topic());
+                let v: Vec<&str> = function_topic.split('/').collect();
+                let operator = v.get(2).unwrap_or(&"");
+                if operator == &"messages" {
+                    return Err(None);
+                }
 
-                let rx_msg = MqttMessage {
-                    function_topic: function_topic,
-                    response_topic: response_topic,
-                    correlation_data: correlation_data,
-                    payload: payload_str.to_string(),
-                };
-                return Ok(rx_msg);
+                let payload_str = packet.payload_str();
+                match packet.properties().get_string(PropertyCode::ResponseTopic) {
+                    Some(topic) => {
+                        let correlation_data = match packet
+                            .properties()
+                            .get_binary(PropertyCode::CorrelationData)
+                        {
+                            Some(data) => data,
+                            None => {
+                                let mut v: Vec<u8> = Vec::new();
+                                v.push(0);
+                                v
+                            }
+                        };
+
+                        let rx_msg = MqttMessage {
+                            function_topic: function_topic,
+                            response_topic: topic,
+                            correlation_data: correlation_data,
+                            payload: payload_str.to_string(),
+                        };
+                        Ok(rx_msg)
+                    }
+                    None => Err(Some("No ResponseTopic provided".to_string())),
+                }
             }
-            Ok(None) => Err("No message received".to_string()),
-            Err(e) => Err(e.to_string()),
+            Ok(None) => Err(None),
+            Err(e) => Err(Some(e.to_string())),
         }
     }
 }
