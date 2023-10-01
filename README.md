@@ -1,6 +1,6 @@
 # DAB <==> RDK Adapter #
 
-This software is a RUST application that enables compatibility with [DAB 2.0 specification](https://github.com/device-automation-bus/dab-specification/blob/master/DAB.md) to devices based on [Reference Design Kit (RDK)](https://rdkcentral.com/).
+This software is a RUST application that enables compatibility with [DAB 2.0 specification](https://getdab.org/) to devices based on [Reference Design Kit (RDK)](https://rdkcentral.com/).
 The DAB <-> RDK adapter can be executed both on the RDK device or using an external PC.
 
 ## Building ##
