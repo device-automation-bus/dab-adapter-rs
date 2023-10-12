@@ -404,7 +404,7 @@ pub struct GetApplicationStateResponse {
 pub struct LaunchApplicationWithContentRequest {
     pub appId: String,
     pub contentId: String,
-    pub parameters: Vec<String>,
+    pub parameters: Option<Vec<String>>,
 }
 
 #[allow(non_snake_case)]
