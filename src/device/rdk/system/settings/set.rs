@@ -16,6 +16,7 @@
 // }
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
 #[allow(unused_imports)]
@@ -42,6 +43,22 @@ fn set_rdk_language(language: String) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
+    #[derive(Serialize)]
+    struct Param {
+        framerate: String,
+    }
+
+    let req_params = Param {
+        framerate: format!("{}x{}x{}", resolution.width, resolution.height, resolution.frequency),
+    };
+
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.FrameRate.setDisplayFrameRate", req_params)?;
+
+    Ok(())
+}
+
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
@@ -55,52 +72,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     if json_str.get("outputResolution").is_some() {
         let dab_request: SetSystemSettingsRequest;
         dab_request = serde_json::from_str(&_packet).unwrap();
-        //#########org.rdk.RDKShell.setScreenResolution#########
-        #[derive(Serialize)]
-        struct Param {
-            w: u32,
-            h: u32,
-        }
-        #[derive(Serialize)]
-        struct RdkRequest {
-            jsonrpc: String,
-            id: i32,
-            method: String,
-            params: Param,
-        }
-
-        let req_params = Param {
-            w: dab_request.outputResolution.width,
-            h: dab_request.outputResolution.height,
-        };
-
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.RDKShell.setScreenResolution".into(),
-            params: req_params,
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
-
-        #[derive(Deserialize)]
-        struct RdkResponse {
-            jsonrpc: String,
-            id: i32,
-            result: SetScreenResolutionResult,
-        }
-
-        #[derive(Deserialize)]
-        struct SetScreenResolutionResult {
-            success: bool,
-        }
-
-        match response_json {
-            Err(err) => {
-                return Err(err);
-            }
-            _ => (),
-        }
+        set_rdk_resolution(&dab_request.outputResolution)?;
     }
 
     // ################ audioVolume ################

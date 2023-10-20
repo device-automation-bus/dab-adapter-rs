@@ -23,6 +23,7 @@
 
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
@@ -47,6 +48,34 @@ fn get_rdk_language() -> Result<String, String> {
     Ok(rdkresponse.result.ui_language)
 }
 
+fn get_rdk_resolution() -> Result<OutputResolution, String> {
+    service_activate("org.rdk.FrameRate".to_string()).unwrap();
+
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetDisplayFrameRate {
+        framerate: String,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<GetDisplayFrameRate> = rdk_request("org.rdk.FrameRate.getDisplayFrameRate")?;
+
+    let mut dimensions = rdkresponse
+        .result
+        .framerate
+        .trim_end_matches(']')
+        .split('x');
+
+    service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string()).unwrap();
+
+    Ok(OutputResolution {
+        width: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
+        height: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
+        frequency: dimensions.next().unwrap().parse::<i32>().unwrap() as f32,
+    })
+
+}
+
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
@@ -55,64 +84,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
     ResponseOperator.language = get_rdk_language()?;
-
-    //######### outputResolution #########
-    service_activate("org.rdk.FrameRate".to_string()).unwrap();
-    #[derive(Serialize)]
-    struct GetDisplayFrameRateRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = GetDisplayFrameRateRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.FrameRate.getDisplayFrameRate".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct GetDisplayFrameRateResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetDisplayFrameRateResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetDisplayFrameRateResult {
-        framerate: String,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            let get_framerate: GetDisplayFrameRateResponse =
-                serde_json::from_str(&response).unwrap();
-            let mut dimensions = get_framerate
-                .result
-                .framerate
-                .trim_end_matches(']')
-                .split('x');
-
-            ResponseOperator.outputResolution.width =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
-            ResponseOperator.outputResolution.height =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
-            ResponseOperator.outputResolution.frequency =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as f32;
-        }
-    }
-    service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string()).unwrap();
+    ResponseOperator.outputResolution = get_rdk_resolution()?;
 
     //######### audioVolume #########
     #[derive(Serialize)]
