@@ -162,15 +162,15 @@ pub fn process(_packet: String) -> Result<String, String> {
         },
     ];
 
-    ResponseOperator.memc = vec![false, true];
+    ResponseOperator.memc = false;
 
-    ResponseOperator.cec = vec![false, true];
+    ResponseOperator.cec = false;
 
-    ResponseOperator.lowLatencyMode = vec![false, true];
+    ResponseOperator.lowLatencyMode = false;
 
-    ResponseOperator.mute = vec![false, true];
+    ResponseOperator.mute = false;
 
-    ResponseOperator.textToSpeech = vec![false, true];
+    ResponseOperator.textToSpeech = false;
 
     ResponseOperator.hdrOutputMode = vec![
         HdrOutputMode::AlwaysHdr,
