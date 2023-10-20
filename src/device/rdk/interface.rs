@@ -1,7 +1,7 @@
 use crate::dab::structs::ErrorResponse;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -112,6 +112,77 @@ pub fn service_deactivate(service: String) -> Result<(), String> {
         }
         Ok(_) => return Ok(()),
     }
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct RdkResponse<T> {
+    pub jsonrpc: String,
+    pub id: i32,
+    pub result: T,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct RdkResult {
+    success: bool,
+}
+
+pub type RdkResponseSimple = RdkResponse<RdkResult>;
+
+pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
+    #[derive(Serialize)]
+    struct RdkNullParams {}
+
+    rdk_request_with_params(method,RdkNullParams {})
+}
+
+pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(method: &str, params: P) -> Result<R, String> {
+    #[derive(Serialize)]
+    struct RdkRequest<P> {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: P,
+    }
+
+    static mut JSONRPC_ID: i32 = 1;
+
+    let id;
+
+    unsafe {
+        id = JSONRPC_ID;
+        JSONRPC_ID += 1;
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id,
+        method: method.into(),
+        params,
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string)?;
+
+    let val: serde_json::Value = match serde_json::from_str(&response_json) {
+        Ok(val) => val,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    if val["error"] != serde_json::Value::Null {
+        return Err(val["error"]["message"].as_str().unwrap().into());
+    } else if val["result"] != serde_json::Value::Null {
+        if !val["result"]["success"].as_bool().unwrap() {
+            return Err(format!("{} failed", method));
+        }
+    }
+
+    let res: R = match serde_json::from_value(val) {
+        Ok(res) => res,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    Ok(res)
 }
 
 pub fn service_activate(service: String) -> Result<(), String> {
