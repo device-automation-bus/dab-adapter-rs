@@ -14,6 +14,7 @@
 //     pub mute: bool,
 //     pub textToSpeech: bool,
 // }
+use std::collections::HashMap;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::OutputResolution;
@@ -84,37 +85,17 @@ fn set_rdk_audio_volume (volume: u32) -> Result<(), String> {
     Ok(())
 }
 
-#[allow(non_snake_case)]
 pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator_json = json!({});
-    // *** Fill in the fields of the struct SetSystemSettingsResponse here ***
-    let json_str: Value = serde_json::from_str(&_packet).unwrap();
+    let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
-    // ################ outputResolution ################
-    // if dab_request.outputResolution != SetSystemSettingsRequest::default().outputResolution {
-    if json_str.get("outputResolution").is_some() {
-        let dab_request: SetSystemSettingsRequest;
-        dab_request = serde_json::from_str(&_packet).unwrap();
-        set_rdk_resolution(&dab_request.outputResolution)?;
-    }
+    for (key, value) in json_map.iter_mut() {
+        match *key {
+            "language" => set_rdk_language(serde_json::from_value::<String>(value.take()).unwrap())?,
+            "outputResolution" => set_rdk_resolution(&serde_json::from_value::<OutputResolution>(value.take()).unwrap())?,
+            "audioVolume" => set_rdk_audio_volume(serde_json::from_value::<u32>(value.take()).unwrap())?,
+            _ => (),
+        }
+    };
 
-    // ################ audioVolume ################
-
-    // if dab_request.audioVolume != SetSystemSettingsRequest::default().audioVolume {
-    if json_str.get("audioVolume").is_some() {
-        let dab_request: SetSystemSettingsRequest;
-        dab_request = serde_json::from_str(&_packet).unwrap();
-        set_rdk_audio_volume(dab_request.audioVolume)?;
-    }
-
-    if json_str.get("language").is_some() {
-        let dab_request: SetSystemSettingsRequest;
-        dab_request = serde_json::from_str(&_packet).unwrap();
-
-        set_rdk_language(dab_request.language)?;
-    }
-
-    // *******************************************************************
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
 }
