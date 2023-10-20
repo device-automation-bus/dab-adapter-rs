@@ -20,7 +20,7 @@ use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
 #[allow(unused_imports)]
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::system::settings::get::get_rdk_connected_audio_ports;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
@@ -59,9 +59,32 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_audio_volume (volume: u32) -> Result<(), String> {
+    let mut connected_ports = get_rdk_connected_audio_ports()?;
+
+    if connected_ports.is_empty() {
+        return Err("Device doesn't have any connected audio port.".into());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        volumeLevel: u32,
+        audioPort: String,
+    }
+
+    let req_params = Param {
+        volumeLevel: volume,
+        audioPort: connected_ports.remove(0),
+    };
+
+    let _rdkresponse: RdkResponseSimple = 
+        rdk_request_with_params("org.rdk.DisplaySettings.setVolumeLevel", req_params)?;
+
+    Ok(())
+}
+
 #[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(unused_mut)]
 pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator_json = json!({});
     // *** Fill in the fields of the struct SetSystemSettingsResponse here ***
@@ -81,51 +104,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     if json_str.get("audioVolume").is_some() {
         let dab_request: SetSystemSettingsRequest;
         dab_request = serde_json::from_str(&_packet).unwrap();
-
-        //#########org.rdk.RDKShell.setVolumeLevel#########
-        #[derive(Serialize)]
-        struct Param {
-            volumeLevel: u32,
-        }
-        #[derive(Serialize)]
-        struct RdkRequest {
-            jsonrpc: String,
-            id: i32,
-            method: String,
-            params: Param,
-        }
-
-        let req_params = Param {
-            volumeLevel: dab_request.audioVolume,
-        };
-
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.DisplaySettings.setVolumeLevel".into(),
-            params: req_params,
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
-
-        #[derive(Deserialize)]
-        struct RdkResponse {
-            jsonrpc: String,
-            id: i32,
-            result: SetVolumeLevelResult,
-        }
-
-        #[derive(Deserialize)]
-        struct SetVolumeLevelResult {
-            success: bool,
-        }
-
-        match response_json {
-            Err(err) => {
-                return Err(err);
-            }
-            _ => (),
-        }
+        set_rdk_audio_volume(dab_request.audioVolume)?;
     }
 
     if json_str.get("language").is_some() {
