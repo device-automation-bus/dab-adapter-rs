@@ -20,11 +20,27 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SetSystemSettingsRequest;
 #[allow(unused_imports)]
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::rdk_request_with_params;
+use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use serde_json::json;
 use serde_json::Value;
+
+fn set_rdk_language(language: String) -> Result<(), String> {
+    #[derive(Serialize)]
+    struct Param {
+        ui_language: String,
+    }
+
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.UserPreferences.1.setUILanguage", Param {
+            ui_language: language,
+        })?;
+
+    Ok(())
+}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -138,6 +154,13 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
             _ => (),
         }
+    }
+
+    if json_str.get("language").is_some() {
+        let dab_request: SetSystemSettingsRequest;
+        dab_request = serde_json::from_str(&_packet).unwrap();
+
+        set_rdk_language(dab_request.language)?;
     }
 
     // *******************************************************************

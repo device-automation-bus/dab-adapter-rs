@@ -27,10 +27,25 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::rdk_request;
+use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+fn get_rdk_language() -> Result<String, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetUILanguage {
+        ui_language: String,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<GetUILanguage> = rdk_request("org.rdk.UserPreferences.1.getUILanguage")?;
+
+    Ok(rdkresponse.result.ui_language)
+}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -38,6 +53,8 @@ use serde_json::json;
 pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
+
+    ResponseOperator.language = get_rdk_language()?;
 
     //######### outputResolution #########
     service_activate("org.rdk.FrameRate".to_string()).unwrap();
