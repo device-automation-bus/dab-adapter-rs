@@ -155,6 +155,19 @@ fn get_rdk_mute() -> Result<bool, String> {
     Ok(rdkresponse.result.muted)
 }
 
+fn get_rdk_cec() -> Result<bool, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct CecGetEnabled {
+        enabled: bool,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<CecGetEnabled> = rdk_request("org.rdk.HdmiCec_2.getEnabled")?;
+
+    Ok(rdkresponse.result.enabled)
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut response = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
@@ -163,6 +176,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.outputResolution = get_rdk_resolution()?;
     response.audioVolume = get_rdk_audio_volume()?;
     response.mute = get_rdk_mute()?;
+    response.cec = get_rdk_cec()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);

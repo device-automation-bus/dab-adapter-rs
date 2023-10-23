@@ -110,6 +110,22 @@ fn set_rdk_mute(mute: bool) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_cec(enabled: bool) -> Result<(), String> {
+    #[derive(Serialize)]
+    struct Param {
+        enabled: bool,
+    }
+
+    let req_params = Param {
+        enabled,
+    };
+
+    let _rdkresponse: RdkResponseSimple = 
+        rdk_request_with_params("org.rdk.HdmiCec_2.setEnabled", req_params)?;
+
+    Ok(())
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
@@ -119,6 +135,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             "outputResolution" => set_rdk_resolution(&serde_json::from_value::<OutputResolution>(value.take()).unwrap())?,
             "audioVolume" => set_rdk_audio_volume(serde_json::from_value::<u32>(value.take()).unwrap())?,
             "mute" => set_rdk_mute(value.take().as_bool().unwrap())?,
+            "cec" => set_rdk_cec(value.take().as_bool().unwrap())?,
             _ => (),
         }
     };

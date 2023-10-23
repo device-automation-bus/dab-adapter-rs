@@ -181,7 +181,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = false;
+    ResponseOperator.cec = true;
 
     ResponseOperator.lowLatencyMode = false;
 
