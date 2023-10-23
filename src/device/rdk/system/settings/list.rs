@@ -185,7 +185,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.lowLatencyMode = false;
 
-    ResponseOperator.mute = false;
+    ResponseOperator.mute = true;
 
     ResponseOperator.textToSpeech = false;
 

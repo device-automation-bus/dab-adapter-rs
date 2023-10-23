@@ -125,6 +125,36 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
     }
 }
 
+fn get_rdk_mute() -> Result<bool, String> {
+    let mut connected_ports = get_rdk_connected_audio_ports()?;
+
+    if connected_ports.is_empty() {
+        return Err("Device doesn't have any connected audio port.".into());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+    }
+
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetMuted {
+        muted: bool,
+        success: bool,
+    }
+
+    let req_params = Param {
+        audioPort: connected_ports.remove(0),
+    };
+
+    let rdkresponse: RdkResponse<GetMuted> = 
+        rdk_request_with_params("org.rdk.DisplaySettings.getMuted", req_params)?;
+
+    Ok(rdkresponse.result.muted)
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut response = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
@@ -132,6 +162,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.language = get_rdk_language()?;
     response.outputResolution = get_rdk_resolution()?;
     response.audioVolume = get_rdk_audio_volume()?;
+    response.mute = get_rdk_mute()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);

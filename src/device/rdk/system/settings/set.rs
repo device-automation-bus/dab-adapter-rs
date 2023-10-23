@@ -85,6 +85,31 @@ fn set_rdk_audio_volume (volume: u32) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_mute(mute: bool) -> Result<(), String> {
+    let mut connected_ports = get_rdk_connected_audio_ports()?;
+
+    if connected_ports.is_empty() {
+        return Err("Device doesn't have any connected audio port.".into());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        muted: bool,
+        audioPort: String,
+    }
+
+    let req_params = Param {
+        muted: mute,
+        audioPort: connected_ports.remove(0),
+    };
+
+    let _rdkresponse: RdkResponseSimple = 
+        rdk_request_with_params("org.rdk.DisplaySettings.setMuted", req_params)?;
+
+    Ok(())
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
@@ -93,6 +118,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             "language" => set_rdk_language(serde_json::from_value::<String>(value.take()).unwrap())?,
             "outputResolution" => set_rdk_resolution(&serde_json::from_value::<OutputResolution>(value.take()).unwrap())?,
             "audioVolume" => set_rdk_audio_volume(serde_json::from_value::<u32>(value.take()).unwrap())?,
+            "mute" => set_rdk_mute(value.take().as_bool().unwrap())?,
             _ => (),
         }
     };
