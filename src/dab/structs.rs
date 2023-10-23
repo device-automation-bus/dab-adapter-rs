@@ -259,7 +259,7 @@ pub enum PictureMode {
 }
 
 #[allow(dead_code)]
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 pub enum AudioOutputMode {
     #[default]
     Stereo,

@@ -1,4 +1,4 @@
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::{AudioOutputMode, ErrorResponse};
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use serde::{Deserialize, de::DeserializeOwned, Serialize};
@@ -314,6 +314,21 @@ pub fn get_rdk_keys() -> Vec<String> {
 
 pub fn get_keycode(keyname: String) -> Option<&'static u16> {
     RDK_KEYMAP.get(&keyname)
+}
+
+pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
+    match mode.as_str() {
+        "STEREO" => Some(AudioOutputMode::Stereo),
+        "SURROUND" | "DOLBYDIGITAL" | "DOLBYDIGITALPLUS" => Some(AudioOutputMode::MultichannelPcm),
+        "PASSTHRU" => Some(AudioOutputMode::PassThrough),
+        _ => {
+            if mode.starts_with("AUTO") {
+                Some(AudioOutputMode::Auto)
+            } else {
+                None
+            }
+        }
+    }
 }
 
 // Telemetry operations

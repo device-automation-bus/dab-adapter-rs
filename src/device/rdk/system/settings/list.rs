@@ -114,8 +114,11 @@ use crate::dab::structs::OutputResolution;
 use crate::dab::structs::PictureMode;
 use crate::dab::structs::VideoInputSource;
 use crate::device::rdk::interface::rdk_request;
+use crate::device::rdk::interface::rdk_request_with_params;
+use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::RdkResponse;
-use serde::Deserialize;
+use crate::device::rdk::system::settings::get::get_rdk_connected_audio_ports;
+use serde::{Serialize, Deserialize};
 use serde_json::json;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
@@ -157,6 +160,46 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
             None
         })
         .collect();
+
+    Ok(res)
+}
+
+fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, String> {
+    let mut connected_ports = get_rdk_connected_audio_ports()?;
+
+    if connected_ports.is_empty() {
+        return Err("Device doesn't have any connected audio port.".into());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetSupportedAudioModes {
+        supportedAudioModes: Vec<String>,
+        success: bool,
+    }
+
+    let req_params = Param {
+        audioPort: connected_ports.remove(0),
+    };
+
+    let rdkresponse: RdkResponse<GetSupportedAudioModes> =
+        rdk_request_with_params("org.rdk.DisplaySettings.getSupportedAudioModes", req_params)?;
+
+    let mut res = rdkresponse.result.supportedAudioModes
+        .iter()
+        .filter_map(|mode| rdk_sound_mode_to_dab(mode))
+        .collect::<Vec<_>>();
+
+    // Ensure the result has at most one AudioOutputMode::MultichannelPcm
+    res.sort();
+    res.dedup();
 
     Ok(res)
 }
@@ -212,12 +255,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         // PictureMode::Game,
         // PictureMode::Auto,
     ];
-    ResponseOperator.audioOutputMode = vec![
-        AudioOutputMode::Stereo,
-        AudioOutputMode::MultichannelPcm,
-        AudioOutputMode::PassThrough,
-        AudioOutputMode::Auto,
-    ];
+    ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
     ResponseOperator.audioOutputSource = vec![
         // AudioOutputSource::NativeSpeaker,
         // AudioOutputSource::Arc,

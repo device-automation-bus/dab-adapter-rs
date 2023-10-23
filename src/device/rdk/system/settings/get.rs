@@ -21,6 +21,7 @@
 // pub textToSpeech: bool,
 // }
 
+use crate::dab::structs::AudioOutputMode;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::OutputResolution;
@@ -29,6 +30,7 @@ use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
+use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;
@@ -168,6 +170,40 @@ fn get_rdk_cec() -> Result<bool, String> {
     Ok(rdkresponse.result.enabled)
 }
 
+fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
+    let mut connected_ports = get_rdk_connected_audio_ports()?;
+
+    if connected_ports.is_empty() {
+        return Err("Device doesn't have any connected audio port.".into());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetSoundMode {
+        soundMode: String,
+        success: bool,
+    }
+
+    let req_params = Param {
+        audioPort: connected_ports.remove(0),
+    };
+
+    let rdkresponse: RdkResponse<GetSoundMode> = 
+        rdk_request_with_params("org.rdk.DisplaySettings.getSoundMode", req_params)?;
+
+    match rdk_sound_mode_to_dab(&rdkresponse.result.soundMode) {
+        Some(mode) => Ok(mode),
+        None => Err(format!("Unknown RDK sound mode {}", rdkresponse.result.soundMode)),
+    }
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut response = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
@@ -177,6 +213,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.audioVolume = get_rdk_audio_volume()?;
     response.mute = get_rdk_mute()?;
     response.cec = get_rdk_cec()?;
+    response.audioOutputMode = get_rdk_audio_output_mode()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);
