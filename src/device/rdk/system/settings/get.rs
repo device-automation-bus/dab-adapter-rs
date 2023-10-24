@@ -78,7 +78,7 @@ fn get_rdk_resolution() -> Result<OutputResolution, String> {
 
 }
 
-pub fn get_rdk_connected_audio_ports() -> Result<Vec<String>, String> {
+pub fn get_rdk_audio_port() -> Result<String, String> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -90,16 +90,13 @@ pub fn get_rdk_connected_audio_ports() -> Result<Vec<String>, String> {
     let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
         rdk_request("org.rdk.DisplaySettings.getConnectedAudioPorts")?;
 
-    Ok(rdkresponse.result.connectedAudioPorts)
+    rdkresponse.result.connectedAudioPorts
+        .get(0)
+        .cloned()
+        .ok_or("Device doesn't have any connected audio port.".into())
 }
 
 fn get_rdk_audio_volume() -> Result<u32, String> {
-    let mut connected_ports = get_rdk_connected_audio_ports()?;
-
-    if connected_ports.is_empty() {
-        return Err("Device doesn't have any connected audio port.".into());
-    }
-
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -115,7 +112,7 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
     }
 
     let req_params = Param {
-        audioPort: connected_ports.remove(0),
+        audioPort: get_rdk_audio_port()?,
     };
 
     let rdkresponse: RdkResponse<GetVolumeLevel> = 
@@ -128,12 +125,6 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
 }
 
 fn get_rdk_mute() -> Result<bool, String> {
-    let mut connected_ports = get_rdk_connected_audio_ports()?;
-
-    if connected_ports.is_empty() {
-        return Err("Device doesn't have any connected audio port.".into());
-    }
-
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -148,7 +139,7 @@ fn get_rdk_mute() -> Result<bool, String> {
     }
 
     let req_params = Param {
-        audioPort: connected_ports.remove(0),
+        audioPort: get_rdk_audio_port()?,
     };
 
     let rdkresponse: RdkResponse<GetMuted> = 
@@ -171,12 +162,6 @@ fn get_rdk_cec() -> Result<bool, String> {
 }
 
 fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
-    let mut connected_ports = get_rdk_connected_audio_ports()?;
-
-    if connected_ports.is_empty() {
-        return Err("Device doesn't have any connected audio port.".into());
-    }
-
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -192,7 +177,7 @@ fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
     }
 
     let req_params = Param {
-        audioPort: connected_ports.remove(0),
+        audioPort: get_rdk_audio_port()?,
     };
 
     let rdkresponse: RdkResponse<GetSoundMode> = 
