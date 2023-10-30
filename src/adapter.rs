@@ -23,6 +23,9 @@ struct Opt {
     /// To exit based on path file (/run/dab-enable) status.
     #[clap(short, long, value_parser, value_name = "RETIRE")]
     retire: Option<bool>,
+    /// Print RDK messages to stdout
+    #[clap(long, value_parser, value_name = "DEBUG")]
+    debug: Option<bool>,
 }
 
 // The file `built.rs` was placed there by cargo and `build.rs`
@@ -113,6 +116,7 @@ pub fn main() {
     let mqtt_port = opt.port.unwrap_or(1883);
     let device_ip = opt.device.unwrap_or(String::from("localhost"));
     let create_retire_thread = opt.retire.unwrap_or(false);
+    let debug = opt.debug.unwrap_or(false);
 
     if opt.version {
         display_version();
@@ -120,7 +124,7 @@ pub fn main() {
     }
 
     // Initialize the device
-    hw_specific::interface::init(&device_ip);
+    hw_specific::interface::init(&device_ip, debug);
 
     // Register the handlers
     let mut handlers: SharedMap = HashMap::new();
