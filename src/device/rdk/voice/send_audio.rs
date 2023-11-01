@@ -55,5 +55,8 @@ pub fn process(packet: String) -> Result<String, String> {
             }
         }
     }
-    sendVoiceCommand()
+
+    sendVoiceCommand()?;
+
+    Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
 }
