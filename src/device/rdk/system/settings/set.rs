@@ -166,7 +166,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             "mute" => set_rdk_mute(value.take().as_bool().unwrap())?,
             "cec" => set_rdk_cec(value.take().as_bool().unwrap())?,
             "audioOutputMode" => set_rdk_audio_output_mode(serde_json::from_value::<AudioOutputMode>(value.take()).unwrap())?,
-            _ => (),
+            "audioOutputSource" | "videoInputSource" | _ => return Err(format!("Setting '{}' is not supported", key)),
         }
     };
 
