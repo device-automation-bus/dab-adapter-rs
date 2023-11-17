@@ -156,6 +156,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             #[derive(Serialize, Clone)]
             struct Param {
                 callsign: String,
+                r#type: String,
                 configuration: CobaltConfig,
             }
             #[derive(Serialize)]
@@ -168,6 +169,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
             let req_params = Param {
                 callsign: Dab_Request.appId,
+                r#type: "Cobalt".into(),
                 configuration: CobaltConfig {
                     url: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
                 },
