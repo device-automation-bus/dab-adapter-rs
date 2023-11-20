@@ -205,10 +205,10 @@ pub fn main() {
     //     "app-telemetry/stop".to_string(),
     //     Box::new(hw_specific::app_telemetry::stop::process),
     // );
-    // handlers.insert(
-    //     "health-check/get".to_string(),
-    //     Box::new(hw_specific::health_check::get::process),
-    // );
+    handlers.insert(
+        "health-check/get".to_string(),
+        Box::new(hw_specific::health_check::get::process),
+    );
     handlers.insert(
         "voice/send-audio".to_string(),
         Box::new(hw_specific::voice::send_audio::process),

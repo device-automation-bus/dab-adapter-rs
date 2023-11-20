@@ -92,6 +92,6 @@ This version currently supports the following DAB operations:
 | app-telemetry/start              |     -     |
 | app-telemetry/stop               |     -     |
 | health-check/get                 |    Yes    |
-| voice/list                       |    Yes    |
+| voice/list                       |     -     |
 | voice/send-audio                 |    Yes    |
 | voice/send-text                  |    Yes    |
