@@ -158,8 +158,8 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    if Dab_Request.parameters.len() > 0 {
-        param_list.append(&mut Dab_Request.parameters);
+    if let Some(mut parameters) = Dab_Request.parameters {
+        param_list.append(&mut parameters);
     }
 
     if is_cobalt {
