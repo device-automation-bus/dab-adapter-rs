@@ -2,10 +2,9 @@
 use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::SendTextRequest;
-use crate::dab::structs::VoiceTextRequestResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use crate::device::rdk::interface::RdkResponseSimple;
+use crate::hw_specific::interface::rdk_request_with_params;
+use serde::Serialize;
 
 pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     let adpcm_step_table: [i16; 89] = [
@@ -122,209 +121,43 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     adpcm_data
 }
 
+fn enable_ptt() -> Result<(), String> {
+    #[derive(Serialize)]
+    struct Ptt {
+        enable: bool,
+    }
+
+    #[derive(Serialize)]
+    struct Param {
+        ptt: Ptt,
+    }
+
+    let req_params = Param {
+        ptt: Ptt { enable: true },
+    };
+
+    let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.configureVoice", req_params)?;
+
+    Ok(())
+}
+
 #[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(unused_mut)]
-pub fn sendVoiceCommand() -> Result<String, String> {
-    let mut ResponseOperator = VoiceTextRequestResponse::default();
-    // *** Fill in the fields of the struct VoiceTextRequestResponse here ***
-    extern crate hound;
-    use std::fs::File;
-    use std::io::Write;
+pub fn sendVoiceCommand() -> Result<(), String> {
+    enable_ptt()?;
 
-    let reader = hound::WavReader::open("/tmp/tts.wav").unwrap();
-    let samples = reader.into_samples::<i16>().map(|x| x.unwrap());
-    let samples: Vec<i16> = samples.collect();
-
-    let buffer = encode_adpcm(&samples);
-    let mut file = File::create("/tmp/tts.raw").unwrap();
-    file.write_all(&buffer).unwrap();
-
-    // **************************** getConnectedDevices ****************************************
     #[derive(Serialize)]
-    struct GetConnectedDevicesRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
+    struct Param {
+        audio_file: String,
+        #[serde(rename = "type")]
+        request_type: String,
     }
 
-    let request = GetConnectedDevicesRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.Bluetooth.getConnectedDevices".into(),
+    let req_params = Param {
+        audio_file: "/tmp/tts.wav".into(),
+        request_type: "ptt_audio_file".into(),
     };
 
-    #[derive(Deserialize)]
-    struct GetConnectedDevicesResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetConnectedDevicesResult,
-    }
+    let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
 
-    #[derive(Deserialize)]
-    struct GetConnectedDevicesResult {
-        connectedDevices: Vec<ConnectedDevices>,
-        success: bool,
-    }
-
-    #[derive(Deserialize)]
-    struct ConnectedDevices {
-        deviceID: String,
-        name: String,
-        deviceType: String,
-        activeState: String,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    let mut _thisDeviceID = String::new();
-    match response_json {
-        Ok(val1) => {
-            let rdkresponse: GetConnectedDevicesResponse = serde_json::from_str(&val1).unwrap();
-
-            for connectedDevice in rdkresponse.result.connectedDevices.iter() {
-                if connectedDevice.deviceType == "HUMAN INTERFACE DEVICE" {
-                    _thisDeviceID = connectedDevice.deviceID.clone();
-                    break;
-                }
-            }
-            if _thisDeviceID.len() == 0 {
-                let err = "No bluetooth remote control found.".to_string();
-                return Err(err);
-            }
-        }
-        Err(err) => {
-            println!("Erro: {}", err);
-            return Err(err);
-        }
-    }
-
-    // ****************************** getDeviceInfo **************************************
-
-    #[derive(Serialize)]
-    struct GetDeviceInfoRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: GetDeviceInfoParams,
-    }
-
-    #[derive(Serialize)]
-    struct GetDeviceInfoParams {
-        deviceID: String,
-    }
-
-    let request = GetDeviceInfoRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.Bluetooth.getDeviceInfo".into(),
-        params: {
-            GetDeviceInfoParams {
-                deviceID: _thisDeviceID,
-            }
-        },
-    };
-
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetDeviceInfoResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResult {
-        deviceInfo: DeviceInfo,
-        success: bool,
-    }
-    #[derive(Deserialize)]
-    struct DeviceInfo {
-        deviceID: String,
-        name: String,
-        deviceType: String,
-        supportedProfile: String,
-        manufacturer: String,
-        MAC: String,
-        rssi: String,
-        signalStrength: String,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    let mut _thisDeviceMAC = String::new();
-
-    match response_json {
-        Ok(val2) => {
-            let rdkresponse: GetDeviceInfoResponse = serde_json::from_str(&val2).unwrap();
-            let thisDeviceMACResponse = rdkresponse.result.deviceInfo.MAC.clone().replace(":", "");
-            _thisDeviceMAC = String::from("0x");
-            _thisDeviceMAC.insert_str(2, &thisDeviceMACResponse);
-        }
-
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-    }
-
-    // ****************************** voiceSessionBegin **************************************
-
-    #[derive(Serialize)]
-    struct VoiceSessionBeginRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: VoiceSessionBeginParams,
-    }
-
-    #[derive(Serialize)]
-    struct VoiceSessionBeginParams {
-        MacAddr: String,
-        AudioFile: String,
-    }
-
-    let request = VoiceSessionBeginRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.VoiceControl.1.voiceSessionBegin".into(),
-        params: {
-            VoiceSessionBeginParams {
-                MacAddr: _thisDeviceMAC,
-                AudioFile: "/tmp/tts.raw".into(),
-            }
-        },
-    };
-
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: RdkResult,
-    }
-
-    #[derive(Deserialize)]
-    struct RdkResult {
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Ok(_) => {}
-
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-    }
-
-    // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(())
 }

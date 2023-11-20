@@ -78,5 +78,7 @@ pub fn process(packet: String) -> Result<String, String> {
 
     child.wait().expect("failed to wait for child process");
 
-    return sendVoiceCommand();
+    sendVoiceCommand()?;
+
+    Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
 }
