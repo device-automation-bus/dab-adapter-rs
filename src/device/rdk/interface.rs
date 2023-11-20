@@ -7,10 +7,12 @@ use std::fs::File;
 use std::io::Write;
 use surf::Client;
 static mut DEVICE_ADDRESS: String = String::new();
+static mut DEBUG: bool = false;
 
-pub fn init(device_ip: &str) {
+pub fn init(device_ip: &str, debug: bool) {
     unsafe {
         DEVICE_ADDRESS.push_str(&device_ip);
+        DEBUG = debug;
     }
 }
 
@@ -52,6 +54,12 @@ pub fn http_post(json_string: String) -> Result<String, String> {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
+    unsafe {
+        if DEBUG {
+            println!("RDK request: {}", json_string);
+        }
+    }
+
     let response = block_on(async {
         client
             .post(rdk_address)
@@ -64,10 +72,26 @@ pub fn http_post(json_string: String) -> Result<String, String> {
     });
     match response {
         Ok(r) => {
-            return Ok(r.to_string());
+            let str = r.to_string();
+
+            unsafe {
+                if DEBUG {
+                    println!("RDK response: {}", str);
+                }
+            }
+
+            return Ok(str);
         }
         Err(err) => {
-            return Err(err.to_string());
+            let str = err.to_string();
+
+            unsafe {
+                if DEBUG {
+                    println!("RDK error: {}", str);
+                }
+            }
+
+            return Err(str);
         }
     }
 }
