@@ -305,7 +305,7 @@ pub struct AudioVolume {
 }
 
 #[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ListSystemSettings {
     pub language: Vec<String>,
     pub outputResolution: Vec<OutputResolution>,
@@ -321,6 +321,99 @@ pub struct ListSystemSettings {
     pub audioVolume: AudioVolume,
     pub mute: bool,
     pub textToSpeech: bool,
+}
+
+// responses from dab-specification-2.0
+impl Default for ListSystemSettings {
+    fn default() -> Self {
+        Self {
+            language: ["en-US".into(), "es".into()].to_vec(),
+            outputResolution: vec![
+                OutputResolution {
+                    width: 1920,
+                    height: 1080,
+                    frequency: 60.0,
+                },
+                OutputResolution {
+                    width: 1920,
+                    height: 1080,
+                    frequency: 50.0,
+                },
+                OutputResolution {
+                    width: 1280,
+                    height: 720,
+                    frequency: 60.0,
+                },
+                OutputResolution {
+                    width: 1280,
+                    height: 720,
+                    frequency: 50.0,
+                },
+                OutputResolution {
+                    width: 720,
+                    height: 576,
+                    frequency: 50.0,
+                },
+                OutputResolution {
+                    width: 640,
+                    height: 480,
+                    frequency: 50.0,
+                },
+            ],
+            memc: false,
+            cec: true,
+            lowLatencyMode: true,
+            matchContentFrameRate: vec![
+                MatchContentFrameRate::EnabledAlways,
+                // MatchContentFrameRate::EnabledSeamlessOnly,
+                MatchContentFrameRate::Disabled,
+            ],
+            hdrOutputMode: vec![
+                HdrOutputMode::AlwaysHdr,
+                HdrOutputMode::HdrOnPlayback,
+                HdrOutputMode::DisableHdr,
+            ],
+            pictureMode: vec![
+                PictureMode::Standard,
+                // PictureMode::Dynamic,
+                // PictureMode::Movie,
+                // PictureMode::Sports,
+                // PictureMode::FilmMaker,
+                // PictureMode::Game,
+                // PictureMode::Auto,
+            ],
+            audioOutputMode: vec![
+                AudioOutputMode::Stereo,
+                AudioOutputMode::MultichannelPcm,
+                AudioOutputMode::PassThrough,
+                AudioOutputMode::Auto,
+            ],
+            audioOutputSource: vec![
+                // AudioOutputSource::NativeSpeaker,
+                // AudioOutputSource::Arc,
+                // AudioOutputSource::EArc,
+                AudioOutputSource::Optical,
+                // AudioOutputSource::Aux,
+                AudioOutputSource::Bluetooth,
+                // AudioOutputSource::Auto,
+                AudioOutputSource::HDMI,
+            ],
+            videoInputSource: vec![
+                VideoInputSource::Tuner,
+                // VideoInputSource::HDMI1,
+                // VideoInputSource::HDMI2,
+                // VideoInputSource::HDMI3,
+                // VideoInputSource::HDMI4,
+                // VideoInputSource::Composite,
+                // VideoInputSource::Component,
+                // VideoInputSource::Home,
+                // VideoInputSource::Cast,
+            ],
+            audioVolume: AudioVolume { min: 0, max: 100 },
+            mute: false,
+            textToSpeech: true,
+        }
+    }
 }
 
 #[allow(non_snake_case)]
