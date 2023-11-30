@@ -117,7 +117,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     #[derive(Deserialize)]
     struct LaunchResult {
-        message: String,
+        launchType: String,
         success: bool,
     }
 
@@ -150,7 +150,9 @@ pub fn process(_packet: String) -> Result<String, String> {
             is_suspended = r.state == "suspended";
         }
     }
-    let is_cobalt = Dab_Request.appId == "Cobalt" || Dab_Request.appId == "Youtube";
+    let is_cobalt = Dab_Request.appId == "Cobalt"
+        || Dab_Request.appId == "Youtube"
+        || Dab_Request.appId == "YouTube";
     let mut param_list = vec![];
     if is_cobalt {
         if !(Dab_Request.contentId.is_empty()) {
@@ -202,7 +204,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message);
+                return Err("Error calling org.rdk.RDKShell.launch".to_string());
             }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
@@ -225,8 +227,8 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
 
             let req_params = Param {
-                callsign: "Youtube".into(),
-                r#type: Dab_Request.appId,
+                callsign: Dab_Request.appId,
+                r#type: "Cobalt".into(),
                 configuration: CobaltConfig {
                     url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
                 },
@@ -251,7 +253,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response_json.unwrap()).unwrap();
             if rdkresponse.result.success == false {
-                return Err(rdkresponse.result.message);
+                return Err("Error calling org.rdk.RDKShell.launch".to_string());
             }
         }
     }
