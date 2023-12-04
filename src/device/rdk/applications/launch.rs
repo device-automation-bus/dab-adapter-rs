@@ -255,6 +255,8 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
             _ => (),
         }
+        //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+        move_to_front_set_focus(req_params.callsign.clone());
     }
 
     if is_suspended {
@@ -277,10 +279,66 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
             _ => (),
         }
+        //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+        move_to_front_set_focus(req_params.callsign.clone());
     }
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+}
+
+pub fn move_to_front_set_focus(callsign: String) {
+    //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+
+    // RDK Request Common Structs
+    #[derive(Serialize, Clone)]
+    struct RequestParams {
+        client: String,
+        callsign: String,
+    }
+
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    let req_params = RequestParams {
+        client: callsign.clone(),
+        callsign: callsign.clone(),
+    };
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.moveToFront".into(),
+        params: req_params.clone(),
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Err(err) => {
+            println!("moveToFront ERROR Erro: {}", err);
+        }
+        _ => (),
+    }
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.1.setFocus".into(),
+        params: req_params.clone(),
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Err(err) => {
+            println!("SetFocus ERROR Erro: {}", err);
+        }
+        _ => (),
+    }
 }

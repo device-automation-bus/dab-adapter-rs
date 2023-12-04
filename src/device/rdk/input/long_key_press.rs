@@ -92,7 +92,6 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     let interval_ms: u64 = 50;
     let total_time = Dab_Request.durationMs;
-    let repetitions = (total_time as f32 / interval_ms as f32).round() as usize;
 
     //#########org.rdk.RDKShell.injectKey#########
     #[derive(Serialize)]
@@ -130,8 +129,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
+    let mut elapsed_time = 0;
 
-    for _i in 0..repetitions - 1 {
+    while elapsed_time < total_time {
         let start_time = Instant::now();
 
         let response_json = http_post(json_string.clone());
@@ -147,11 +147,13 @@ pub fn process(_packet: String) -> Result<String, String> {
             _ => (),
         }
 
-        let end_time = Instant::now();
-        let elapsed_time_ms = end_time.duration_since(start_time).as_millis();
-        if (elapsed_time_ms) < interval_ms.into() {
-            thread::sleep(Duration::from_millis(interval_ms - elapsed_time_ms as u64));
+        let mut end_time = Instant::now().duration_since(start_time).as_millis();
+        if end_time < interval_ms.into() {
+            thread::sleep(Duration::from_millis(interval_ms - end_time as u64));
+            end_time = Instant::now().duration_since(start_time).as_millis();
         }
+
+        elapsed_time += end_time as u32;
     }
 
     // *******************************************************************
