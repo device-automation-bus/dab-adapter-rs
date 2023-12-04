@@ -176,18 +176,16 @@ pub fn process(_packet: String) -> Result<String, String> {
                 jsonrpc: String,
                 id: i32,
                 method: String,
-                params: Param,
+                params: String,
             }
 
             // This is Cobalt only, we will need a switch statement for other apps.
-            let req_params = Param {
-                url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
-            };
+
             let request = RdkRequest {
                 jsonrpc: "2.0".into(),
                 id: 3,
                 method: Dab_Request.appId.clone() + ".1.deeplink".into(),
-                params: req_params,
+                params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
             };
             let json_string = serde_json::to_string(&request).unwrap();
             let response_json = http_post(json_string);
@@ -200,12 +198,8 @@ pub fn process(_packet: String) -> Result<String, String> {
                 }
                 _ => (),
             }
-
-            let rdkresponse: RdkResponseLaunch =
-                serde_json::from_str(&response_json.unwrap()).unwrap();
-            if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
-            }
+            //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+            move_to_front_set_focus(req_params.callsign.clone());
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
             #[derive(Serialize)]
@@ -278,10 +272,66 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
             _ => (),
         }
+        //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+        move_to_front_set_focus(req_params.callsign.clone());
     }
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+}
+
+pub fn move_to_front_set_focus(callsign: String) {
+    //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
+
+    // RDK Request Common Structs
+    #[derive(Serialize, Clone)]
+    struct RequestParams {
+        client: String,
+        callsign: String,
+    }
+
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    let req_params = RequestParams {
+        client: callsign.clone(),
+        callsign: callsign.clone(),
+    };
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.moveToFront".into(),
+        params: req_params.clone(),
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Err(err) => {
+            println!("moveToFront ERROR Erro: {}", err);
+        }
+        _ => (),
+    }
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.1.setFocus".into(),
+        params: req_params.clone(),
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Err(err) => {
+            println!("SetFocus ERROR Erro: {}", err);
+        }
+        _ => (),
+    }
 }
