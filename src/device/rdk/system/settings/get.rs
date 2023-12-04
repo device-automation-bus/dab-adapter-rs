@@ -21,123 +21,186 @@
 // pub textToSpeech: bool,
 // }
 
+use crate::dab::structs::AudioOutputMode;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::rdk_request;
+use crate::device::rdk::interface::rdk_request_with_params;
+use crate::device::rdk::interface::rdk_sound_mode_to_dab;
+use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use serde_json::json;
 
-#[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = GetSystemSettingsResponse::default();
-    // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
+fn get_rdk_language() -> Result<String, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetUILanguage {
+        ui_language: String,
+        success: bool,
+    }
 
-    //######### outputResolution #########
+    let rdkresponse: RdkResponse<GetUILanguage> = rdk_request("org.rdk.UserPreferences.1.getUILanguage")?;
+
+    Ok(rdkresponse.result.ui_language)
+}
+
+fn get_rdk_resolution() -> Result<OutputResolution, String> {
     service_activate("org.rdk.FrameRate".to_string()).unwrap();
-    #[derive(Serialize)]
-    struct GetDisplayFrameRateRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
 
-    let request = GetDisplayFrameRateRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.FrameRate.getDisplayFrameRate".into(),
-    };
-
+    #[allow(dead_code)]
     #[derive(Deserialize)]
-    struct GetDisplayFrameRateResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetDisplayFrameRateResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetDisplayFrameRateResult {
+    struct GetDisplayFrameRate {
         framerate: String,
         success: bool,
     }
 
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let rdkresponse: RdkResponse<GetDisplayFrameRate> = rdk_request("org.rdk.FrameRate.getDisplayFrameRate")?;
 
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            let get_framerate: GetDisplayFrameRateResponse =
-                serde_json::from_str(&response).unwrap();
-            let mut dimensions = get_framerate
-                .result
-                .framerate
-                .trim_end_matches(']')
-                .split('x');
+    let mut dimensions = rdkresponse
+        .result
+        .framerate
+        .trim_end_matches(']')
+        .split('x');
 
-            ResponseOperator.outputResolution.width =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
-            ResponseOperator.outputResolution.height =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as u32;
-            ResponseOperator.outputResolution.frequency =
-                dimensions.next().unwrap().parse::<i32>().unwrap() as f32;
-        }
-    }
     service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string()).unwrap();
 
-    //######### audioVolume #########
+    Ok(OutputResolution {
+        width: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
+        height: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
+        frequency: dimensions.next().unwrap().parse::<i32>().unwrap() as f32,
+    })
+
+}
+
+pub fn get_rdk_audio_port() -> Result<String, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetConnectedAudioPorts {
+        connectedAudioPorts: Vec<String>,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
+        rdk_request("org.rdk.DisplaySettings.getConnectedAudioPorts")?;
+
+    rdkresponse.result.connectedAudioPorts
+        .get(0)
+        .cloned()
+        .ok_or("Device doesn't have any connected audio port.".into())
+}
+
+fn get_rdk_audio_volume() -> Result<u32, String> {
+    #[allow(non_snake_case)]
     #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
+    struct Param {
+        audioPort: String,
     }
 
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getVolumeLevel".into(),
-    };
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
     #[derive(Deserialize)]
-    struct GetVolumeLevelResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetVolumeLevelResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetVolumeLevelResult {
+    struct GetVolumeLevel {
         volumeLevel: String,
         success: bool,
     }
 
-    match response_json {
-        Err(err) => {
-            return Err(err);
-        }
-        Ok(response) => {
-            let get_audio_volume: GetVolumeLevelResponse = serde_json::from_str(&response).unwrap();
-            let volume = get_audio_volume.result.volumeLevel.parse::<f32>().unwrap();
-            ResponseOperator.audioVolume = volume as u32;
-        }
+    let req_params = Param {
+        audioPort: get_rdk_audio_port()?,
+    };
+
+    let rdkresponse: RdkResponse<GetVolumeLevel> = 
+        rdk_request_with_params("org.rdk.DisplaySettings.getVolumeLevel", req_params)?;
+
+    match rdkresponse.result.volumeLevel.parse::<f32>() {
+        Ok(volume) => Ok(volume as u32),
+        Err(error) => Err(error.to_string()),
     }
-    // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+}
+
+fn get_rdk_mute() -> Result<bool, String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+    }
+
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetMuted {
+        muted: bool,
+        success: bool,
+    }
+
+    let req_params = Param {
+        audioPort: get_rdk_audio_port()?,
+    };
+
+    let rdkresponse: RdkResponse<GetMuted> = 
+        rdk_request_with_params("org.rdk.DisplaySettings.getMuted", req_params)?;
+
+    Ok(rdkresponse.result.muted)
+}
+
+fn get_rdk_cec() -> Result<bool, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct CecGetEnabled {
+        enabled: bool,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<CecGetEnabled> = rdk_request("org.rdk.HdmiCec_2.getEnabled")?;
+
+    Ok(rdkresponse.result.enabled)
+}
+
+fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct GetSoundMode {
+        soundMode: String,
+        success: bool,
+    }
+
+    let req_params = Param {
+        audioPort: get_rdk_audio_port()?,
+    };
+
+    let rdkresponse: RdkResponse<GetSoundMode> = 
+        rdk_request_with_params("org.rdk.DisplaySettings.getSoundMode", req_params)?;
+
+    match rdk_sound_mode_to_dab(&rdkresponse.result.soundMode) {
+        Some(mode) => Ok(mode),
+        None => Err(format!("Unknown RDK sound mode {}", rdkresponse.result.soundMode)),
+    }
+}
+
+pub fn process(_packet: String) -> Result<String, String> {
+    let mut response = GetSystemSettingsResponse::default();
+    // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
+
+    response.language = get_rdk_language()?;
+    response.outputResolution = get_rdk_resolution()?;
+    response.audioVolume = get_rdk_audio_volume()?;
+    response.mute = get_rdk_mute()?;
+    response.cec = get_rdk_cec()?;
+    response.audioOutputMode = get_rdk_audio_output_mode()?;
+
+    let mut response_json = json!(response);
+    response_json["status"] = json!(200);
+    Ok(serde_json::to_string(&response_json).unwrap())
 }
