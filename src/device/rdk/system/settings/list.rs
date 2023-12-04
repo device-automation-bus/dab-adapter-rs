@@ -86,9 +86,9 @@
 // pub struct ListSystemSettings {
 //     pub language: Vec<String>,
 //     pub outputResolution: Vec<OutputResolution>,
-//     pub memc: Vec<bool>,
-//     pub cec: Vec<bool>,
-//     pub lowLatencyMode: Vec<bool>,
+//     pub memc: bool,
+//     pub cec: bool,
+//     pub lowLatencyMode: bool,
 //     pub matchContentFrameRate: Vec<MatchContentFrameRate>,
 //     pub hdrOutputMode: Vec<HdrOutputMode>,
 //     pub pictureMode: Vec<PictureMode>,
@@ -96,8 +96,8 @@
 //     pub audioOutputSource: Vec<AudioOutputSource>,
 //     pub videoInputSource: Vec<VideoInputSource>,
 //     pub audioVolume: AudioVolume,
-//     pub mute: Vec<bool>,
-//     pub textToSpeech: Vec<bool>,
+//     pub mute: bool,
+//     pub textToSpeech: bool,
 // }
 
 // use super::LANGUAGES;
@@ -162,15 +162,15 @@ pub fn process(_packet: String) -> Result<String, String> {
         },
     ];
 
-    ResponseOperator.memc = vec![false, true];
+    ResponseOperator.memc = false;
 
-    ResponseOperator.cec = vec![false, true];
+    ResponseOperator.cec = true;
 
-    ResponseOperator.lowLatencyMode = vec![false, true];
+    ResponseOperator.lowLatencyMode = true;
 
-    ResponseOperator.mute = vec![false, true];
+    ResponseOperator.mute = false;
 
-    ResponseOperator.textToSpeech = vec![false, true];
+    ResponseOperator.textToSpeech = true;
 
     ResponseOperator.hdrOutputMode = vec![
         HdrOutputMode::AlwaysHdr,
