@@ -25,12 +25,12 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
     // *** parse and call configureVoice(arg)
     let IncomingMessage = serde_json::from_str(&_packet);
-
+    println!("IncomingMessage {:?}", IncomingMessage);
     match IncomingMessage {
         Err(err) => {
             let response = ErrorResponse {
                 status: 400,
-                error: "Setting voiceSystem failed: argument parse failure.".to_string() + err.to_string().as_str(),
+                error: "Setting voiceSystem failed: argument parse failure.".to_string(),
             };
             let Response_json = json!(response);
             return Err(serde_json::to_string(&Response_json).unwrap());
