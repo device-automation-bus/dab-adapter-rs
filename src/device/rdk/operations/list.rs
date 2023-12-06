@@ -77,13 +77,9 @@ pub fn process(_packet: String) -> Result<String, String> {
         .operations
         .push("health-check/get".to_string());
     ResponseOperator.operations.push("voice/list".to_string());
-    // ResponseOperator.operations.push("voice/set".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("voice/send-audio".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("voice/send-text".to_string());
+    ResponseOperator.operations.push("voice/set".to_string());
+    ResponseOperator.operations.push("voice/send-audio".to_string());
+    ResponseOperator.operations.push("voice/send-text".to_string());
     ResponseOperator.operations.push("version".to_string());
     ResponseOperator
         .operations
