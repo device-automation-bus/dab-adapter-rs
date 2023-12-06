@@ -25,12 +25,12 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
     // *** parse and call configureVoice(arg)
     let IncomingMessage = serde_json::from_str(&_packet);
-    println!("IncomingMessage {:?}", _packet);
+
     match IncomingMessage {
         Err(err) => {
             let response = ErrorResponse {
                 status: 400,
-                error: "Setting voiceSystem failed: argument parse failure.".to_string(),
+                error: "Setting voiceSystem failed. Argument parse failure.".to_string(),
             };
             let Response_json = json!(response);
             return Err(serde_json::to_string(&Response_json).unwrap());
@@ -43,7 +43,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     if Voice_Set_Request.voiceSystem.name.is_empty() {
         let response = ErrorResponse {
             status: 400,
-            error: "request missing parameter(s)".to_string(),
+            error: "Setting voiceSystem failed. Request missing parameter(s)".to_string(),
         };
         let Response_json = json!(response);
         return Err(serde_json::to_string(&Response_json).unwrap());
@@ -54,7 +54,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         // Unsupported VoiceSystem.
         let response = ErrorResponse {
             status: 400,
-            error: "Unsupported voiceSystem(".to_string(),
+            error: "Setting voiceSystem failed. Unsupported voiceSystem.".to_string(),
         };
         let Response_json = json!(response);
         return Err(serde_json::to_string(&Response_json).unwrap());
@@ -72,7 +72,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     //     return Err(serde_json::to_string(&Response_json).unwrap());
     // }
 
-    ResponseOperator.voiceSystem.enabled = true;
+    ResponseOperator.voiceSystem.enabled = Voice_Set_Request.voiceSystem.enabled;
     ResponseOperator.voiceSystem.name = Voice_Set_Request.voiceSystem.name;
 
     // *******************************************************************
