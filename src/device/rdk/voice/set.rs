@@ -25,7 +25,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
     // *** parse and call configureVoice(arg)
     let IncomingMessage = serde_json::from_str(&_packet);
-    println!("IncomingMessage {:?}", IncomingMessage);
+    println!("IncomingMessage {:?}", _packet);
     match IncomingMessage {
         Err(err) => {
             let response = ErrorResponse {
