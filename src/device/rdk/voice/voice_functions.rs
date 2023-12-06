@@ -121,6 +121,28 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     adpcm_data
 }
 
+// fn enable_voice(EnableVoice: bool) -> Result<(), RdkResponseSimple> {
+//    #[derive(Serialize)]
+//    struct Ptt {
+//        enable: bool,
+//    }
+//
+//    #[derive(Serialize)]
+//    struct Param {
+//        ptt: Ptt,
+//        enable: bool,
+//    }
+//
+//    let req_params = Param {
+//        enable: EnableVoice,
+//        ptt: Ptt { enable: true },
+//    };
+//
+//    let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.configureVoice", req_params)?;
+//
+//    Ok(())
+//}
+
 fn enable_ptt() -> Result<(), String> {
     #[derive(Serialize)]
     struct Ptt {
