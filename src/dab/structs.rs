@@ -269,7 +269,7 @@ pub enum AudioOutputMode {
 }
 
 #[allow(dead_code)]
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, PartialEq)]
 pub enum AudioOutputSource {
     NativeSpeaker,
     Arc,

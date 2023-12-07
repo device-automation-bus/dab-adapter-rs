@@ -105,6 +105,7 @@
 use std::collections::HashMap;
 use lazy_static::lazy_static;
 use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::AudioVolume;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettings;
@@ -164,6 +165,35 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
         .collect();
 
     Ok(res)
+}
+
+pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetConnectedAudioPorts {
+        supportedAudioPorts: Vec<String>,
+        success: bool,
+    }
+    let mut response = vec![AudioOutputSource::default()];
+    let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
+        rdk_request("org.rdk.DisplaySettings.getSupportedAudioPorts")?;
+
+    for source in rdkresponse.result.supportedAudioPorts.iter() {
+        println!("asd : {:?}",source);
+        let val = match source.as_str() {
+            "SPDIF0" => AudioOutputSource::Optical,
+            "HDMI0" => AudioOutputSource::HDMI,
+            _ => {
+            continue;
+            },
+        };
+
+                if !response.contains(&val) {
+        response.push(val);
+    }
+    }
+Ok(response)
 }
 
 pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, String> {
@@ -256,16 +286,18 @@ pub fn process(_packet: String) -> Result<String, String> {
         // PictureMode::Auto,
     ];
     ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
-    ResponseOperator.audioOutputSource = vec![
-        // AudioOutputSource::NativeSpeaker,
-        // AudioOutputSource::Arc,
-        // AudioOutputSource::EArc,
-        //AudioOutputSource::Optical,
-        // AudioOutputSource::Aux,
-        //AudioOutputSource::Bluetooth,
-        // AudioOutputSource::Auto,
-        //AudioOutputSource::HDMI,
-    ];
+    ResponseOperator.audioOutputSource =  get_rdk_supported_audio_source()?;
+    
+    // vec![
+    //     AudioOutputSource::NativeSpeaker,
+    //     AudioOutputSource::Arc,
+    //     AudioOutputSource::EArc,
+    //     AudioOutputSource::Optical,
+    //     AudioOutputSource::Aux,
+    //     AudioOutputSource::Bluetooth,
+    //     AudioOutputSource::Auto,
+    //     AudioOutputSource::HDMI,
+    // ];
     ResponseOperator.videoInputSource = vec![
         //VideoInputSource::Tuner,
         // VideoInputSource::HDMI1,
