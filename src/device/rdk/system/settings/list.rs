@@ -232,7 +232,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator.hdrOutputMode = vec![
         HdrOutputMode::AlwaysHdr,
         HdrOutputMode::HdrOnPlayback,
-        HdrOutputMode::DisableHdr,
+        // HdrOutputMode::DisableHdr,
     ];
 
     ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
