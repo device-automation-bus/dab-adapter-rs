@@ -25,7 +25,6 @@ pub fn get_device_id() -> String {
             let response: serde_json::Value = serde_json::from_str(&r).unwrap();
             let device_id = response["result"]["estb_mac"].as_str().unwrap();
             let dab_device_id = device_id.replace(":", "").to_string();
-            println!("DAB Device ID: {}", dab_device_id);
             return dab_device_id;
         }
         Err(err) => {

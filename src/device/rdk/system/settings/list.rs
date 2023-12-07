@@ -307,8 +307,8 @@ pub fn process(_packet: String) -> Result<String, String> {
         // VideoInputSource::HDMI4,
         // VideoInputSource::Composite,
         // VideoInputSource::Component,
-        // VideoInputSource::Home,
-        VideoInputSource::Cast,
+        VideoInputSource::Home,
+        // VideoInputSource::Cast,
     ];
 
     // *******************************************************************

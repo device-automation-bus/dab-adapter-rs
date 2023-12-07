@@ -52,6 +52,7 @@ use crate::dab::structs::GetDeviceInformationResponse;
 use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_device_id;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -442,6 +443,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator.chipset = Deviceidentification.result.chipset;
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
+    ResponseOperator.deviceId = get_device_id();
 
     if ConnectedVideoDisplays.result.connectedVideoDisplays[0].contains("HDMI") {
         ResponseOperator.displayType = DisplayType::External;
