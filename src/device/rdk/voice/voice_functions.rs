@@ -121,6 +121,29 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     adpcm_data
 }
 
+#[allow(non_snake_case)]
+pub fn configureVoice(EnableVoice: bool) -> Result<(), String> {
+   #[derive(Serialize)]
+   struct Ptt {
+       enable: bool,
+   }
+
+   #[derive(Serialize)]
+   struct Param {
+       ptt: Ptt,
+       enable: bool,
+   }
+
+   let req_params = Param {
+       enable: EnableVoice,
+       ptt: Ptt { enable: EnableVoice },
+   };
+
+   let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.configureVoice", req_params)?;
+
+   Ok(())
+}
+
 fn enable_ptt() -> Result<(), String> {
     #[derive(Serialize)]
     struct Ptt {

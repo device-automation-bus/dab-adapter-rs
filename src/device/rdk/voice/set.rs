@@ -15,8 +15,7 @@ use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::SetVoiceSystemRequest;
 use crate::dab::structs::SetVoiceSystemResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
+use super::voice_functions::configureVoice;
 use serde_json::json;
 
 #[allow(non_snake_case)]
@@ -24,50 +23,57 @@ use serde_json::json;
 #[allow(unused_mut)]
 pub fn process(_packet: String) -> Result<String, String> {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
-    // *** Fill in the fields of the struct SetVoiceSystemResponse here ***
+    // *** parse and call configureVoice(arg)
+    let IncomingMessage = serde_json::from_str(&_packet);
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: String,
-    }
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.DisplaySettings.getConnectedVideoDisplays".into(),
-        params: "{}".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetConnectedVideoDisplaysResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetConnectedVideoDisplaysResult {
-        connectedVideoDisplays: Vec<String>,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Ok(val2) => {
-            let _rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-        }
-
+    match IncomingMessage {
         Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
+            let response = ErrorResponse {
+                status: 400,
+                error: "Setting voiceSystem failed. Argument parse failure.".to_string(),
+            };
+            let Response_json = json!(response);
+            return Err(serde_json::to_string(&Response_json).unwrap());
         }
+        Ok(_) => (),
     }
+
+    let Voice_Set_Request: SetVoiceSystemRequest = IncomingMessage.unwrap();
+
+    if Voice_Set_Request.voiceSystem.name.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "Setting voiceSystem failed. Request missing parameter(s)".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
+    // TODO: Add other RDK specific voice protocol support confirmation.
+    if Voice_Set_Request.voiceSystem.name != "AmazonAlexa" {
+        // Unsupported VoiceSystem.
+        let response = ErrorResponse {
+            status: 400,
+            error: "Setting voiceSystem failed. Unsupported voiceSystem.".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
+    configureVoice(Voice_Set_Request.voiceSystem.enabled)?;
+    // TODO: validation of response.
+    // if response.success == false {
+    //     // Thunder JSONRPC failed
+    //     let response = ErrorResponse {
+    //         status: 400,
+    //         error: "Platform operation failed.".to_string(),
+    //     };
+    //     let Response_json = json!(response);
+    //     return Err(serde_json::to_string(&Response_json).unwrap());
+    // }
+
+    ResponseOperator.voiceSystem.enabled = Voice_Set_Request.voiceSystem.enabled;
+    ResponseOperator.voiceSystem.name = Voice_Set_Request.voiceSystem.name;
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);
