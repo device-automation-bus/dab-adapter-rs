@@ -102,8 +102,6 @@
 
 // use super::LANGUAGES;
 // use super::RESOLUTIONS;
-use std::collections::HashMap;
-use lazy_static::lazy_static;
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::AudioVolume;
@@ -118,8 +116,10 @@ use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
-use serde::{Serialize, Deserialize};
+use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 
 use super::get::get_rdk_cec;
 use super::get::get_rdk_mute;
@@ -146,7 +146,9 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
         ]);
     }
 
-    let res = rdkresponse.result.supportedResolutions
+    let res = rdkresponse
+        .result
+        .supportedResolutions
         .iter()
         .filter_map(|item| {
             if let Some((resolution, framerate)) = item.split_once("p") {
@@ -156,7 +158,7 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
                             width: dimensions[0],
                             height: dimensions[1],
                             frequency: framerate_n,
-                        })
+                        });
                     }
                 }
             }
@@ -180,20 +182,19 @@ pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String
         rdk_request("org.rdk.DisplaySettings.getSupportedAudioPorts")?;
 
     for source in rdkresponse.result.supportedAudioPorts.iter() {
-        println!("asd : {:?}",source);
         let val = match source.as_str() {
             "SPDIF0" => AudioOutputSource::Optical,
             "HDMI0" => AudioOutputSource::HDMI,
             _ => {
-            continue;
-            },
+                continue;
+            }
         };
 
-                if !response.contains(&val) {
-        response.push(val);
+        if !response.contains(&val) {
+            response.push(val);
+        }
     }
-    }
-Ok(response)
+    Ok(response)
 }
 
 pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, String> {
@@ -286,8 +287,8 @@ pub fn process(_packet: String) -> Result<String, String> {
         // PictureMode::Auto,
     ];
     ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
-    ResponseOperator.audioOutputSource =  get_rdk_supported_audio_source()?;
-    
+    ResponseOperator.audioOutputSource = get_rdk_supported_audio_source()?;
+
     // vec![
     //     AudioOutputSource::NativeSpeaker,
     //     AudioOutputSource::Arc,
