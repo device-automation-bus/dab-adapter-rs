@@ -240,7 +240,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator.matchContentFrameRate = vec![
         MatchContentFrameRate::EnabledAlways,
         // MatchContentFrameRate::EnabledSeamlessOnly,
-        MatchContentFrameRate::Disabled,
+        // MatchContentFrameRate::Disabled,
     ];
 
     ResponseOperator.pictureMode = vec![
