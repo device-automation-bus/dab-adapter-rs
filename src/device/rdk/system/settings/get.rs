@@ -22,19 +22,20 @@
 // }
 
 use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
-use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
+use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
-use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;
-use serde::{Serialize, Deserialize};
+use crate::device::rdk::interface::RdkResponse;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 fn get_rdk_language() -> Result<String, String> {
@@ -45,7 +46,8 @@ fn get_rdk_language() -> Result<String, String> {
         success: bool,
     }
 
-    let rdkresponse: RdkResponse<GetUILanguage> = rdk_request("org.rdk.UserPreferences.1.getUILanguage")?;
+    let rdkresponse: RdkResponse<GetUILanguage> =
+        rdk_request("org.rdk.UserPreferences.1.getUILanguage")?;
 
     Ok(rdkresponse.result.ui_language)
 }
@@ -60,7 +62,8 @@ fn get_rdk_resolution() -> Result<OutputResolution, String> {
         success: bool,
     }
 
-    let rdkresponse: RdkResponse<GetDisplayFrameRate> = rdk_request("org.rdk.FrameRate.getDisplayFrameRate")?;
+    let rdkresponse: RdkResponse<GetDisplayFrameRate> =
+        rdk_request("org.rdk.FrameRate.getDisplayFrameRate")?;
 
     let mut dimensions = rdkresponse
         .result
@@ -75,7 +78,6 @@ fn get_rdk_resolution() -> Result<OutputResolution, String> {
         height: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
         frequency: dimensions.next().unwrap().parse::<i32>().unwrap() as f32,
     })
-
 }
 
 pub fn get_rdk_audio_port() -> Result<String, String> {
@@ -90,7 +92,9 @@ pub fn get_rdk_audio_port() -> Result<String, String> {
     let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
         rdk_request("org.rdk.DisplaySettings.getConnectedAudioPorts")?;
 
-    rdkresponse.result.connectedAudioPorts
+    rdkresponse
+        .result
+        .connectedAudioPorts
         .get(0)
         .cloned()
         .ok_or("Device doesn't have any connected audio port.".into())
@@ -115,7 +119,7 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
         audioPort: get_rdk_audio_port()?,
     };
 
-    let rdkresponse: RdkResponse<GetVolumeLevel> = 
+    let rdkresponse: RdkResponse<GetVolumeLevel> =
         rdk_request_with_params("org.rdk.DisplaySettings.getVolumeLevel", req_params)?;
 
     match rdkresponse.result.volumeLevel.parse::<f32>() {
@@ -124,7 +128,7 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
     }
 }
 
-fn get_rdk_mute() -> Result<bool, String> {
+pub fn get_rdk_mute() -> Result<bool, String> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -142,13 +146,13 @@ fn get_rdk_mute() -> Result<bool, String> {
         audioPort: get_rdk_audio_port()?,
     };
 
-    let rdkresponse: RdkResponse<GetMuted> = 
+    let rdkresponse: RdkResponse<GetMuted> =
         rdk_request_with_params("org.rdk.DisplaySettings.getMuted", req_params)?;
 
     Ok(rdkresponse.result.muted)
 }
 
-fn get_rdk_cec() -> Result<bool, String> {
+pub fn get_rdk_cec() -> Result<bool, String> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct CecGetEnabled {
@@ -159,6 +163,35 @@ fn get_rdk_cec() -> Result<bool, String> {
     let rdkresponse: RdkResponse<CecGetEnabled> = rdk_request("org.rdk.HdmiCec_2.getEnabled")?;
 
     Ok(rdkresponse.result.enabled)
+}
+
+fn get_rdk_connected_audio_source() -> Result<AudioOutputSource, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetConnectedAudioPorts {
+        connectedAudioPorts: Vec<String>,
+        success: bool,
+    }
+    let mut response = vec![AudioOutputSource::default()];
+
+    let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
+        rdk_request("org.rdk.DisplaySettings.getConnectedAudioPorts")?;
+
+    for source in rdkresponse.result.connectedAudioPorts.iter() {
+        let val = match source.as_str() {
+            "SPDIF0" => AudioOutputSource::Optical,
+            "HDMI0" => AudioOutputSource::HDMI,
+            _ => {
+                continue;
+            }
+        };
+
+        if !response.contains(&val) {
+            response.push(val);
+        }
+    }
+    Ok(response.get(0).unwrap().clone())
 }
 
 fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
@@ -180,12 +213,15 @@ fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
         audioPort: get_rdk_audio_port()?,
     };
 
-    let rdkresponse: RdkResponse<GetSoundMode> = 
+    let rdkresponse: RdkResponse<GetSoundMode> =
         rdk_request_with_params("org.rdk.DisplaySettings.getSoundMode", req_params)?;
 
     match rdk_sound_mode_to_dab(&rdkresponse.result.soundMode) {
         Some(mode) => Ok(mode),
-        None => Err(format!("Unknown RDK sound mode {}", rdkresponse.result.soundMode)),
+        None => Err(format!(
+            "Unknown RDK sound mode {}",
+            rdkresponse.result.soundMode
+        )),
     }
 }
 
@@ -199,6 +235,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.mute = get_rdk_mute()?;
     response.cec = get_rdk_cec()?;
     response.audioOutputMode = get_rdk_audio_output_mode()?;
+    response.audioOutputSource = get_rdk_connected_audio_source()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);

@@ -14,23 +14,23 @@
 //     pub mute: bool,
 //     pub textToSpeech: bool,
 // }
-use std::collections::HashMap;
 use crate::dab::structs::AudioOutputMode;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
+use crate::device::rdk::interface::rdk_request_with_params;
+use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
-use crate::device::rdk::interface::rdk_request_with_params;
-use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use serde_json::json;
 use serde_json::Value;
+use std::collections::HashMap;
 
 fn set_rdk_language(language: String) -> Result<(), String> {
     #[derive(Serialize)]
@@ -38,10 +38,12 @@ fn set_rdk_language(language: String) -> Result<(), String> {
         ui_language: String,
     }
 
-    let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.UserPreferences.1.setUILanguage", Param {
+    let _rdkresponse: RdkResponseSimple = rdk_request_with_params(
+        "org.rdk.UserPreferences.1.setUILanguage",
+        Param {
             ui_language: language,
-        })?;
+        },
+    )?;
 
     Ok(())
 }
@@ -53,7 +55,10 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
     }
 
     let req_params = Param {
-        framerate: format!("{}x{}x{}", resolution.width, resolution.height, resolution.frequency),
+        framerate: format!(
+            "{}x{}x{}",
+            resolution.width, resolution.height, resolution.frequency
+        ),
     };
 
     let _rdkresponse: RdkResponseSimple =
@@ -62,7 +67,7 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_audio_volume (volume: u32) -> Result<(), String> {
+fn set_rdk_audio_volume(volume: u32) -> Result<(), String> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -75,7 +80,7 @@ fn set_rdk_audio_volume (volume: u32) -> Result<(), String> {
         audioPort: get_rdk_audio_port()?,
     };
 
-    let _rdkresponse: RdkResponseSimple = 
+    let _rdkresponse: RdkResponseSimple =
         rdk_request_with_params("org.rdk.DisplaySettings.setVolumeLevel", req_params)?;
 
     Ok(())
@@ -94,7 +99,7 @@ fn set_rdk_mute(mute: bool) -> Result<(), String> {
         audioPort: get_rdk_audio_port()?,
     };
 
-    let _rdkresponse: RdkResponseSimple = 
+    let _rdkresponse: RdkResponseSimple =
         rdk_request_with_params("org.rdk.DisplaySettings.setMuted", req_params)?;
 
     Ok(())
@@ -106,11 +111,9 @@ fn set_rdk_cec(enabled: bool) -> Result<(), String> {
         enabled: bool,
     }
 
-    let req_params = Param {
-        enabled,
-    };
+    let req_params = Param { enabled };
 
-    let _rdkresponse: RdkResponseSimple = 
+    let _rdkresponse: RdkResponseSimple =
         rdk_request_with_params("org.rdk.HdmiCec_2.setEnabled", req_params)?;
 
     Ok(())
@@ -123,15 +126,11 @@ fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<Strin
         Stereo => Ok("STEREO".into()),
         PassThrough => Ok("PASSTHRU".into()),
         Auto => Ok("AUTO".into()),
-        MultichannelPcm => {
-            get_rdk_supported_audio_modes(port)?
-                .iter()
-                .find(|mode| {
-                    ["SURROUND", "DOLBYDIGITAL", "DOLBYDIGITALPLUS"].contains(&mode.as_str())
-                })
-                .cloned()
-                .ok_or("Audio port doesn't support multichannel.".into())
-        }
+        MultichannelPcm => get_rdk_supported_audio_modes(port)?
+            .iter()
+            .find(|mode| ["SURROUND", "DOLBYDIGITAL", "DOLBYDIGITALPLUS"].contains(&mode.as_str()))
+            .cloned()
+            .ok_or("Audio port doesn't support multichannel.".into()),
     }
 }
 
@@ -149,7 +148,7 @@ fn set_rdk_audio_output_mode(mode: AudioOutputMode) -> Result<(), String> {
     };
     req_params.soundMode = rdk_sound_mode_from_dab(mode, &req_params.audioPort)?;
 
-    let _rdkresponse: RdkResponseSimple = 
+    let _rdkresponse: RdkResponseSimple =
         rdk_request_with_params("org.rdk.DisplaySettings.setSoundMode", req_params)?;
 
     Ok(())
@@ -160,15 +159,25 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     for (key, value) in json_map.iter_mut() {
         match *key {
-            "language" => set_rdk_language(serde_json::from_value::<String>(value.take()).unwrap())?,
-            "outputResolution" => set_rdk_resolution(&serde_json::from_value::<OutputResolution>(value.take()).unwrap())?,
-            "audioVolume" => set_rdk_audio_volume(serde_json::from_value::<u32>(value.take()).unwrap())?,
+            "language" => {
+                set_rdk_language(serde_json::from_value::<String>(value.take()).unwrap())?
+            }
+            "outputResolution" => set_rdk_resolution(
+                &serde_json::from_value::<OutputResolution>(value.take()).unwrap(),
+            )?,
+            "audioVolume" => {
+                set_rdk_audio_volume(serde_json::from_value::<u32>(value.take()).unwrap())?
+            }
             "mute" => set_rdk_mute(value.take().as_bool().unwrap())?,
             "cec" => set_rdk_cec(value.take().as_bool().unwrap())?,
-            "audioOutputMode" => set_rdk_audio_output_mode(serde_json::from_value::<AudioOutputMode>(value.take()).unwrap())?,
-            "audioOutputSource" | "videoInputSource" | _ => return Err(format!("Setting '{}' is not supported", key)),
+            "audioOutputMode" => set_rdk_audio_output_mode(
+                serde_json::from_value::<AudioOutputMode>(value.take()).unwrap(),
+            )?,
+            "audioOutputSource" | "videoInputSource" | _ => {
+                return Err(format!("Setting '{}' is not supported", key))
+            }
         }
-    };
+    }
 
     Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
 }
