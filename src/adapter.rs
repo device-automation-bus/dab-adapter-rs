@@ -20,7 +20,7 @@ struct Opt {
     /// Print the version information
     #[clap(short, long, value_parser, value_name = "VERSION")]
     version: bool,
-    /// To exit based on path file (/run/dab-enable) status.
+    /// To exit based on path file (/opt/dab-enable) status.
     #[clap(short, long, value_parser, value_name = "RETIRE")]
     retire: Option<bool>,
     /// Print RDK messages to stdout
@@ -39,7 +39,7 @@ fn fd_monitor_thread() {
     use std::process;
     use std::time::Duration;
 
-    static MONITORPATH: &str = "/run";
+    static MONITORPATH: &str = "/opt";
     println!("Monitoring changes of {}/dab-enable", MONITORPATH);
     let monitor_path = Path::new(MONITORPATH);
 
