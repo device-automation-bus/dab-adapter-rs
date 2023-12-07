@@ -239,9 +239,9 @@ pub enum MatchContentFrameRate {
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum HdrOutputMode {
+    #[default]
     AlwaysHdr,
     HdrOnPlayback,
-    #[default]
     DisableHdr,
 }
 
@@ -285,7 +285,6 @@ pub enum AudioOutputSource {
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum VideoInputSource {
-    #[default]
     Tuner,
     HDMI1,
     HDMI2,
@@ -294,6 +293,7 @@ pub enum VideoInputSource {
     Composite,
     Component,
     Home,
+    #[default]
     Cast,
 }
 
