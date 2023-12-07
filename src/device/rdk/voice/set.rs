@@ -27,7 +27,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let IncomingMessage = serde_json::from_str(&_packet);
 
     match IncomingMessage {
-        Err(err) => {
+        Err(_) => {
             let response = ErrorResponse {
                 status: 400,
                 error: "Setting voiceSystem failed. Argument parse failure.".to_string(),
