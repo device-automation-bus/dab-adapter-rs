@@ -111,6 +111,7 @@ use crate::dab::structs::ListSystemSettings;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::PictureMode;
+use crate::dab::structs::VideoInputSource;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
@@ -271,7 +272,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         // VideoInputSource::Composite,
         // VideoInputSource::Component,
         // VideoInputSource::Home,
-        // VideoInputSource::Cast,
+        VideoInputSource::Cast,
     ];
 
     // *******************************************************************
