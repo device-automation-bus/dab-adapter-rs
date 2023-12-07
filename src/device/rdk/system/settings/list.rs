@@ -121,6 +121,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 
 use super::get::get_rdk_cec;
+use super::get::get_rdk_mute;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     #[allow(non_snake_case)]
@@ -227,7 +228,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.lowLatencyMode = true;
 
-    ResponseOperator.mute = false;
+    ResponseOperator.mute = get_rdk_mute()?;
 
     ResponseOperator.textToSpeech = true;
 
