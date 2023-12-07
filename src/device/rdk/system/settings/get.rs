@@ -148,7 +148,7 @@ fn get_rdk_mute() -> Result<bool, String> {
     Ok(rdkresponse.result.muted)
 }
 
-fn get_rdk_cec() -> Result<bool, String> {
+pub fn get_rdk_cec() -> Result<bool, String> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct CecGetEnabled {

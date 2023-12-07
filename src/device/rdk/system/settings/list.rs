@@ -120,6 +120,8 @@ use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 
+use super::get::get_rdk_cec;
+
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
@@ -221,7 +223,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = true;
+    ResponseOperator.cec = get_rdk_cec()?;
 
     ResponseOperator.lowLatencyMode = true;
 
