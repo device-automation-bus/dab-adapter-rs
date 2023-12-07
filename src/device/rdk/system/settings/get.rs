@@ -22,6 +22,7 @@
 // }
 
 use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::OutputResolution;
@@ -161,6 +162,37 @@ pub fn get_rdk_cec() -> Result<bool, String> {
     Ok(rdkresponse.result.enabled)
 }
 
+fn get_rdk_connected_audio_source() -> Result<AudioOutputSource, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetConnectedAudioPorts {
+        connectedAudioPorts: Vec<String>,
+        success: bool,
+    }
+    let mut response = vec![AudioOutputSource::default()];
+    println!("{:?}",line!());
+
+    let rdkresponse: RdkResponse<GetConnectedAudioPorts> =
+        rdk_request("org.rdk.DisplaySettings.getConnectedAudioPorts")?;
+
+    for source in rdkresponse.result.connectedAudioPorts.iter() {
+        let val = match source.as_str() {
+            "SPDIF0" => AudioOutputSource::Optical,
+            "HDMI0" => AudioOutputSource::HDMI,
+            _ => {
+            continue;
+            },
+        };
+
+        if !response.contains(&val) {
+        response.push(val);
+    }
+    }
+Ok(response.get(0).unwrap().clone())
+}
+
+
 fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
@@ -199,6 +231,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.mute = get_rdk_mute()?;
     response.cec = get_rdk_cec()?;
     response.audioOutputMode = get_rdk_audio_output_mode()?;
+    response.audioOutputSource = get_rdk_connected_audio_source()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);
