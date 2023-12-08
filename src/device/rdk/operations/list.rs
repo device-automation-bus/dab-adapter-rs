@@ -42,15 +42,15 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator
         .operations
         .push("system/restart".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/list".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/get".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/set".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/list".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/get".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/set".to_string());
     ResponseOperator
         .operations
         .push("input/key/list".to_string());
