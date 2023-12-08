@@ -10,12 +10,12 @@
 // pub voiceSystem: VoiceSystem,
 // }
 
+use super::voice_functions::configureVoice;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::SetVoiceSystemRequest;
 use crate::dab::structs::SetVoiceSystemResponse;
-use super::voice_functions::configureVoice;
 use serde_json::json;
 
 #[allow(non_snake_case)]

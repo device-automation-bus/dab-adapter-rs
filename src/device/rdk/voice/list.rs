@@ -15,7 +15,6 @@
 //     pub voiceSystems: Vec<VoiceSystem>,
 // }
 
-
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
@@ -81,8 +80,13 @@ pub fn process(_packet: String) -> Result<String, String> {
             // Current Alexa solution is PTT & starts with protocol 'avs://'
             if rdkresponse.result.urlPtt.to_string().contains("avs:") {
                 let mut avsEnabled = false;
-                if rdkresponse.result.ptt.status.to_string().contains("ready") { avsEnabled = true; }
-                let avs = VoiceSystem { name: ("AmazonAlexa").to_string(), enabled: avsEnabled };
+                if rdkresponse.result.ptt.status.to_string().contains("ready") {
+                    avsEnabled = true;
+                }
+                let avs = VoiceSystem {
+                    name: ("AmazonAlexa").to_string(),
+                    enabled: avsEnabled,
+                };
                 ResponseOperator.voiceSystems.push(avs);
             }
         }

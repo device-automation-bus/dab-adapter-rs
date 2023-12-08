@@ -123,25 +123,28 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
 
 #[allow(non_snake_case)]
 pub fn configureVoice(EnableVoice: bool) -> Result<(), String> {
-   #[derive(Serialize)]
-   struct Ptt {
-       enable: bool,
-   }
+    #[derive(Serialize)]
+    struct Ptt {
+        enable: bool,
+    }
 
-   #[derive(Serialize)]
-   struct Param {
-       ptt: Ptt,
-       enable: bool,
-   }
+    #[derive(Serialize)]
+    struct Param {
+        ptt: Ptt,
+        enable: bool,
+    }
 
-   let req_params = Param {
-       enable: EnableVoice,
-       ptt: Ptt { enable: EnableVoice },
-   };
+    let req_params = Param {
+        enable: EnableVoice,
+        ptt: Ptt {
+            enable: EnableVoice,
+        },
+    };
 
-   let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.configureVoice", req_params)?;
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params)?;
 
-   Ok(())
+    Ok(())
 }
 
 fn enable_ptt() -> Result<(), String> {
@@ -159,7 +162,8 @@ fn enable_ptt() -> Result<(), String> {
         ptt: Ptt { enable: true },
     };
 
-    let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.configureVoice", req_params)?;
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params)?;
 
     Ok(())
 }
@@ -180,7 +184,8 @@ pub fn sendVoiceCommand() -> Result<(), String> {
         request_type: "ptt_audio_file".into(),
     };
 
-    let _rdkresponse: RdkResponseSimple = rdk_request_with_params ("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
 
     Ok(())
 }
