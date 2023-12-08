@@ -42,15 +42,15 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator
         .operations
         .push("system/restart".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/list".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/get".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/settings/set".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/list".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/get".to_string());
+    ResponseOperator
+        .operations
+        .push("system/settings/set".to_string());
     ResponseOperator
         .operations
         .push("input/key/list".to_string());
@@ -78,8 +78,12 @@ pub fn process(_packet: String) -> Result<String, String> {
         .push("health-check/get".to_string());
     ResponseOperator.operations.push("voice/list".to_string());
     ResponseOperator.operations.push("voice/set".to_string());
-    ResponseOperator.operations.push("voice/send-audio".to_string());
-    ResponseOperator.operations.push("voice/send-text".to_string());
+    ResponseOperator
+        .operations
+        .push("voice/send-audio".to_string());
+    ResponseOperator
+        .operations
+        .push("voice/send-text".to_string());
     ResponseOperator.operations.push("version".to_string());
     ResponseOperator
         .operations

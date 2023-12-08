@@ -1,7 +1,7 @@
 use crate::dab::structs::{AudioOutputMode, ErrorResponse};
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use serde::{Deserialize, de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -157,10 +157,13 @@ pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkNullParams {}
 
-    rdk_request_with_params(method,RdkNullParams {})
+    rdk_request_with_params(method, RdkNullParams {})
 }
 
-pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(method: &str, params: P) -> Result<R, String> {
+pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
+    method: &str,
+    params: P,
+) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkRequest<P> {
         jsonrpc: String,

@@ -15,9 +15,12 @@
 //     pub textToSpeech: bool,
 // }
 use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
+use crate::dab::structs::PictureMode;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -119,6 +122,55 @@ fn set_rdk_cec(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        audioPort: String,
+        enable: bool,
+    }
+
+    let mut req_params = Param {
+        audioPort: serde_json::to_string(&source).unwrap(),
+        enable: true,
+    };
+
+    if source == AudioOutputSource::HDMI {
+        req_params.audioPort = "HDMI0".into();
+    }
+
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.DisplaySettings.setEnableAudioPort", req_params)?;
+    Ok(())
+}
+
+fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
+    match mode {
+        // STB HDR mode is always enable
+        HdrOutputMode::AlwaysHdr => Ok(()),
+        HdrOutputMode::HdrOnPlayback => Err(format!(
+            "Setting hdr mode '{}' is not supported",
+            "HdrOnPlayback"
+        )),
+        HdrOutputMode::DisableHdr => Err(format!(
+            "Setting hdr mode '{}' is not supported",
+            "DisableHdr"
+        )),
+    }
+}
+
+fn set_rdk_picture_mode(mode: PictureMode) -> Result<(), String> {
+    match mode {
+        // STB Picture mode is always Standard
+        PictureMode::Standard => Ok(()),
+        _ => Err(format!(
+            "Setting Picture mode '{}' is not supported",
+            serde_json::to_string(&mode).unwrap()
+        )
+        .to_string()),
+    }
+}
+
 fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<String, String> {
     use AudioOutputMode::*;
 
@@ -154,6 +206,21 @@ fn set_rdk_audio_output_mode(mode: AudioOutputMode) -> Result<(), String> {
     Ok(())
 }
 
+fn set_rdk_text_to_speech(val: bool) -> Result<(), String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        enabletts: bool,
+    }
+
+    let req_params = Param { enabletts: val };
+
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.TextToSpeech.enabletts", req_params)?;
+
+    Ok(())
+}
+
 pub fn process(_packet: String) -> Result<String, String> {
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
@@ -173,9 +240,17 @@ pub fn process(_packet: String) -> Result<String, String> {
             "audioOutputMode" => set_rdk_audio_output_mode(
                 serde_json::from_value::<AudioOutputMode>(value.take()).unwrap(),
             )?,
-            "audioOutputSource" | "videoInputSource" | _ => {
-                return Err(format!("Setting '{}' is not supported", key))
+            "audioOutputSource" => set_rdk_audio_output_source(
+                serde_json::from_value::<AudioOutputSource>(value.take()).unwrap(),
+            )?,
+            "hdrOutputMode" => {
+                set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
+            "pictureMode" => {
+                set_rdk_picture_mode(serde_json::from_value::<PictureMode>(value.take()).unwrap())?
+            }
+            "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
+            "videoInputSource" | _ => return Err(format!("Setting '{}' is not supported", key)),
         }
     }
 
