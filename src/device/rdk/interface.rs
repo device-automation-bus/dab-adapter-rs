@@ -4,6 +4,7 @@ use lazy_static::lazy_static;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Read;
 use std::io::Write;
 use surf::Client;
 static mut DEVICE_ADDRESS: String = String::new();
@@ -299,6 +300,21 @@ lazy_static! {
         // keycode_map.insert(String::from("KEY_GREEN"),0);
         // keycode_map.insert(String::from("KEY_YELLOW"),0);
         // keycode_map.insert(String::from("KEY_BLUE"),0);
+
+        if let Ok(json_file) = read_keymap_json("/opt/dab_platform_keymap.json") {
+        // Platform specific keymap file present in the device
+        // Json file should be in below format
+        // {
+        //     "KEY_CHANNEL_UP":104,
+        //     "KEY_CHANNEL_DOWN":109,
+        //     "KEY_MENU":408
+        // } 
+            if let Ok(new_keymap) = serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                for (key, value) in new_keymap {
+                    keycode_map.insert(key, value);
+                }
+            }
+        }
         keycode_map
     };
 }
@@ -337,4 +353,21 @@ pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
 
 pub fn get_device_memory() -> Result<u32, String> {
     Ok(0)
+}
+
+//Read key inputs from file
+
+pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
+    let mut file_content = String::new();
+    File::open(file_path)
+        .map_err(|e| {
+            println!("Error opening file: {}", e);
+            e.to_string()
+        })?
+        .read_to_string(&mut file_content)
+        .map_err(|e| {
+            println!("Error reading file: {}", e);
+            e.to_string()
+        })?;
+    Ok(file_content)
 }
