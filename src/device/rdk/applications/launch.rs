@@ -15,6 +15,7 @@ use crate::dab::structs::LaunchApplicationResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use urlencoding::decode;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -142,7 +143,12 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut param_list = vec![];
     if let Some(mut parameters) = Dab_Request.parameters.clone() {
         if parameters.len() > 0 {
-            param_list.append(&mut parameters);
+            for param in parameters.iter() {
+                println!("param = {:?}", param);
+                let decodedParam = decode(param).expect("UTF-8").into_owned();
+                println!("decodedParam = {:?}", decodedParam);
+                param_list.append(&mut parameters);
+            }
         }
     }
 
