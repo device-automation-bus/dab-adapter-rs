@@ -64,8 +64,27 @@ pub fn process(_packet: String) -> Result<String, String> {
         Ok(val2) => {
             let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
             for s in rdkresponse.result.types.iter() {
-                let app = Application { appId: s.clone() };
-                ResponseOperator.applications.push(app);
+                match s.as_str() {
+                    "YouTube" => {
+                        let app = Application {
+                            appId: ("YouTube").to_string(),
+                        };
+                        ResponseOperator.applications.push(app);
+                    }
+                    "Amazon" => {
+                        let app = Application {
+                            appId: ("PrimeVideo").to_string(),
+                        };
+                        ResponseOperator.applications.push(app);
+                    }
+                    "Netflix" => {
+                        let app = Application {
+                            appId: ("Netflix").to_string(),
+                        };
+                        ResponseOperator.applications.push(app);
+                    }
+                    &_ => println!("Out of scope of DAB2.0 Spec."),
+                }
             }
         }
 
