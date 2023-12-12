@@ -14,9 +14,41 @@ use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
-use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
+use crate::device::rdk::interface::rdk_request;
+use crate::device::rdk::interface::RdkResponse;
+use serde::Deserialize;
 use serde_json::json;
+
+pub fn get_app_state (callsign: String) -> Result<String, String> {
+    #[derive(Deserialize)]
+    #[allow(dead_code)]
+    struct State {
+        callsign: String,
+        state: String,
+        uri: String,
+    }
+
+    #[derive(Deserialize)]
+    #[allow(dead_code)]
+    struct GetState {
+        state: Vec<State>,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<GetState> = 
+        rdk_request("org.rdk.RDKShell.getState")?;
+
+    for item in rdkresponse.result.state {
+        if item.callsign == callsign {
+            match item.state.as_str() {
+                "suspended" => return Ok("BACKGROUND".to_string()),
+                _ => return Ok("FOREGROUND".to_string()),
+            }
+        }
+    }
+
+    Ok("STOPPED".to_string())
+}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -50,71 +82,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         return Err(serde_json::to_string(&Response_json).unwrap());
     }
 
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = RdkRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.RDKShell.getState".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct GetStateResult {
-        state: Vec<State>,
-        success: bool,
-    }
-
-    #[derive(Deserialize)]
-    struct RdkResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetStateResult,
-    }
-
-    #[derive(Deserialize)]
-    struct State {
-        callsign: String,
-        state: String,
-        uri: String,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
-
-            for item in rdkresponse.result.state {
-                if item.callsign != Dab_Request.appId {
-                    continue;
-                }
-                match item.state.as_str() {
-                    "suspended" => ResponseOperator.state = "BACKGROUND".to_string(),
-                    _ => ResponseOperator.state = "FOREGROUND".to_string(),
-                }
-                break;
-            }
-
-            // We couldn't find the requested appId in the list, that
-            // means the app isn't running yet
-            if ResponseOperator.state.is_empty() {
-                ResponseOperator.state = "STOPPED".to_string();
-            }
-        }
-    }
+    ResponseOperator.state = get_app_state(Dab_Request.appId)?;
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);

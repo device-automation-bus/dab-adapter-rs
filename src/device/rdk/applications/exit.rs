@@ -15,6 +15,7 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::applications::get_state::get_app_state;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -173,6 +174,8 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     // *******************************************************************
+    ResponseOperator.state = get_app_state(Dab_Request.appId)?;
+
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
