@@ -109,7 +109,6 @@ use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettings;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
-use crate::dab::structs::PictureMode;
 use crate::dab::structs::VideoInputSource;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -298,7 +297,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
 
     ResponseOperator.pictureMode = vec![
-        PictureMode::Standard,
+        // PictureMode::Standard,
         // PictureMode::Dynamic,
         // PictureMode::Movie,
         // PictureMode::Sports,

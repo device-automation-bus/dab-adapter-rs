@@ -20,7 +20,6 @@ use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
-use crate::dab::structs::PictureMode;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -196,18 +195,6 @@ fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_picture_mode(mode: PictureMode) -> Result<(), String> {
-    match mode {
-        // STB Picture mode is always Standard
-        PictureMode::Standard => Ok(()),
-        _ => Err(format!(
-            "Setting Picture mode '{}' is not supported",
-            serde_json::to_string(&mode).unwrap()
-        )
-        .to_string()),
-    }
-}
-
 fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<String, String> {
     use AudioOutputMode::*;
 
@@ -283,11 +270,10 @@ pub fn process(_packet: String) -> Result<String, String> {
             "hdrOutputMode" => {
                 set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
-            "pictureMode" => {
-                set_rdk_picture_mode(serde_json::from_value::<PictureMode>(value.take()).unwrap())?
-            }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
-            "videoInputSource" | _ => return Err(format!("Setting '{}' is not supported", key)),
+            "pictureMode" | "videoInputSource" | _ => {
+                return Err(format!("Setting '{}' is not supported", key))
+            }
         }
     }
 
