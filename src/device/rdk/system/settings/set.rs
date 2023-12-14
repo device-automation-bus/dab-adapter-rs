@@ -28,6 +28,7 @@ use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
+use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
@@ -51,21 +52,42 @@ fn set_rdk_language(language: String) -> Result<(), String> {
     Ok(())
 }
 
+pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result<String, String> {
+    let resolution_map = [
+        ([640, 480], "480"),
+        ([720, 576], "576"),
+        ([1280, 720], "720"),
+        ([1920, 1080], "1080"),
+        ([3840, 2160], "2160"),
+    ];
+    for (res_arr, res_str) in &resolution_map {
+        if resolution.width == res_arr[0] && resolution.height == res_arr[1] {
+            return Ok(format!("{}p{}", res_str, resolution.frequency));
+        }
+    }
+    Err("Unsupported video format".into())
+}
+
 fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
-    #[derive(Serialize)]
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Serialize, Deserialize)]
     struct Param {
-        framerate: String,
+        videoDisplay: String,
+        resolution: String,
+        persist: bool,
+        ignoreEdid: bool,
     }
 
     let req_params = Param {
-        framerate: format!(
-            "{}x{}x{}",
-            resolution.width, resolution.height, resolution.frequency
-        ),
+        videoDisplay: get_rdk_connected_video_displays()?,
+        resolution: convert_resolution_to_string(resolution)?,
+        persist: true,
+        ignoreEdid: true,
     };
 
     let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.FrameRate.setDisplayFrameRate", req_params)?;
+        rdk_request_with_params("org.rdk.DisplaySettings.setCurrentResolution", req_params)?;
 
     Ok(())
 }

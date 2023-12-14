@@ -81,6 +81,26 @@ fn get_rdk_resolution() -> Result<OutputResolution, String> {
     })
 }
 
+pub fn get_rdk_connected_video_displays() -> Result<String, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct ConnectedVideoDisplays {
+        connectedVideoDisplays: Vec<String>,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<ConnectedVideoDisplays> =
+        rdk_request("org.rdk.DisplaySettings.getConnectedVideoDisplays")?;
+
+    rdkresponse
+        .result
+        .connectedVideoDisplays
+        .get(0)
+        .cloned()
+        .ok_or("Device doesn't have any connected video port.".into())
+}
+
 pub fn get_rdk_hdr_current_setting() -> Result<HdrOutputMode, String> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
