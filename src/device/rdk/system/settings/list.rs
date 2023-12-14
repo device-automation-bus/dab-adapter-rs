@@ -169,6 +169,30 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     Ok(res)
 }
 
+pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetHDRSupport {
+        standards: Vec<String>,
+        supportsHDR: bool,
+        success: bool,
+    }
+
+    let settop_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getSettopHDRSupport")?;
+    let tv_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getTvHDRSupport")?;
+
+    let mut response = vec![HdrOutputMode::DisableHdr];
+
+    if settop_hdr_response.result.supportsHDR & tv_hdr_response.result.supportsHDR {
+        response.insert(0, HdrOutputMode::AlwaysHdr);
+    }
+
+    Ok(response)
+}
+
 pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
@@ -263,11 +287,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.textToSpeech = true;
 
-    ResponseOperator.hdrOutputMode = vec![
-        HdrOutputMode::AlwaysHdr,
-        HdrOutputMode::HdrOnPlayback,
-        // HdrOutputMode::DisableHdr,
-    ];
+    ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 
     ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
 
@@ -288,17 +308,6 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
     ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
     ResponseOperator.audioOutputSource = get_rdk_supported_audio_source()?;
-
-    // vec![
-    //     AudioOutputSource::NativeSpeaker,
-    //     AudioOutputSource::Arc,
-    //     AudioOutputSource::EArc,
-    //     AudioOutputSource::Optical,
-    //     AudioOutputSource::Aux,
-    //     AudioOutputSource::Bluetooth,
-    //     AudioOutputSource::Auto,
-    //     AudioOutputSource::HDMI,
-    // ];
     ResponseOperator.videoInputSource = vec![
         //VideoInputSource::Tuner,
         // VideoInputSource::HDMI1,

@@ -145,18 +145,33 @@ fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> 
 }
 
 fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize, Default)]
+    struct Param {
+        hdr_mode: bool,
+    }
+
+    let mut req_params = Param::default();
+
     match mode {
         // STB HDR mode is always enable
-        HdrOutputMode::AlwaysHdr => Ok(()),
-        HdrOutputMode::HdrOnPlayback => Err(format!(
-            "Setting hdr mode '{}' is not supported",
-            "HdrOnPlayback"
-        )),
-        HdrOutputMode::DisableHdr => Err(format!(
-            "Setting hdr mode '{}' is not supported",
-            "DisableHdr"
-        )),
+        HdrOutputMode::AlwaysHdr => {
+            req_params.hdr_mode = true;
+        }
+        HdrOutputMode::HdrOnPlayback => {
+            return Err(format!(
+                "Setting hdr mode '{}' is not supported",
+                "HdrOnPlayback"
+            ))
+        }
+        HdrOutputMode::DisableHdr => {
+            req_params.hdr_mode = false;
+        }
     }
+
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.DisplaySettings.setForceHDRMode", req_params)?;
+    Ok(())
 }
 
 fn set_rdk_picture_mode(mode: PictureMode) -> Result<(), String> {
