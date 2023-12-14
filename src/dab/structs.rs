@@ -236,18 +236,18 @@ pub struct OutputResolution {
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum MatchContentFrameRate {
+    #[default]
     EnabledAlways,
     EnabledSeamlessOnly,
-    #[default]
     Disabled,
 }
 
 #[allow(dead_code)]
 #[derive(Default, Serialize, Deserialize)]
 pub enum HdrOutputMode {
-    #[default]
     AlwaysHdr,
     HdrOnPlayback,
+    #[default]
     DisableHdr,
 }
 

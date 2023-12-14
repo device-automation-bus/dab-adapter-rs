@@ -122,6 +122,7 @@ use std::collections::HashMap;
 
 use super::get::get_rdk_cec;
 use super::get::get_rdk_mute;
+use super::get::get_rdk_tts;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     #[allow(non_snake_case)]
@@ -284,7 +285,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.mute = get_rdk_mute()?;
 
-    ResponseOperator.textToSpeech = true;
+    ResponseOperator.textToSpeech = get_rdk_tts()?;
 
     ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 

@@ -195,6 +195,21 @@ pub fn get_rdk_mute() -> Result<bool, String> {
     Ok(rdkresponse.result.muted)
 }
 
+pub fn get_rdk_tts() -> Result<bool, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct TtsGetEnabled {
+        isenabled: bool,
+        TTS_Status: u16,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<TtsGetEnabled> = rdk_request("org.rdk.TextToSpeech.isttsenabled")?;
+
+    Ok(rdkresponse.result.isenabled)
+}
+
 pub fn get_rdk_cec() -> Result<bool, String> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -280,6 +295,8 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.hdrOutputMode = get_rdk_hdr_current_setting()?;
     response.audioOutputMode = get_rdk_audio_output_mode()?;
     response.audioOutputSource = get_rdk_connected_audio_source()?;
+    response.lowLatencyMode = true;
+    response.textToSpeech = get_rdk_tts()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);
