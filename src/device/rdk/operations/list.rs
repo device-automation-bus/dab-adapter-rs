@@ -29,9 +29,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator
         .operations
         .push("applications/launch".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("applications/launch-with-content".to_string());
+    ResponseOperator
+        .operations
+        .push("applications/launch-with-content".to_string());
     ResponseOperator
         .operations
         .push("applications/get-state".to_string());
@@ -85,15 +85,15 @@ pub fn process(_packet: String) -> Result<String, String> {
         .operations
         .push("voice/send-text".to_string());
     ResponseOperator.operations.push("version".to_string());
-    ResponseOperator
-        .operations
-        .push("system/language/list".to_string());
-    ResponseOperator
-        .operations
-        .push("system/language/get".to_string());
-    ResponseOperator
-        .operations
-        .push("system/language/set".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/language/list".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/language/get".to_string());
+    // ResponseOperator
+    //     .operations
+    //     .push("system/language/set".to_string());
     ResponseOperator.operations.shrink_to_fit();
 
     // *******************************************************************
