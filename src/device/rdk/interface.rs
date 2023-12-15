@@ -17,21 +17,13 @@ pub fn init(device_ip: &str, debug: bool) {
     }
 }
 
-pub fn get_device_id() -> String {
+pub fn get_device_id() -> Result<String, String> {
     let json_string =
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
-    let response = http_post(json_string);
-    match response {
-        Ok(r) => {
-            let response: serde_json::Value = serde_json::from_str(&r).unwrap();
-            let device_id = response["result"]["estb_mac"].as_str().unwrap();
-            let dab_device_id = device_id.replace(":", "").to_string();
-            return dab_device_id;
-        }
-        Err(err) => {
-            return err.to_string();
-        }
-    }
+    let response = http_post(json_string)?;
+    let rdkresponse: serde_json::Value = serde_json::from_str(&response).unwrap();
+    let device_id = rdkresponse["result"]["estb_mac"].as_str().ok_or("RDK Error: org.rdk.System.getDeviceInfo.result.estb_mac not found")?;
+    Ok(device_id.replace(":", "").to_string())
 }
 
 pub fn http_download(url: String) -> Result<(), String> {

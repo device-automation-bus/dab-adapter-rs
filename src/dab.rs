@@ -24,7 +24,13 @@ use device_telemetry::DeviceTelemetry;
 
 pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     // Get the device ID
-    let device_id = hw_specific::interface::get_device_id();
+    let device_id = match hw_specific::interface::get_device_id(){
+        Ok(id) => id,
+        Err(e) => {
+            println!("RDK: Error getting device ID: {}", e);
+            "unknown".to_string()
+        }
+    };
     println!("DAB Device ID: {}", device_id);
 
     // Connect to the MQTT broker
