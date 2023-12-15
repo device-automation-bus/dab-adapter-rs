@@ -381,7 +381,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ResponseOperator.chipset = Deviceidentification.result.chipset;
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
-    ResponseOperator.deviceId = get_device_id();
+    ResponseOperator.deviceId = get_device_id()?;
 
     if ConnectedVideoDisplays.result.connectedVideoDisplays[0].contains("HDMI") {
         ResponseOperator.displayType = DisplayType::External;
