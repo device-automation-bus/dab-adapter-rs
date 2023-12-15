@@ -20,7 +20,6 @@ use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
-use crate::dab::structs::PictureMode;
 #[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -28,6 +27,7 @@ use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
+use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
@@ -51,21 +51,42 @@ fn set_rdk_language(language: String) -> Result<(), String> {
     Ok(())
 }
 
+pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result<String, String> {
+    let resolution_map = [
+        ([640, 480], "480"),
+        ([720, 576], "576"),
+        ([1280, 720], "720"),
+        ([1920, 1080], "1080"),
+        ([3840, 2160], "2160"),
+    ];
+    for (res_arr, res_str) in &resolution_map {
+        if resolution.width == res_arr[0] && resolution.height == res_arr[1] {
+            return Ok(format!("{}p{}", res_str, resolution.frequency));
+        }
+    }
+    Err("Unsupported video format".into())
+}
+
 fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
-    #[derive(Serialize)]
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Serialize, Deserialize)]
     struct Param {
-        framerate: String,
+        videoDisplay: String,
+        resolution: String,
+        persist: bool,
+        ignoreEdid: bool,
     }
 
     let req_params = Param {
-        framerate: format!(
-            "{}x{}x{}",
-            resolution.width, resolution.height, resolution.frequency
-        ),
+        videoDisplay: get_rdk_connected_video_displays()?,
+        resolution: convert_resolution_to_string(resolution)?,
+        persist: true,
+        ignoreEdid: true,
     };
 
     let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.FrameRate.setDisplayFrameRate", req_params)?;
+        rdk_request_with_params("org.rdk.DisplaySettings.setCurrentResolution", req_params)?;
 
     Ok(())
 }
@@ -145,30 +166,33 @@ fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> 
 }
 
 fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
+    #[allow(non_snake_case)]
+    #[derive(Serialize, Default)]
+    struct Param {
+        hdr_mode: bool,
+    }
+
+    let mut req_params = Param::default();
+
     match mode {
         // STB HDR mode is always enable
-        HdrOutputMode::AlwaysHdr => Ok(()),
-        HdrOutputMode::HdrOnPlayback => Err(format!(
-            "Setting hdr mode '{}' is not supported",
-            "HdrOnPlayback"
-        )),
-        HdrOutputMode::DisableHdr => Err(format!(
-            "Setting hdr mode '{}' is not supported",
-            "DisableHdr"
-        )),
+        HdrOutputMode::AlwaysHdr => {
+            req_params.hdr_mode = true;
+        }
+        HdrOutputMode::HdrOnPlayback => {
+            return Err(format!(
+                "Setting hdr mode '{}' is not supported",
+                "HdrOnPlayback"
+            ))
+        }
+        HdrOutputMode::DisableHdr => {
+            req_params.hdr_mode = false;
+        }
     }
-}
 
-fn set_rdk_picture_mode(mode: PictureMode) -> Result<(), String> {
-    match mode {
-        // STB Picture mode is always Standard
-        PictureMode::Standard => Ok(()),
-        _ => Err(format!(
-            "Setting Picture mode '{}' is not supported",
-            serde_json::to_string(&mode).unwrap()
-        )
-        .to_string()),
-    }
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.DisplaySettings.setForceHDRMode", req_params)?;
+    Ok(())
 }
 
 fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<String, String> {
@@ -246,11 +270,10 @@ pub fn process(_packet: String) -> Result<String, String> {
             "hdrOutputMode" => {
                 set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
-            "pictureMode" => {
-                set_rdk_picture_mode(serde_json::from_value::<PictureMode>(value.take()).unwrap())?
-            }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
-            "videoInputSource" | _ => return Err(format!("Setting '{}' is not supported", key)),
+            "pictureMode" | "videoInputSource" | _ => {
+                return Err(format!("Setting '{}' is not supported", key))
+            }
         }
     }
 
