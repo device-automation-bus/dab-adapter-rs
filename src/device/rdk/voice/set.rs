@@ -12,8 +12,8 @@
 
 use super::voice_functions::configureVoice;
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SetVoiceSystemRequest;
 use crate::dab::structs::SetVoiceSystemResponse;
 use serde_json::json;

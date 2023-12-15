@@ -9,7 +9,6 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::Version;
 #[allow(unused_imports)]
 use crate::dab::structs::VersionRequest;

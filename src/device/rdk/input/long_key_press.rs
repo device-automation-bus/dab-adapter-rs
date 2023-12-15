@@ -8,7 +8,6 @@
 // #[allow(non_snake_case)]
 // #[derive(Default,Serialize,Deserialize)]
 // pub struct LongKeyPressResponse {}
-
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::LongKeyPressRequest;
 use crate::dab::structs::LongKeyPressResponse;

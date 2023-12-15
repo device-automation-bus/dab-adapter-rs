@@ -9,8 +9,8 @@
 // pub struct KeyPressResponse {}
 
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::KeyPressRequest;
 use crate::dab::structs::KeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
@@ -100,18 +100,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        _ => (),
-    }
+    http_post(json_string)?;
 
     // *******************************************************************
     let mut ResponseOperator_json = json!(ResponseOperator);

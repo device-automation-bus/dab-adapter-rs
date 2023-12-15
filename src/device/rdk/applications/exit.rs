@@ -10,8 +10,8 @@
 // pub state: String,
 // }
 
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
@@ -110,18 +110,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
-    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response).unwrap();
     let mut app_created = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
@@ -141,16 +132,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
 
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
-
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
+            http_post(json_string)?;
         } else {
             // ****************** org.rdk.RDKShell.destroy ********************
             let request = RdkRequest {
@@ -161,16 +143,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
 
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
-
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
+            http_post(json_string)?;
         }
     }
 

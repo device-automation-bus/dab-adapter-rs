@@ -15,7 +15,6 @@
 // }
 
 use crate::dab::structs::Application;
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::ListApplicationsResponse;
 #[allow(unused_imports)]
 use crate::device::rdk::interface::http_post;
@@ -58,42 +57,30 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
-    match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-            for s in rdkresponse.result.types.iter() {
-                match s.as_str() {
-                    "YouTube" => {
-                        let app = Application {
-                            appId: ("YouTube").to_string(),
-                        };
-                        ResponseOperator.applications.push(app);
-                    }
-                    "Amazon" => {
-                        let app = Application {
-                            appId: ("PrimeVideo").to_string(),
-                        };
-                        ResponseOperator.applications.push(app);
-                    }
-                    "Netflix" => {
-                        let app = Application {
-                            appId: ("Netflix").to_string(),
-                        };
-                        ResponseOperator.applications.push(app);
-                    }
-                    &_ => println!("Out of scope of DAB2.0 Spec."),
-                }
+    let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
+    for s in rdkresponse.result.types.iter() {
+        match s.as_str() {
+            "YouTube" => {
+                let app = Application {
+                    appId: ("YouTube").to_string(),
+                };
+                ResponseOperator.applications.push(app);
             }
-        }
-
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
+            "Amazon" => {
+                let app = Application {
+                    appId: ("PrimeVideo").to_string(),
+                };
+                ResponseOperator.applications.push(app);
+            }
+            "Netflix" => {
+                let app = Application {
+                    appId: ("Netflix").to_string(),
+                };
+                ResponseOperator.applications.push(app);
+            }
+            &_ => println!("Out of scope of DAB2.0 Spec."),
         }
     }
 

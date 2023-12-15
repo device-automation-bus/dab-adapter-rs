@@ -1,5 +1,4 @@
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::SendTextRequest;
 use crate::device::rdk::interface::RdkResponseSimple;
