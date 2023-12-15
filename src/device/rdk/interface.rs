@@ -310,7 +310,7 @@ lazy_static! {
         //     "KEY_MENU":408
         // }
             if let Ok(new_keymap) = serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                println!("Imported platform specified keymap /opt/dab_platform_keymap.json.")
+                println!("Imported platform specified keymap /opt/dab_platform_keymap.json.");
                 for (key, value) in new_keymap {
                     keycode_map.insert(key, value);
                 }
