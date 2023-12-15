@@ -193,7 +193,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), String> {
 }
 
 // RDK's voice stack now supports PCM S16LE 16K upto 256kbps
-pub fn require_audio_format_conversion(audio_file_in: String) -> bool {
+pub fn is_supported_audio_format(audio_file_in: String) -> bool {
     let mut samplerate = false;
     let mut bitrate = false;
     let mut codec = false;

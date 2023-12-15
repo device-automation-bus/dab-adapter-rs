@@ -56,8 +56,8 @@ pub fn process(packet: String) -> Result<String, String> {
         .save_to_file(&Dab_Request.requestText, "/tmp/tts.mp3")
         .expect("Failed to save to file");
 
-    if convert_audio_to_pcms16le16256("/tmp/tts.wav".into()) {
-        sendVoiceCommand("/tmp/tts.wav".into())?;
+    if convert_audio_to_pcms16le16256("/tmp/tts.mp3".into()) {
+        sendVoiceCommand("/tmp/tts.mp3".into())?;
         return Ok(serde_json::to_string(&json!({"status": 200})).unwrap());
     }
     Ok(
