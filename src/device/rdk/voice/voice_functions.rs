@@ -222,7 +222,7 @@ pub fn is_supported_audio_format(audio_file_in: String) -> bool {
 }
 
 pub fn convert_audio_to_pcms16le16256(audio_file: String) -> bool {
-    let location = "lcoation=".to_owned() + audio_file.as_str();
+    let location = "location=".to_owned() + audio_file.as_str();
 
     let mut child = Command::new("gst-launch-1.0")
         .arg("-q")
