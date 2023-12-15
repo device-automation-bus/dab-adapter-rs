@@ -34,14 +34,16 @@ pub fn get_device_id() -> String {
     }
 }
 
-pub fn http_download(url: String) -> Result<(), String> {
+pub fn http_download(url: String, mut file_name: String) -> Result<(), String> {
     let client = Client::new();
-
+    if file_name.is_empty() {
+        file_name = "/tmp/tts.wav".into();
+    }
     let response = block_on(async { client.get(url).await });
 
     match response {
         Ok(mut r) => {
-            let mut file = File::create("/tmp/tts.wav").unwrap();
+            let mut file = File::create(file_name).unwrap();
             let body = block_on(r.body_bytes()).unwrap();
             file.write_all(&body).unwrap();
             return Ok(());

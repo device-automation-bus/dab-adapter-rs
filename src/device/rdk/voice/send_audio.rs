@@ -13,6 +13,8 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendAudioRequest;
 use serde_json::json;
 
+use super::voice_functions::convert_audio_to_pcms16le16256;
+use super::voice_functions::require_audio_format_conversion;
 use super::voice_functions::sendVoiceCommand;
 use crate::device::rdk::interface::http_download;
 
@@ -41,9 +43,14 @@ pub fn process(packet: String) -> Result<String, String> {
                 let Response_json = json!(response);
                 return Err(serde_json::to_string(&Response_json).unwrap());
             }
-            let result = http_download(DabRequest.fileLocation);
+            let result = http_download(DabRequest.fileLocation, "/tmp/tts_download.wav".into());
             match result {
-                Ok(_) => {}
+                Ok(_) => {
+                    // RDK Currently supports PCM S16LE 16K 256kbps. Convert on mismatch.
+                    if require_audio_format_conversion("/tmp/tts.wav".into()) {
+                        convert_audio_to_pcms16le16256("/tmp/tts.wav".into());
+                    }
+                }
                 Err(e) => {
                     let response = ErrorResponse {
                         status: 400,
@@ -56,7 +63,7 @@ pub fn process(packet: String) -> Result<String, String> {
         }
     }
 
-    sendVoiceCommand()?;
+    sendVoiceCommand("/tmp/tts.wav".into())?;
 
     Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
 }

@@ -13,13 +13,13 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendTextRequest;
 use serde_json::json;
 
+use super::voice_functions::convert_audio_to_pcms16le16256;
 use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(packet: String) -> Result<String, String> {
-    use std::process::Command;
     use tts_rust::{languages::Languages, tts::GTTSClient};
 
     let IncomingMessage = serde_json::from_str(&packet);
@@ -56,29 +56,12 @@ pub fn process(packet: String) -> Result<String, String> {
         .save_to_file(&Dab_Request.requestText, "/tmp/tts.mp3")
         .expect("Failed to save to file");
 
-    let mut child = Command::new("gst-launch-1.0")
-        .arg("-q")
-        .arg("filesrc")
-        .arg("location=/tmp/tts.mp3")
-        .arg("!")
-        .arg("decodebin")
-        .arg("!")
-        .arg("audioconvert")
-        .arg("!")
-        .arg("audioresample")
-        .arg("!")
-        .arg("audio/x-raw,rate=16000,channels=1,format=S16LE")
-        .arg("!")
-        .arg("wavenc")
-        .arg("!")
-        .arg("filesink")
-        .arg("location=/tmp/tts.wav")
-        .spawn()
-        .expect("Failed to execute command");
-
-    child.wait().expect("failed to wait for child process");
-
-    sendVoiceCommand()?;
-
-    Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
+    if convert_audio_to_pcms16le16256("/tmp/tts.wav".into()) {
+        sendVoiceCommand("/tmp/tts.wav".into())?;
+        return Ok(serde_json::to_string(&json!({"status": 200})).unwrap());
+    }
+    Ok(
+        serde_json::to_string(&json!({"status": 500, "error":"Audio format conversion failed."}))
+            .unwrap(),
+    )
 }

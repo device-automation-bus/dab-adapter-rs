@@ -5,6 +5,8 @@ use crate::dab::structs::SendTextRequest;
 use crate::device::rdk::interface::RdkResponseSimple;
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::Serialize;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
 
 pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     let adpcm_step_table: [i16; 89] = [
@@ -169,7 +171,7 @@ fn enable_ptt() -> Result<(), String> {
 }
 
 #[allow(non_snake_case)]
-pub fn sendVoiceCommand() -> Result<(), String> {
+pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), String> {
     enable_ptt()?;
 
     #[derive(Serialize)]
@@ -180,7 +182,7 @@ pub fn sendVoiceCommand() -> Result<(), String> {
     }
 
     let req_params = Param {
-        audio_file: "/tmp/tts.wav".into(),
+        audio_file: audio_file_in,
         request_type: "ptt_audio_file".into(),
     };
 
@@ -188,4 +190,61 @@ pub fn sendVoiceCommand() -> Result<(), String> {
         rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
 
     Ok(())
+}
+
+// RDK's voice stack now supports PCM S16LE 16K upto 256kbps
+pub fn require_audio_format_conversion(audio_file_in: String) -> bool {
+    let mut samplerate = false;
+    let mut bitrate = false;
+    let mut codec = false;
+    let mut format_check = Command::new("gst-discoverer-1.0")
+        .arg("-v")
+        .arg(audio_file_in.clone())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let stdout_resp = format_check.stdout.take().unwrap();
+    let lines = BufReader::new(stdout_resp).lines();
+    for line in lines {
+        let line_string: String = line.unwrap();
+        match line_string {
+            s if s.contains("Sample rate: 16000") => samplerate = true,
+            s if s.contains("Bitrate: 256000") => bitrate = true,
+            s if s.contains("audio codec: Uncompressed 16-bit PCM audio") => codec = true,
+            _ => {}
+        }
+    }
+    if !(samplerate && bitrate && codec) {
+        println!("Conversion required.");
+        return true;
+    }
+    return false;
+}
+
+pub fn convert_audio_to_pcms16le16256(audio_file: String) -> bool {
+    let location = "lcoation=".to_owned() + audio_file.as_str();
+
+    let mut child = Command::new("gst-launch-1.0")
+        .arg("-q")
+        .arg("filesrc")
+        .arg(location.clone())
+        .arg("!")
+        .arg("decodebin")
+        .arg("!")
+        .arg("audioconvert")
+        .arg("!")
+        .arg("audioresample")
+        .arg("!")
+        .arg("audio/x-raw,rate=16000,channels=1,format=S16LE")
+        .arg("!")
+        .arg("wavenc")
+        .arg("!")
+        .arg("filesink")
+        .arg(location.clone())
+        .spawn()
+        .expect("Failed to execute command");
+    child
+        .wait()
+        .expect("failed to wait for child process")
+        .success()
 }
