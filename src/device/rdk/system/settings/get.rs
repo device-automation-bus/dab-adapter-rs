@@ -28,6 +28,7 @@ use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
+use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -78,6 +79,48 @@ fn get_rdk_resolution() -> Result<OutputResolution, String> {
         height: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
         frequency: dimensions.next().unwrap().parse::<i32>().unwrap() as f32,
     })
+}
+
+pub fn get_rdk_connected_video_displays() -> Result<String, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct ConnectedVideoDisplays {
+        connectedVideoDisplays: Vec<String>,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<ConnectedVideoDisplays> =
+        rdk_request("org.rdk.DisplaySettings.getConnectedVideoDisplays")?;
+
+    rdkresponse
+        .result
+        .connectedVideoDisplays
+        .get(0)
+        .cloned()
+        .ok_or("Device doesn't have any connected video port.".into())
+}
+
+pub fn get_rdk_hdr_current_setting() -> Result<HdrOutputMode, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetHDRSupport {
+        standards: Vec<String>,
+        supportsHDR: bool,
+        success: bool,
+    }
+
+    let settop_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getSettopHDRSupport")?;
+    let tv_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getTvHDRSupport")?;
+
+    if settop_hdr_response.result.supportsHDR & tv_hdr_response.result.supportsHDR {
+        Ok(HdrOutputMode::AlwaysHdr)
+    } else {
+        Ok(HdrOutputMode::DisableHdr)
+    }
 }
 
 pub fn get_rdk_audio_port() -> Result<String, String> {
@@ -150,6 +193,21 @@ pub fn get_rdk_mute() -> Result<bool, String> {
         rdk_request_with_params("org.rdk.DisplaySettings.getMuted", req_params)?;
 
     Ok(rdkresponse.result.muted)
+}
+
+pub fn get_rdk_tts() -> Result<bool, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct TtsGetEnabled {
+        isenabled: bool,
+        TTS_Status: u16,
+        success: bool,
+    }
+
+    let rdkresponse: RdkResponse<TtsGetEnabled> = rdk_request("org.rdk.TextToSpeech.isttsenabled")?;
+
+    Ok(rdkresponse.result.isenabled)
 }
 
 pub fn get_rdk_cec() -> Result<bool, String> {
@@ -234,8 +292,11 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.audioVolume = get_rdk_audio_volume()?;
     response.mute = get_rdk_mute()?;
     response.cec = get_rdk_cec()?;
+    response.hdrOutputMode = get_rdk_hdr_current_setting()?;
     response.audioOutputMode = get_rdk_audio_output_mode()?;
     response.audioOutputSource = get_rdk_connected_audio_source()?;
+    response.lowLatencyMode = true;
+    response.textToSpeech = get_rdk_tts()?;
 
     let mut response_json = json!(response);
     response_json["status"] = json!(200);

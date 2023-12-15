@@ -109,7 +109,6 @@ use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettings;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
-use crate::dab::structs::PictureMode;
 use crate::dab::structs::VideoInputSource;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
@@ -123,6 +122,7 @@ use std::collections::HashMap;
 
 use super::get::get_rdk_cec;
 use super::get::get_rdk_mute;
+use super::get::get_rdk_tts;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     #[allow(non_snake_case)]
@@ -167,6 +167,30 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
         .collect();
 
     Ok(res)
+}
+
+pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, String> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct GetHDRSupport {
+        standards: Vec<String>,
+        supportsHDR: bool,
+        success: bool,
+    }
+
+    let settop_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getSettopHDRSupport")?;
+    let tv_hdr_response: RdkResponse<GetHDRSupport> =
+        rdk_request("org.rdk.DisplaySettings.getTvHDRSupport")?;
+
+    let mut response = vec![HdrOutputMode::DisableHdr];
+
+    if settop_hdr_response.result.supportsHDR & tv_hdr_response.result.supportsHDR {
+        response.insert(0, HdrOutputMode::AlwaysHdr);
+    }
+
+    Ok(response)
 }
 
 pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String> {
@@ -261,13 +285,9 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.mute = get_rdk_mute()?;
 
-    ResponseOperator.textToSpeech = true;
+    ResponseOperator.textToSpeech = get_rdk_tts()?;
 
-    ResponseOperator.hdrOutputMode = vec![
-        HdrOutputMode::AlwaysHdr,
-        HdrOutputMode::HdrOnPlayback,
-        // HdrOutputMode::DisableHdr,
-    ];
+    ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 
     ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
 
@@ -278,7 +298,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
 
     ResponseOperator.pictureMode = vec![
-        PictureMode::Standard,
+        // PictureMode::Standard,
         // PictureMode::Dynamic,
         // PictureMode::Movie,
         // PictureMode::Sports,
@@ -288,17 +308,6 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
     ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
     ResponseOperator.audioOutputSource = get_rdk_supported_audio_source()?;
-
-    // vec![
-    //     AudioOutputSource::NativeSpeaker,
-    //     AudioOutputSource::Arc,
-    //     AudioOutputSource::EArc,
-    //     AudioOutputSource::Optical,
-    //     AudioOutputSource::Aux,
-    //     AudioOutputSource::Bluetooth,
-    //     AudioOutputSource::Auto,
-    //     AudioOutputSource::HDMI,
-    // ];
     ResponseOperator.videoInputSource = vec![
         //VideoInputSource::Tuner,
         // VideoInputSource::HDMI1,
