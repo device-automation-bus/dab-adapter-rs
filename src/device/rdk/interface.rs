@@ -308,8 +308,9 @@ lazy_static! {
         //     "KEY_CHANNEL_UP":104,
         //     "KEY_CHANNEL_DOWN":109,
         //     "KEY_MENU":408
-        // } 
+        // }
             if let Ok(new_keymap) = serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                println!("Imported platform specified keymap /opt/dab_platform_keymap.json.");
                 for (key, value) in new_keymap {
                     keycode_map.insert(key, value);
                 }
@@ -361,12 +362,14 @@ pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
     let mut file_content = String::new();
     File::open(file_path)
         .map_err(|e| {
-            println!("Error opening file: {}", e);
+            if e.kind() != std::io::ErrorKind::NotFound {
+                println!("Error opening {}: {}", file_path, e);
+            }
             e.to_string()
         })?
         .read_to_string(&mut file_content)
         .map_err(|e| {
-            println!("Error reading file: {}", e);
+            println!("Error reading {}: {}", file_path, e);
             e.to_string()
         })?;
     Ok(file_content)
