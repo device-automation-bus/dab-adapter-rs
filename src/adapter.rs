@@ -121,6 +121,8 @@ pub fn main() {
     if opt.version {
         display_version();
         return;
+    } else if let Some(hash) = built_info::GIT_COMMIT_HASH {
+        println!("DAB<->RDK Adapter [{}]", hash);
     }
 
     // Initialize the device
