@@ -24,7 +24,6 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;

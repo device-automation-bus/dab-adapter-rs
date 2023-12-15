@@ -9,7 +9,6 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::KeyList;
 #[allow(unused_imports)]
 use crate::dab::structs::KeyListRequest;

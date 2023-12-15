@@ -10,8 +10,8 @@
 // pub state: String,
 // }
 
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
+use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
 use crate::device::rdk::interface::rdk_request;

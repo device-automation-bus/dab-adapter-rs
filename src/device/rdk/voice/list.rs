@@ -16,7 +16,6 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::ListVoiceSystemsResponse;
 
@@ -72,30 +71,20 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
-    match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-            // Current Alexa solution is PTT & starts with protocol 'avs://'
-            if rdkresponse.result.urlPtt.to_string().contains("avs:") {
-                let mut avsEnabled = false;
-                if rdkresponse.result.ptt.status.to_string().contains("ready") {
-                    avsEnabled = true;
-                }
-                let avs = VoiceSystem {
-                    name: ("AmazonAlexa").to_string(),
-                    enabled: avsEnabled,
-                };
-                ResponseOperator.voiceSystems.push(avs);
-            }
+    let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
+    // Current Alexa solution is PTT & starts with protocol 'avs://'
+    if rdkresponse.result.urlPtt.to_string().contains("avs:") {
+        let mut avsEnabled = false;
+        if rdkresponse.result.ptt.status.to_string().contains("ready") {
+            avsEnabled = true;
         }
-
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
+        let avs = VoiceSystem {
+            name: ("AmazonAlexa").to_string(),
+            enabled: avsEnabled,
+        };
+        ResponseOperator.voiceSystems.push(avs);
     }
 
     // *******************************************************************

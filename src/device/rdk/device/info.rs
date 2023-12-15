@@ -46,8 +46,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 #[allow(unused_imports)]
 use crate::dab::structs::DeviceInfoRequest;
-use crate::dab::structs::DisplayType;
 use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DisplayType;
 use crate::dab::structs::GetDeviceInformationResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::NetworkInterface;
@@ -92,21 +92,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
+    let response = http_post(json_string)?;
     let ConnectedVideoDisplays: GetConnectedVideoDisplaysResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            ConnectedVideoDisplays = serde_json::from_str(&response).unwrap();
-        }
-    }
+    ConnectedVideoDisplays = serde_json::from_str(&response).unwrap();
     //#########org.rdk.System.getDeviceInfo#########
     #[derive(Serialize)]
     struct GetDeviceInfoRequest {
@@ -148,21 +136,10 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
     let DeviceInfo: GetDeviceInfoResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            DeviceInfo = serde_json::from_str(&response).unwrap();
-        }
-    }
+    DeviceInfo = serde_json::from_str(&response).unwrap();
 
     //#########org.rdk.RDKShell.getScreenResolution#########
     #[derive(Serialize)]
@@ -193,21 +170,10 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
     let ScreenResolution: GetScreenResolutionResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            ScreenResolution = serde_json::from_str(&response).unwrap();
-        }
-    }
+    ScreenResolution = serde_json::from_str(&response).unwrap();
 
     //#########org.rdk.Network.getInterfaces#########
     #[derive(Serialize)]
@@ -244,21 +210,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
+    let response = http_post(json_string)?;
     let mut Interfaces: GetInterfacesResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            Interfaces = serde_json::from_str(&response).unwrap();
-        }
-    }
+    Interfaces = serde_json::from_str(&response).unwrap();
 
     //#########DeviceInfo.systeminfo#########
     #[derive(Serialize)]
@@ -293,21 +247,10 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
+    let response = http_post(json_string)?;
     let Systeminfo: SysteminfoResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            Systeminfo = serde_json::from_str(&response).unwrap();
-        }
-    }
+    Systeminfo = serde_json::from_str(&response).unwrap();
+    
     //#########DeviceIdentification.1.deviceidentification#########
 
     #[derive(Serialize)]
@@ -338,21 +281,9 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
+    let response = http_post(json_string)?;
     let Deviceidentification: DeviceidentificationResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            Deviceidentification = serde_json::from_str(&response).unwrap();
-        }
-    }
+    Deviceidentification = serde_json::from_str(&response).unwrap();
     //######### Correlate Fields #########
 
     for iface in Interfaces.result.interfaces.iter_mut() {
@@ -416,31 +347,21 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
 
         let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
+        let response = http_post(json_string)?;
 
-        match response_json {
-            Err(err) => {
-                let error = ErrorResponse {
-                    status: 500,
-                    error: err,
-                };
-                return Err(serde_json::to_string(&error).unwrap());
-            }
-            Ok(response) => {
-                let IPSettings: GetIPSettingsResponse = serde_json::from_str(&response).unwrap();
-                if let Some(ipaddr) = IPSettings.result.ipaddr {
-                    interface.ipAddress = ipaddr;
-                }
+        let IPSettings: GetIPSettingsResponse = serde_json::from_str(&response).unwrap();
+        if let Some(ipaddr) = IPSettings.result.ipaddr {
+            interface.ipAddress = ipaddr;
+        }
 
-                for dnsparam in [ IPSettings.result.primarydns, IPSettings.result.secondarydns ] {
-                    if let Some(dns) = dnsparam {
-                        if !dns.is_empty() {
-                            interface.dns.push(dns)
-                        }
-                    }
+        for dnsparam in [ IPSettings.result.primarydns, IPSettings.result.secondarydns ] {
+            if let Some(dns) = dnsparam {
+                if !dns.is_empty() {
+                    interface.dns.push(dns)
                 }
             }
         }
+
         ResponseOperator.networkInterfaces.push(interface);
     }
 

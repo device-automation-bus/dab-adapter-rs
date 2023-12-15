@@ -9,7 +9,6 @@
 // }
 
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::HealthCheckRequest;
 use crate::dab::structs::HealthCheckResponse;

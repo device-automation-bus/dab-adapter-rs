@@ -1,4 +1,4 @@
-use crate::dab::structs::{AudioOutputMode, ErrorResponse};
+use crate::dab::structs::AudioOutputMode;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -124,18 +124,8 @@ pub fn service_deactivate(service: String) -> Result<(), String> {
     struct ControllerDeactivateResult {}
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string.clone());
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => return Ok(()),
-    }
+    http_post(json_string.clone())?;
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -197,9 +187,9 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
         params,
     };
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string)?;
+    let response = http_post(json_string)?;
 
-    let val: serde_json::Value = match serde_json::from_str(&response_json) {
+    let val: serde_json::Value = match serde_json::from_str(&response) {
         Ok(val) => val,
         Err(e) => return Err(e.to_string()),
     };
@@ -248,18 +238,8 @@ pub fn service_activate(service: String) -> Result<(), String> {
     struct ControllerActivateResult {}
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string.clone());
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => return Ok(()),
-    }
+    http_post(json_string.clone())?;
+    Ok(())
 }
 
 pub fn service_is_available(service: &str) -> Result<bool, String> {

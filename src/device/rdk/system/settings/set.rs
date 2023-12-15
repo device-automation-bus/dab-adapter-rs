@@ -17,7 +17,6 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
 #[allow(unused_imports)]
