@@ -83,6 +83,7 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
 
                 // Process the message
                 let response = if function_topic == "dab/discovery" {
+                    println!("OK: {}", function_topic);
                     serde_json::to_string(&DiscoveryResponse {
                         status: 200,
                         ip: ip_address.clone(),
@@ -126,7 +127,7 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                                 println!("ERROR: {}", operation);
                                 serde_json::to_string(&NotImplemented {
                                     status: 501,
-                                    error: "Not implemented".to_string(),
+                                    error: operation + " operator not implemented",
                                 })
                                 .unwrap()
                             }
