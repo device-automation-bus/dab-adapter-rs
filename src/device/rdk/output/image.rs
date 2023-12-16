@@ -1,14 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct CaptureScreenshotRequest {
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct CaptureScreenshotResponse {
-//     pub outputImage: String,
-// }
-
 #[allow(unused_imports)]
 use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;

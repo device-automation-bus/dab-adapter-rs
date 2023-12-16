@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct HealthCheckRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct HealthCheckResponse{
-// pub healthy: bool,
-// }
-
 #[allow(unused_imports)]
 #[allow(unused_imports)]
 use crate::dab::structs::HealthCheckRequest;

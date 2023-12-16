@@ -1,11 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct RestartRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct RestartResponse {}
-
 #[allow(unused_imports)]
 #[allow(unused_imports)]
 use crate::dab::structs::RestartRequest;

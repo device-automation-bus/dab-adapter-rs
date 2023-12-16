@@ -1,19 +1,3 @@
-// pub struct SetSystemSettingsRequest {
-//     pub language: String,
-//     pub outputResolution: OutputResolution,
-//     pub memc: bool,
-//     pub cec: bool,
-//     pub lowLatencyMode: bool,
-//     pub matchContentFrameRate: MatchContentFrameRate,
-//     pub hdrOutputMode: HdrOutputMode,
-//     pub pictureMode: PictureMode,
-//     pub audioOutputMode: AudioOutputMode,
-//     pub audioOutputSource: AudioOutputSource,
-//     pub videoInputSource: VideoInputSource,
-//     pub audioVolume: u32,
-//     pub mute: bool,
-//     pub textToSpeech: bool,
-// }
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]

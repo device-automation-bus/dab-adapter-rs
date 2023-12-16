@@ -1,15 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct GetApplicationStateRequest{
-// pub appId: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct GetApplicationStateResponse{
-// pub state: String,
-// }
-
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::GetApplicationStateRequest;

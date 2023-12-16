@@ -1,19 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct ApplicationListRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct Application{
-// pub appId: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize)]
-// ListApplicationsResponse{
-//     pub applications: Vec<Application>,
-// }
-
 use crate::dab::structs::Application;
 use crate::dab::structs::ListApplicationsResponse;
 #[allow(unused_imports)]

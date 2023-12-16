@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyPressRequest{
-// pub keyCode: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyPressResponse {}
-
 #[allow(unused_imports)]
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
