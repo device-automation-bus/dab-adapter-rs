@@ -43,6 +43,7 @@
 // pub uptimeSince: u64,
 // }
 
+use std::time::{SystemTime, UNIX_EPOCH};
 #[allow(unused_imports)]
 use crate::dab::structs::DeviceInfoRequest;
 use crate::dab::structs::DisplayType;
@@ -430,12 +431,28 @@ pub fn process(_packet: String) -> Result<String, String> {
                 if let Some(ipaddr) = IPSettings.result.ipaddr {
                     interface.ipAddress = ipaddr;
                 }
+
+                for dnsparam in [ IPSettings.result.primarydns, IPSettings.result.secondarydns ] {
+                    if let Some(dns) = dnsparam {
+                        if !dns.is_empty() {
+                            interface.dns.push(dns)
+                        }
+                    }
+                }
             }
         }
         ResponseOperator.networkInterfaces.push(interface);
     }
+
+    let ms_since_epoch = (SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| {
+            serde_json::to_string(&ErrorResponse { status: 500, error: err.to_string() }).unwrap()
+        })?
+        .as_secs() - Systeminfo.result.uptime) * 1000;
+
     ResponseOperator.serialNumber = Systeminfo.result.serialnumber;
-    ResponseOperator.uptimeSince = Systeminfo.result.uptime;
+    ResponseOperator.uptimeSince = ms_since_epoch;
     ResponseOperator.manufacturer = DeviceInfo.result.make;
     ResponseOperator.firmwareVersion = DeviceInfo.result.imageRevision;
     ResponseOperator.firmwareBuild = DeviceInfo.result.imageVersion;
