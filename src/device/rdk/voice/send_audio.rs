@@ -17,6 +17,12 @@ use super::voice_functions::convert_audio_to_pcms16le16mono;
 use super::voice_functions::is_supported_audio_format;
 use super::voice_functions::sendVoiceCommand;
 use crate::device::rdk::interface::http_download;
+use std::fs;
+
+fn rename_file(source_path: &str, target_path: &str) -> Result<(), std::io::Error> {
+    fs::rename(source_path, target_path)?;
+    Ok(())
+}
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -53,6 +59,18 @@ pub fn process(packet: String) -> Result<String, String> {
                             "/tmp/tts-download.wav".into(),
                             "/tmp/tts.wav".into(),
                         );
+                    } else {
+                        match rename_file("/tmp/tts-download.wav".into(), "/tmp/tts.wav".into()) {
+                            Ok(_) => println!("File renamed successfully!"),
+                            Err(err) => {
+                                let response = ErrorResponse {
+                                    status: 400,
+                                    error: err,
+                                };
+                                let Response_json = json!(response);
+                                return Err(serde_json::to_string(&Response_json).unwrap());
+                            }
+                        }
                     }
                 }
                 Err(e) => {
