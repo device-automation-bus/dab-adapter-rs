@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct LaunchApplicationRequest{
-// pub appId: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct LaunchApplicationResponse {}
-
 #[allow(unused_imports)]
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::LaunchApplicationRequest;

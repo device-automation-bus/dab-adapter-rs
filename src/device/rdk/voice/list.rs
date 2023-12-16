@@ -1,20 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct VoiceListRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct VoiceSystem{
-// pub name: String,
-// pub enabled: bool,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize, Deserialize)]
-// ListVoiceSystem{
-//     pub voiceSystems: Vec<VoiceSystem>,
-// }
-
 #[allow(unused_imports)]
 #[allow(unused_imports)]
 use crate::dab::structs::ListVoiceSystemsResponse;

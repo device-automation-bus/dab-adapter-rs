@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct VersionRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct Version{
-// pub versions: Vec<String>,
-// }
-
 #[allow(unused_imports)]
 use crate::dab::structs::Version;
 #[allow(unused_imports)]

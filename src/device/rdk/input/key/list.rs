@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyListRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyList{
-// pub keyCodes: Vec<String>,
-// }
-
 #[allow(unused_imports)]
 use crate::dab::structs::KeyList;
 #[allow(unused_imports)]

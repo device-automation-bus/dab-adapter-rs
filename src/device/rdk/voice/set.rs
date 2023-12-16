@@ -1,15 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct SetVoiceSystemRequest{
-// pub voiceSystem: VoiceSystem,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct SetVoiceSystemResponse{
-// pub voiceSystem: VoiceSystem,
-// }
-
 use super::voice_functions::configureVoice;
 #[allow(unused_imports)]
 #[allow(unused_imports)]

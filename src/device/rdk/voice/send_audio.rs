@@ -1,14 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct SendAudioRequest{
-// pub fileLocation: String,
-// pub voiceSystem: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct VoiceAudioRequestResponse {}
-
 use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendAudioRequest;
 use serde_json::json;

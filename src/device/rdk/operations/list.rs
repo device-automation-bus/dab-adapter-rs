@@ -1,13 +1,3 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct OperationsListRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct ListSupportedOperation{
-// pub operations: Vec<String>,
-// }
-
 use crate::dab::structs::ListSupportedOperation;
 #[allow(unused_imports)]
 use crate::dab::structs::OperationsListRequest;
