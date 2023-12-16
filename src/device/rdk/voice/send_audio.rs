@@ -65,7 +65,7 @@ pub fn process(packet: String) -> Result<String, String> {
                             Err(err) => {
                                 let response = ErrorResponse {
                                     status: 400,
-                                    error: err,
+                                    error: err.to_string(),
                                 };
                                 let Response_json = json!(response);
                                 return Err(serde_json::to_string(&Response_json).unwrap());
