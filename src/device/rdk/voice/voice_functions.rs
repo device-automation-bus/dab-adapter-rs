@@ -255,13 +255,14 @@ pub fn is_supported_audio_format(file_path: String) -> bool {
     return status;
 }
 
-pub fn convert_audio_to_pcms16le16mono(audio_file: String) -> bool {
-    let location = "location=".to_owned() + audio_file.as_str();
+pub fn convert_audio_to_pcms16le16mono(audio_file_in: String, audio_file_out: String) -> bool {
+    let location_in = "location=".to_owned() + audio_file_in.as_str();
+    let location_out = "location=".to_owned() + audio_file_out.as_str();
 
     let mut child = Command::new("gst-launch-1.0")
         .arg("-q")
         .arg("filesrc")
-        .arg(location.clone())
+        .arg(location_in)
         .arg("!")
         .arg("decodebin")
         .arg("!")
@@ -274,7 +275,7 @@ pub fn convert_audio_to_pcms16le16mono(audio_file: String) -> bool {
         .arg("wavenc")
         .arg("!")
         .arg("filesink")
-        .arg(location.clone())
+        .arg(location_out)
         .spawn()
         .expect("Failed to execute command");
     child

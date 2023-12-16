@@ -43,13 +43,16 @@ pub fn process(packet: String) -> Result<String, String> {
                 let Response_json = json!(response);
                 return Err(serde_json::to_string(&Response_json).unwrap());
             }
-            let result = http_download(DabRequest.fileLocation, "/tmp/tts.wav".into());
+            let result = http_download(DabRequest.fileLocation, "/tmp/tts-download.wav".into());
             match result {
                 Ok(_) => {
                     // RDK Currently supports PCM S16LE 16K 256kbps. Convert on mismatch.
-                    if !is_supported_audio_format("/tmp/tts.wav".into()) {
+                    if !is_supported_audio_format("/tmp/tts-download.wav".into()) {
                         println!("Calling convert_audio_to_pcms16le16mono");
-                        convert_audio_to_pcms16le16mono("/tmp/tts.wav".into());
+                        convert_audio_to_pcms16le16mono(
+                            "/tmp/tts-download.wav".into(),
+                            "/tmp/tts.wav".into(),
+                        );
                     }
                 }
                 Err(e) => {
