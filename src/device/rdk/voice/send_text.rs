@@ -13,7 +13,7 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendTextRequest;
 use serde_json::json;
 
-use super::voice_functions::convert_audio_to_pcms16le16256;
+use super::voice_functions::convert_audio_to_pcms16le16mono;
 use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]
@@ -56,7 +56,8 @@ pub fn process(packet: String) -> Result<String, String> {
         .save_to_file(&Dab_Request.requestText, "/tmp/tts.mp3")
         .expect("Failed to save to file");
 
-    if convert_audio_to_pcms16le16256("/tmp/tts.mp3".into()) {
+    if convert_audio_to_pcms16le16mono("/tmp/tts.mp3".into()) {
+        println!("convert_audio_to_pcms16le16mono success.");
         sendVoiceCommand("/tmp/tts.mp3".into())?;
         return Ok(serde_json::to_string(&json!({"status": 200})).unwrap());
     }

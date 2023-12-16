@@ -13,7 +13,7 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendAudioRequest;
 use serde_json::json;
 
-use super::voice_functions::convert_audio_to_pcms16le16256;
+use super::voice_functions::convert_audio_to_pcms16le16mono;
 use super::voice_functions::is_supported_audio_format;
 use super::voice_functions::sendVoiceCommand;
 use crate::device::rdk::interface::http_download;
@@ -47,8 +47,9 @@ pub fn process(packet: String) -> Result<String, String> {
             match result {
                 Ok(_) => {
                     // RDK Currently supports PCM S16LE 16K 256kbps. Convert on mismatch.
-                    if is_supported_audio_format("/tmp/tts.wav".into()) {
-                        convert_audio_to_pcms16le16256("/tmp/tts.wav".into());
+                    if !is_supported_audio_format("/tmp/tts.wav".into()) {
+                        println!("Calling convert_audio_to_pcms16le16mono");
+                        convert_audio_to_pcms16le16mono("/tmp/tts.wav".into());
                     }
                 }
                 Err(e) => {

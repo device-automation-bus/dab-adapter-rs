@@ -5,8 +5,11 @@ use crate::dab::structs::SendTextRequest;
 use crate::device::rdk::interface::RdkResponseSimple;
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::Serialize;
-use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::mem;
+use std::process::Command;
 
 pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     let adpcm_step_table: [i16; 89] = [
@@ -193,35 +196,66 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), String> {
 }
 
 // RDK's voice stack now supports PCM S16LE 16K upto 256kbps
-pub fn is_supported_audio_format(audio_file_in: String) -> bool {
-    let mut samplerate = false;
-    let mut bitrate = false;
-    let mut codec = false;
-    let mut format_check = Command::new("gst-discoverer-1.0")
-        .arg("-v")
-        .arg(audio_file_in.clone())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    let stdout_resp = format_check.stdout.take().unwrap();
-    let lines = BufReader::new(stdout_resp).lines();
-    for line in lines {
-        let line_string: String = line.unwrap();
-        match line_string {
-            s if s.contains("Sample rate: 16000") => samplerate = true,
-            s if s.contains("Bitrate: 256000") => bitrate = true,
-            s if s.contains("audio codec: Uncompressed 16-bit PCM audio") => codec = true,
-            _ => {}
-        }
-    }
-    if !(samplerate && bitrate && codec) {
-        println!("Conversion required.");
-        return true;
-    }
-    return false;
+#[repr(C)]
+struct WavHeader {
+    riff: [u8; 4],        //4
+    file_size: u32,       //4
+    wave: [u8; 4],        //4
+    fmt: [u8; 4],         //4
+    fmt_size: u32,        //4
+    audio_format: u16,    //2
+    num_channels: u16,    //2
+    sample_rate: u32,     //4
+    byte_rate: u32,       //4
+    block_align: u16,     //2 [1:8b mono/2:8b stereo/3:16b mono/4:16b stereo]
+    bits_per_sample: u16, //2
+    data: [u8; 4],        //4
+    data_size: u32,       //4
 }
 
-pub fn convert_audio_to_pcms16le16256(audio_file: String) -> bool {
+fn read_wav_header(file_path: &str) -> Result<WavHeader, io::Error> {
+    let mut file = File::open(file_path)?;
+    let mut header: WavHeader = unsafe { mem::zeroed() };
+
+    file.read_exact(unsafe {
+        let header_ptr = &mut header as *mut WavHeader as *mut u8;
+        std::slice::from_raw_parts_mut(header_ptr, mem::size_of::<WavHeader>())
+    })?;
+
+    Ok(header)
+}
+
+fn is_valid_wav(file_path: &str) -> Result<bool, io::Error> {
+    let header = read_wav_header(file_path)?;
+
+    let is_pcm = header.audio_format == 1;
+    let is_signed_16_bit = header.bits_per_sample == 16;
+    let is_little_endian = header.num_channels.to_le() == header.num_channels;
+    let is_sample_rate_16000 = header.sample_rate == 16000;
+    let is_bitrate_valid = header.byte_rate <= 256000;
+
+    Ok(is_pcm && is_signed_16_bit && is_little_endian && is_sample_rate_16000 && is_bitrate_valid)
+}
+
+pub fn is_supported_audio_format(file_path: String) -> bool {
+    let mut status = false;
+    match is_valid_wav(&file_path) {
+        Ok(is_valid) => {
+            if is_valid {
+                println!("The WAV file is valid.");
+                status = true;
+            } else {
+                println!("The WAV file is not valid.");
+            }
+        }
+        Err(err) => {
+            eprintln!("Error: {}", err);
+        }
+    }
+    return status;
+}
+
+pub fn convert_audio_to_pcms16le16mono(audio_file: String) -> bool {
     let location = "location=".to_owned() + audio_file.as_str();
 
     let mut child = Command::new("gst-launch-1.0")
