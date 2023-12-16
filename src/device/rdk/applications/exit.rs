@@ -11,37 +11,12 @@ use std::{thread, time};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, String> {
     let mut ResponseOperator = ExitApplicationResponse::default();
     // *** Fill in the fields of the struct ExitApplicationResponse here ***
 
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        _ => (),
-    }
-
-    let Dab_Request: ExitApplicationRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.appId.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'appId' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
-    }
-
     let mut is_background = false;
-    if Dab_Request.background.is_some() && Dab_Request.background.unwrap() {
+    if _dab_request.background.is_some() && _dab_request.background.unwrap() {
         is_background = true;
     }
 
@@ -60,7 +35,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let req_params = RequestParams {
-        callsign: Dab_Request.appId.clone(),
+        callsign: _dab_request.appId.clone(),
     };
     // ****************** org.rdk.RDKShell.getState ********************
     #[derive(Serialize)]
@@ -104,7 +79,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut app_created = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
-        if app == Dab_Request.appId {
+        if app == _dab_request.appId {
             app_created = true;
         }
     }
@@ -139,7 +114,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     for _idx in 1..=20 { // 2 seconds (20*100ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(100));
-        ResponseOperator.state = get_app_state(Dab_Request.appId.clone())?;
+        ResponseOperator.state = get_app_state(_dab_request.appId.clone())?;
         if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
             || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
         {

@@ -2,7 +2,8 @@ use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::AudioVolume;
 use crate::dab::structs::HdrOutputMode;
-use crate::dab::structs::ListSystemSettings;
+use crate::dab::structs::ListSystemSettingsRequest;
+use crate::dab::structs::ListSystemSettingsResponse;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::VideoInputSource;
@@ -14,7 +15,7 @@ use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 use std::collections::HashMap;
 
 use super::get::get_rdk_tts;
@@ -157,8 +158,8 @@ fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, String> {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = ListSystemSettings::default();
+pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, String> {
+    let mut ResponseOperator = ListSystemSettingsResponse::default();
     // *** Fill in the fields of the struct ListSystemSettings here ***
 
     // // Return language tags defined in RFC 5646.
@@ -216,7 +217,5 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

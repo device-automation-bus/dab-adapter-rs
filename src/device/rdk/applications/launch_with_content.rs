@@ -1,57 +1,27 @@
 #[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
+use serde_json::json;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::applications::launch::move_to_front_set_focus;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 use urlencoding::decode;
 use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<String, String> {
     let mut ResponseOperator = LaunchApplicationWithContentResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationWithContentResponse here ***
 
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        _ => (),
-    }
-
-    let mut Dab_Request: LaunchApplicationWithContentRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.appId.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'appId' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
-    }
-
-    if !(Dab_Request.appId == "Cobalt"
-        || Dab_Request.appId == "Youtube"
-        || Dab_Request.appId == "YouTube")
+    if !(_dab_request.appId == "Cobalt"
+        || _dab_request.appId == "Youtube"
+        || _dab_request.appId == "YouTube")
     {
-        let response = ErrorResponse {
-            status: 500,
-            error: "This operator currently only supports Youtube".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+        return Err("This operator currently only supports Youtube".to_string());
     }
 
     // ****** RDK Request Common Structs ********
@@ -70,7 +40,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let req_params = RequestParams {
-        callsign: Dab_Request.appId.clone(),
+        callsign: _dab_request.appId.clone(),
     };
 
     // ****************** org.rdk.RDKShell.getState ********************
@@ -129,22 +99,22 @@ pub fn process(_packet: String) -> Result<String, String> {
     let mut is_suspended = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
-        if app == Dab_Request.appId {
+        if app == _dab_request.appId {
             app_created = true;
             is_suspended = r.state == "suspended";
         }
     }
-    let is_cobalt = Dab_Request.appId == "Cobalt"
-        || Dab_Request.appId == "Youtube"
-        || Dab_Request.appId == "YouTube";
+    let is_cobalt = _dab_request.appId == "Cobalt"
+        || _dab_request.appId == "Youtube"
+        || _dab_request.appId == "YouTube";
     let mut param_list = vec![];
     if is_cobalt {
-        if !(Dab_Request.contentId.is_empty()) {
-            param_list.push(format!("v={}", Dab_Request.contentId.clone()));
+        if !(_dab_request.contentId.is_empty()) {
+            param_list.push(format!("v={}", _dab_request.contentId.clone()));
         }
     }
 
-    if let Some(mut parameters) = Dab_Request.parameters {
+    if let Some(mut parameters) = _dab_request.parameters {
         if is_cobalt {
             // Decode each parameter before appending to the list
             for param in &mut parameters {
@@ -174,7 +144,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             let request = RdkRequest {
                 jsonrpc: "2.0".into(),
                 id: 3,
-                method: Dab_Request.appId.clone() + ".1.deeplink".into(),
+                method: _dab_request.appId.clone() + ".1.deeplink".into(),
                 params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
             };
             let json_string = serde_json::to_string(&request).unwrap();
@@ -202,7 +172,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
 
             let req_params = Param {
-                callsign: Dab_Request.appId,
+                callsign: _dab_request.appId,
                 r#type: "Cobalt".into(),
                 configuration: CobaltConfig {
                     url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
@@ -256,7 +226,5 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

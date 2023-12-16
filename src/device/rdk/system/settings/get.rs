@@ -1,7 +1,6 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
-#[allow(unused_imports)]
 use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
 use crate::dab::structs::HdrOutputMode;
@@ -13,7 +12,7 @@ use crate::device::rdk::interface::service_activate;
 use crate::device::rdk::interface::service_deactivate;
 use crate::device::rdk::interface::RdkResponse;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 
 fn get_rdk_language() -> Result<String, String> {
     #[allow(dead_code)]
@@ -259,7 +258,7 @@ fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, String> {
     }
 }
 
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, String> {
     let mut response = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
@@ -274,7 +273,5 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.lowLatencyMode = false;
     response.textToSpeech = get_rdk_tts()?;
 
-    let mut response_json = json!(response);
-    response_json["status"] = json!(200);
-    Ok(serde_json::to_string(&response_json).unwrap())
+    Ok(serde_json::to_string(&response).unwrap())
 }

@@ -116,7 +116,7 @@ pub fn service_deactivate(service: String) -> Result<(), String> {
     struct ControllerDeactivateResult {}
 
     let json_string = serde_json::to_string(&request).unwrap();
-    http_post(json_string.clone())?;
+    http_post(json_string)?;
     Ok(())
 }
 
@@ -230,7 +230,7 @@ pub fn service_activate(service: String) -> Result<(), String> {
     struct ControllerActivateResult {}
 
     let json_string = serde_json::to_string(&request).unwrap();
-    http_post(json_string.clone())?;
+    http_post(json_string)?;
     Ok(())
 }
 

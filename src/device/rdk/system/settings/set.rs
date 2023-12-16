@@ -2,9 +2,8 @@ use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 #[allow(unused_imports)]
 use crate::dab::structs::HdrOutputMode;
-use crate::dab::structs::OutputResolution;
-#[allow(unused_imports)]
 use crate::dab::structs::SetSystemSettingsRequest;
+use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::RdkResponseSimple;
 #[allow(unused_imports)]
@@ -14,7 +13,7 @@ use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 #[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
-use serde_json::json;
+
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -228,7 +227,8 @@ fn set_rdk_text_to_speech(val: bool) -> Result<(), String> {
     Ok(())
 }
 
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, String> {
+    let _packet = serde_json::to_string(&_dab_request).unwrap();
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
     for (key, value) in json_map.iter_mut() {
@@ -260,5 +260,5 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    Ok(serde_json::to_string(&json!({"status": 200})).unwrap())
+    Ok("".into())
 }

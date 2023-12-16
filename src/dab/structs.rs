@@ -1,4 +1,32 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+pub type SharedMap = 
+    HashMap<String, RequestTypes>;
+
+#[derive(Clone)]
+pub enum RequestTypes {	
+    OperationsListRequest,
+    ApplicationListRequest,
+    ApplicationLaunchRequest,
+    ApplicationLaunchWithContentRequest,
+    ApplicationGetStateRequest,
+    ApplicationExitRequest,
+    DeviceInfoRequest,
+    SystemRestartRequest,
+    SystemSettingsListRequest,
+    SystemSettingsGetRequest,
+    SystemSettingsSetRequest,
+    InputKeyListRequest,
+    InputKeyPressRequest,
+    InputLongKeyPressRequest,
+    OutputImageRequest,
+    HealthCheckGetRequest,
+    VoiceListRequest,
+    VoiceSetRequest,
+    VoiceSendAudioRequest,
+    VoiceSendTextRequest,
+    VersionRequest,
+}
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -309,10 +337,15 @@ pub struct AudioVolume {
     pub min: u32,
     pub max: u32,
 }
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct ListSystemSettingsRequest{
+
+}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct ListSystemSettings {
+pub struct ListSystemSettingsResponse {
     pub language: Vec<String>,
     pub outputResolution: Vec<OutputResolution>,
     pub memc: bool,
@@ -429,7 +462,7 @@ pub struct LaunchApplicationRequest {
 pub struct LaunchApplicationResponse {}
 
 #[allow(non_snake_case)]
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct ApplicationListRequest {}
 
 #[allow(non_snake_case)]
@@ -516,5 +549,28 @@ pub struct StartDeviceTelemetryRequest {
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
 pub struct StartDeviceTelemetryResponse {
+    pub duration: u64,
+}
+
+// Implement device-telemetry
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopAppTelemetryRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopAppTelemetryResponse {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartAppTelemetryRequest {
+    pub app_id: String,
+    pub duration: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartAppTelemetryResponse {
+    pub app_id: String,
     pub duration: u64,
 }
