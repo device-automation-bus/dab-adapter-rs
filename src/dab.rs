@@ -2,25 +2,131 @@ pub mod device_telemetry;
 pub mod mqtt_client;
 pub mod structs;
 
+use serde_json::json;
 use mqtt_client::MqttClient;
 use mqtt_client::MqttMessage;
+use structs::SharedMap;
 use structs::DiscoveryResponse;
 use structs::ErrorResponse;
 use structs::Messages;
-use structs::NotImplemented;
 use structs::NotificationLevel;
+use structs::RequestTypes;
 use structs::TelemetryMessage;
 
 use crate::device::rdk as hw_specific;
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
-pub type SharedMap =
-    HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use device_telemetry::DeviceTelemetry;
+
+fn call_function(json_str: String,request_type: RequestTypes) -> Result<String,String> {
+    match request_type {
+        RequestTypes::OperationsListRequest => {
+            let dab_request: structs::OperationsListRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::operations::list::process(dab_request)
+        },
+        RequestTypes::ApplicationListRequest => {
+            let dab_request: structs::ApplicationListRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::applications::list::process(dab_request)
+        },
+        RequestTypes::ApplicationLaunchRequest => {
+            let dab_request: structs::LaunchApplicationRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::applications::launch::process(dab_request)
+        },
+        RequestTypes::ApplicationLaunchWithContentRequest => {
+            let dab_request: structs::LaunchApplicationWithContentRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::applications::launch_with_content::process(dab_request)
+        },
+        RequestTypes::ApplicationGetStateRequest => {
+            let dab_request: structs::GetApplicationStateRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::applications::get_state::process(dab_request)
+        },
+        RequestTypes::ApplicationExitRequest => {
+            let dab_request: structs::ExitApplicationRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::applications::exit::process(dab_request)
+        },
+        RequestTypes::DeviceInfoRequest => {
+            let dab_request: structs::DeviceInfoRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::device::info::process(dab_request)
+        },
+        RequestTypes::SystemRestartRequest => {
+            let dab_request: structs::RestartRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::system::restart::process(dab_request)
+        },
+        RequestTypes::SystemSettingsListRequest => {
+            let dab_request: structs::ListSystemSettingsRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::system::settings::list::process(dab_request)
+        },
+        RequestTypes::SystemSettingsGetRequest => {
+            let dab_request: structs::GetSystemSettingsRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::system::settings::get::process(dab_request)
+        },
+        RequestTypes::SystemSettingsSetRequest => {
+            let dab_request: structs::SetSystemSettingsRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::system::settings::set::process(dab_request)
+        },
+        RequestTypes::InputKeyListRequest => {
+            let dab_request: structs::KeyListRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::input::key::list::process(dab_request)
+        },
+        RequestTypes::InputKeyPressRequest => {
+            let dab_request: structs::KeyPressRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::input::key_press::process(dab_request)
+        },
+        RequestTypes::InputLongKeyPressRequest => {
+            let dab_request: structs::LongKeyPressRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::input::long_key_press::process(dab_request)
+        },
+        RequestTypes::OutputImageRequest => {
+            let dab_request: structs::CaptureScreenshotRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::output::image::process(dab_request)
+        },
+        RequestTypes::HealthCheckGetRequest => {
+            let dab_request: structs::HealthCheckRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::health_check::get::process(dab_request)
+        },
+        RequestTypes::VoiceListRequest => {
+            let dab_request: structs::VoiceListRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::voice::list::process(dab_request)
+        },
+        RequestTypes::VoiceSetRequest => {
+            let dab_request: structs::SetVoiceSystemRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::voice::set::process(dab_request)
+        },
+        RequestTypes::VoiceSendAudioRequest => {
+            let dab_request: structs::SendAudioRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::voice::send_audio::process(dab_request)
+        },
+        RequestTypes::VoiceSendTextRequest => {
+            let dab_request: structs::SendTextRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::voice::send_text::process(dab_request)
+        },
+        RequestTypes::VersionRequest => {
+            let dab_request: structs::VersionRequest =
+                serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
+            hw_specific::version::process(dab_request)
+        },
+    }
+}
 
 pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     // Get the device ID
@@ -79,7 +185,6 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 let response_topic = msg_received.response_topic;
                 let correlation_data = msg_received.correlation_data;
                 let payload = msg_received.payload;
-                // let response: String;
 
                 // Process the message
                 let response = if function_topic == "dab/discovery" {
@@ -100,14 +205,20 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
 
                     match function_map.get_mut(&operation) {
                         // If we get the proper handler, then call it
-                        Some(callback) => {
-                            println!("OK: {}", operation);
-
-                            match callback(payload) {
-                                Ok(r) => r,
+                        Some(request_type) => {
+                            println!("processing: {}", operation);
+                            match call_function(payload.clone(), request_type.clone()) {
+                                Ok(r) => {
+                                    // The request was successful.
+                                    let mut response_json = json!(r);
+                                    response_json["status"] = json!(200);
+                                    response_json.to_string()
+                                },
                                 Err(e) => serde_json::to_string(&ErrorResponse {
+                                    // Internal error. The explanation of the error 
+                                    // must be included in the error field of the response.
                                     status: 500,
-                                    error: e,
+                                    error: e
                                 })
                                 .unwrap(),
                             }
@@ -115,21 +226,53 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                         // If we can't get the proper handler, then this is a telemetry operation or is not implemented
                         _ => {
                             // If the operation is device-telemetry/start, then start the device telemetry thread
-                            if &operation == "device-telemetry/start" {
-                                device_telemetry
-                                    .device_telemetry_start_process(payload)
-                                    .unwrap()
+                            let function_response = if &operation == "device-telemetry/start" {
+                                let dab_request: Result<structs::StartDeviceTelemetryRequest,String> =
+                                    serde_json::from_str(&payload.clone()).map_err(|e| e.to_string());
+                                match dab_request {
+                                    Ok(r) => {
+                                        Ok(device_telemetry
+                                            .device_telemetry_start_process(r)
+                                            .unwrap())
+                                    },
+                                    Err(e) => {
+                                        println!("ERROR: {}", e);
+                                        Err(e)
+                                    }
+                                }
                             } else if &operation == "device-telemetry/stop" {
-                                device_telemetry
-                                    .device_telemetry_stop_process(payload)
-                                    .unwrap()
+                                let dab_request: Result<structs::StopDeviceTelemetryRequest,String> =
+                                    serde_json::from_str(&payload.clone()).map_err(|e| e.to_string());
+                                match dab_request {
+                                    Ok(r) => {
+                                        Ok(device_telemetry
+                                            .device_telemetry_stop_process(r)
+                                            .unwrap())
+                                    },
+                                    Err(e) => {
+                                        println!("ERROR: {}", e);
+                                        Err(e)
+                                    }
+                                }
                             } else {
                                 println!("ERROR: {}", operation);
-                                serde_json::to_string(&NotImplemented {
-                                    status: 501,
-                                    error: operation + " operator not implemented",
+                                Err(operation + " operator not implemented")
+                            };
+
+                            match function_response{
+                                Ok(r) => {
+                                    // The request was successful.
+                                    let mut response_json = json!(r);
+                                    response_json["status"] = json!(200);
+                                    response_json.to_string()
+                                },
+                                Err(e) => serde_json::to_string(&ErrorResponse {
+                                    // Internal error. The explanation of the error 
+                                    // must be included in the error field of the response.
+                                    status: 500,
+                                    error: e
                                 })
-                                .unwrap()
+                                .unwrap(),
                             }
                         }
                     }
