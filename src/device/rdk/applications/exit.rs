@@ -14,10 +14,11 @@ use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
-use crate::device::rdk::interface::http_post;
 use crate::device::rdk::applications::get_state::get_app_state;
+use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -174,8 +175,16 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     // *******************************************************************
-    ResponseOperator.state = get_app_state(Dab_Request.appId)?;
-
+    for _idx in 1..=20 { // 2 seconds (20*100ms)
+        // TODO: refactor to listen to Thunder events with websocket.
+        thread::sleep(time::Duration::from_millis(100));
+        ResponseOperator.state = get_app_state(Dab_Request.appId.clone())?;
+        if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
+            || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
+        {
+            break;
+        }
+    }
     let mut ResponseOperator_json = json!(ResponseOperator);
     ResponseOperator_json["status"] = json!(200);
     Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
