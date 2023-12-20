@@ -121,7 +121,6 @@ use serde_json::json;
 use std::collections::HashMap;
 
 use super::get::get_rdk_cec;
-use super::get::get_rdk_mute;
 use super::get::get_rdk_tts;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
@@ -283,7 +282,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.lowLatencyMode = true;
 
-    ResponseOperator.mute = get_rdk_mute()?;
+    ResponseOperator.mute = false;
 
     ResponseOperator.textToSpeech = get_rdk_tts()?;
 
