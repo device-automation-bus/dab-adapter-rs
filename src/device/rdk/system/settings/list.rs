@@ -282,7 +282,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.lowLatencyMode = true;
 
-    ResponseOperator.mute = false;
+    ResponseOperator.mute = true;
 
     ResponseOperator.textToSpeech = get_rdk_tts()?;
 
