@@ -262,6 +262,25 @@ pub fn service_activate(service: String) -> Result<(), String> {
     }
 }
 
+pub fn service_is_available(service: &str) -> Result<bool, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct Status {
+        autostart: bool,
+        callsign: String,
+    }
+
+    match rdk_request::<RdkResponse<Vec<Status>>> (format!("Controller.1.status@{service}").as_str()) {
+        Err(message) => {
+            if message == "ERROR_UNKNOWN_KEY" {
+                return Ok(false);
+            }
+            return Err(message);
+        }
+        Ok(_) => return Ok(true)
+    }
+}
+
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
