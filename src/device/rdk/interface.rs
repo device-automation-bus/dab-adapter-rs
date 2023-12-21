@@ -158,19 +158,27 @@ pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkNullParams {}
 
-    rdk_request_with_params(method, RdkNullParams {})
+    rdk_request_impl::<RdkNullParams,R>(method, None)
 }
 
 pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
     method: &str,
     params: P,
 ) -> Result<R, String> {
+    rdk_request_impl(method, Some(params))
+}
+
+fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
+    method: &str,
+    params: Option<P>,
+) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkRequest<P> {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: P,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        params: Option<P>,
     }
 
     static mut JSONRPC_ID: i32 = 1;
