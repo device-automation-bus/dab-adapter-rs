@@ -210,7 +210,7 @@ pub fn get_rdk_tts() -> Result<bool, String> {
     Ok(rdkresponse.result.isenabled)
 }
 
-pub fn get_rdk_cec() -> Result<bool, String> {
+fn get_rdk_cec() -> Result<bool, String> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct CecGetEnabled {

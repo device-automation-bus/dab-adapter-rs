@@ -120,7 +120,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 
-use super::get::get_rdk_cec;
 use super::get::get_rdk_tts;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
@@ -278,7 +277,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = get_rdk_cec()?;
+    ResponseOperator.cec = true;
 
     ResponseOperator.lowLatencyMode = true;
 
