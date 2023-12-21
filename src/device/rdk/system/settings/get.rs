@@ -171,7 +171,7 @@ fn get_rdk_audio_volume() -> Result<u32, String> {
     }
 }
 
-pub fn get_rdk_mute() -> Result<bool, String> {
+fn get_rdk_mute() -> Result<bool, String> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
