@@ -206,7 +206,7 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
 
     if val["error"] != serde_json::Value::Null {
         return Err(val["error"]["message"].as_str().unwrap().into());
-    } else if val["result"] != serde_json::Value::Null {
+    } else if !val["result"].is_null() && val["result"]["success"].is_boolean() {
         if !val["result"]["success"].as_bool().unwrap() {
             return Err(format!("{} failed", method));
         }
