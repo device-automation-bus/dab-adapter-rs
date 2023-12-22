@@ -1,16 +1,17 @@
+use crate::dab::structs::DabError;
 use crate::dab::structs::SendTextRequest;
 use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: SendTextRequest) -> Result<String, String> {
+pub fn process(_dab_request: SendTextRequest) -> Result < String, DabError > {
     use std::process::Command;
     use tts_rust::{languages::Languages, tts::GTTSClient};
 
     // TODO: Add other RDK specific voice protocol support confirmation.
     if _dab_request.voiceSystem.to_string() != "AmazonAlexa" {
-        return Err("Unsupported 'voiceSystem'.".to_string());
+        return Err(DabError::Err400("Unsupported 'voiceSystem'.".to_string()));
     }
 
     let narrator: GTTSClient = GTTSClient {
@@ -46,5 +47,5 @@ pub fn process(_dab_request: SendTextRequest) -> Result<String, String> {
 
     sendVoiceCommand("/tmp/tts.wav".into())?;
 
-    Ok("".into())
+    Ok("{}".to_string())
 }

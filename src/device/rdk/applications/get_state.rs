@@ -1,5 +1,4 @@
-#[allow(unused_imports)]
-use serde_json::json;
+use crate::dab::structs::DabError;
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
 use crate::device::rdk::interface::RdkResponse;
@@ -7,7 +6,7 @@ use crate::device::rdk::interface::rdk_request;
 use serde::Deserialize;
 
 
-pub fn get_app_state (callsign: String) -> Result<String, String> {
+pub fn get_app_state (callsign: String) -> Result < String, DabError > {
     #[derive(Deserialize)]
     #[allow(dead_code)]
     struct State {
@@ -41,7 +40,7 @@ pub fn get_app_state (callsign: String) -> Result<String, String> {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: GetApplicationStateRequest) -> Result<String, String> {
+pub fn process(_dab_request: GetApplicationStateRequest) -> Result < String, DabError > {
     let mut ResponseOperator = GetApplicationStateResponse::default();
     // *** Fill in the fields of the struct GetApplicationStateResponse here ***
 

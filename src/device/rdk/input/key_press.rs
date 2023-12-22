@@ -1,6 +1,4 @@
-#[allow(unused_imports)]
-use serde_json::json;
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DabError;
 use crate::dab::structs::KeyPressRequest;
 use crate::dab::structs::KeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
@@ -11,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: KeyPressRequest) -> Result<String, String> {
+pub fn process(_dab_request: KeyPressRequest) -> Result < String, DabError > {
     let mut ResponseOperator = KeyPressResponse::default();
     // *** Fill in the fields of the struct KeyPressResponse here ***
 
@@ -19,14 +17,7 @@ pub fn process(_dab_request: KeyPressRequest) -> Result<String, String> {
 
     match get_keycode(_dab_request.keyCode.clone()) {
         Some(k) => KeyCode = *k,
-        None => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "keyCode' not found".to_string(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
+        None => return Err(DabError::Err400("keyCode' not found".to_string())),
     }
 
     //#########org.rdk.RDKShell.injectKey#########

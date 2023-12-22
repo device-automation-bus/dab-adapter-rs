@@ -3,6 +3,13 @@ use std::collections::HashMap;
 pub type SharedMap = 
     HashMap<String, RequestTypes>;
 
+#[derive(Debug)]
+pub enum DabError {
+    Err400(String),
+    Err500(String),
+    Err501(String),
+}
+
 #[derive(Clone)]
 pub enum RequestTypes {	
     OperationsListRequest,
@@ -44,14 +51,7 @@ pub struct NotImplemented {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct DabResponse {
-    pub status: u16,
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DiscoveryResponse {
-    pub status: u16,
     pub ip: String,
     pub deviceId: String,
 }

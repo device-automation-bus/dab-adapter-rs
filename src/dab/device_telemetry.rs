@@ -1,4 +1,5 @@
 use crate::dab::{mqtt_client::MqttMessage, MqttClient, TelemetryMessage};
+use crate::dab::structs::DabError;
 use crate::dab::structs::StartDeviceTelemetryResponse;
 use crate::dab::structs::StartDeviceTelemetryRequest;
 use crate::dab::structs::StopDeviceTelemetryResponse;
@@ -87,7 +88,7 @@ impl DeviceTelemetry {
     }
 
     #[allow(non_snake_case)]
-    pub fn device_telemetry_start_process(&mut self, _dab_request: StartDeviceTelemetryRequest) -> Result<String, String> {
+    pub fn device_telemetry_start_process(&mut self, _dab_request: StartDeviceTelemetryRequest) -> Result < String, DabError > {
         let mut ResponseOperator = StartDeviceTelemetryResponse::default();
 
         self.start(_dab_request.duration);
@@ -98,7 +99,7 @@ impl DeviceTelemetry {
     }
 
     #[allow(non_snake_case)]
-    pub fn device_telemetry_stop_process(&mut self, _dab_request: StopDeviceTelemetryRequest) -> Result<String, String> {
+    pub fn device_telemetry_stop_process(&mut self, _dab_request: StopDeviceTelemetryRequest) -> Result < String, DabError > {
         let ResponseOperator = StopDeviceTelemetryResponse::default();
 
         self.stop();

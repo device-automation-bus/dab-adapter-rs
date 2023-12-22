@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use serde_json::json;
+use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
@@ -13,7 +14,7 @@ use std::{thread, time};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<String, String> {
+pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result < String, DabError > {
     let mut ResponseOperator = LaunchApplicationWithContentResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationWithContentResponse here ***
 
@@ -21,7 +22,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         || _dab_request.appId == "Youtube"
         || _dab_request.appId == "YouTube")
     {
-        return Err("This operator currently only supports Youtube".to_string());
+        return Err(DabError::Err400("This operator currently only supports Youtube".to_string()));
     }
 
     // ****** RDK Request Common Structs ********
@@ -189,7 +190,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
+                return Err(DabError::Err500("Error calling org.rdk.RDKShell.launch".to_string()));
             }
         }
     }
@@ -222,7 +223,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
     }
 
     if app_state != "FOREGROUND" {
-        return Err("Check state request(5 second) timeout, app may not be visible to user.".to_string());
+        return Err(DabError::Err500("Check state request(5 second) timeout, app may not be visible to user.".to_string()));
     }
 
     // *******************************************************************

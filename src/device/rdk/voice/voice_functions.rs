@@ -1,5 +1,4 @@
-#[allow(unused_imports)]
-use crate::dab::structs::SendTextRequest;
+use crate::dab::structs::DabError;
 use crate::device::rdk::interface::RdkResponseSimple;
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
@@ -121,7 +120,7 @@ pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
 }
 
 #[allow(non_snake_case)]
-pub fn configureVoice(EnableVoice: bool) -> Result<(), String> {
+pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
     #[derive(Serialize)]
     struct Ptt {
         enable: bool,
@@ -146,7 +145,7 @@ pub fn configureVoice(EnableVoice: bool) -> Result<(), String> {
     Ok(())
 }
 
-fn enable_ptt() -> Result<(), String> {
+fn enable_ptt() -> Result<(), DabError> {
     #[derive(Serialize)]
     struct Ptt {
         enable: bool,
@@ -169,7 +168,7 @@ fn enable_ptt() -> Result<(), String> {
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
-fn is_voice_enabled(voiceSystem: String) -> bool {
+fn is_voice_enabled(voiceSystem: String) -> Result<bool, DabError> {
     let mut avs_enabled = false;
     #[derive(Serialize)]
     struct RdkRequest {
@@ -211,30 +210,23 @@ fn is_voice_enabled(voiceSystem: String) -> bool {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response_json = http_post(json_string)?;
 
-    match response_json {
-        Ok(val2) => {
-            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
-            // Current Alexa solution is PTT & starts with protocol 'avs://'
-            if rdkresponse.result.urlPtt.to_string().contains("avs:") && voiceSystem == "AmazonAlexa" {
-                if rdkresponse.result.ptt.status.to_string().contains("ready") {
-                    avs_enabled = true;
-                }
-            }
-        }
-
-        Err(err) => {
-            println!("Erro: {}", err);
+    let rdkresponse: RdkResponse = serde_json::from_str(&response_json).unwrap();
+    // Current Alexa solution is PTT & starts with protocol 'avs://'
+    if rdkresponse.result.urlPtt.to_string().contains("avs:") && voiceSystem == "AmazonAlexa" {
+        if rdkresponse.result.ptt.status.to_string().contains("ready") {
+            avs_enabled = true;
         }
     }
-    return avs_enabled;
+    Ok(avs_enabled)
 }
 
 #[allow(non_snake_case)]
-pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), String> {
+pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
-    if !is_voice_enabled("AmazonAlexa".to_string()) {
+    let voice_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
+    if !voice_enabled {
         enable_ptt()?;
     }
 

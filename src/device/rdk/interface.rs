@@ -1,3 +1,4 @@
+use crate::dab::structs::DabError;
 use crate::dab::structs::AudioOutputMode;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
@@ -17,16 +18,16 @@ pub fn init(device_ip: &str, debug: bool) {
     }
 }
 
-pub fn get_device_id() -> Result<String, String> {
+pub fn get_device_id() -> Result < String, DabError > {
     let json_string =
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
     let response = http_post(json_string)?;
     let rdkresponse: serde_json::Value = serde_json::from_str(&response).unwrap();
-    let device_id = rdkresponse["result"]["estb_mac"].as_str().ok_or("RDK Error: org.rdk.System.getDeviceInfo.result.estb_mac not found")?;
+    let device_id = rdkresponse["result"]["estb_mac"].as_str().ok_or(DabError::Err500("RDK Error: org.rdk.System.getDeviceInfo.result.estb_mac not found".to_string()))?;
     Ok(device_id.replace(":", "").to_string())
 }
 
-pub fn http_download(url: String) -> Result<(), String> {
+pub fn http_download(url: String) -> Result<(), DabError> {
     let client = Client::new();
 
     let response = block_on(async { client.get(url).await });
@@ -38,11 +39,11 @@ pub fn http_download(url: String) -> Result<(), String> {
             file.write_all(&body).unwrap();
             return Ok(());
         }
-        Err(err) => return Err(err.to_string()),
+        Err(err) => return Err(DabError::Err500(err.to_string())),
     }
 }
 
-pub fn http_post(json_string: String) -> Result<String, String> {
+pub fn http_post(json_string: String) -> Result < String, DabError > {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
@@ -83,12 +84,12 @@ pub fn http_post(json_string: String) -> Result<String, String> {
                 }
             }
 
-            return Err(str);
+            return Err(DabError::Err500(str));
         }
     }
 }
 
-pub fn service_deactivate(service: String) -> Result<(), String> {
+pub fn service_deactivate(service: String) -> Result<(), DabError> {
     //#########Controller.1.deactivate#########
     #[derive(Serialize)]
     struct ControllerDeactivateRequest {
@@ -136,7 +137,7 @@ pub struct RdkResult {
 
 pub type RdkResponseSimple = RdkResponse<RdkResult>;
 
-pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
+pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, DabError> {
     #[derive(Serialize)]
     struct RdkNullParams {}
 
@@ -146,14 +147,14 @@ pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
 pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
     method: &str,
     params: P,
-) -> Result<R, String> {
+) -> Result<R, DabError> {
     rdk_request_impl(method, Some(params))
 }
 
 fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
     method: &str,
     params: Option<P>,
-) -> Result<R, String> {
+) -> Result<R, DabError> {
     #[derive(Serialize)]
     struct RdkRequest<P> {
         jsonrpc: String,
@@ -183,26 +184,26 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
 
     let val: serde_json::Value = match serde_json::from_str(&response) {
         Ok(val) => val,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(DabError::Err500(e.to_string())),
     };
 
     if val["error"] != serde_json::Value::Null {
-        return Err(val["error"]["message"].as_str().unwrap().into());
-    } else if !val["result"].is_null() && val["result"]["success"].is_boolean() {
+        return Err(DabError::Err500(val["error"]["message"].as_str().unwrap().into()));
+    } else if val["result"] != serde_json::Value::Null {
         if !val["result"]["success"].as_bool().unwrap() {
-            return Err(format!("{} failed", method));
+            return Err(DabError::Err500(format!("{} failed", method)));
         }
     }
 
     let res: R = match serde_json::from_value(val) {
         Ok(res) => res,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(DabError::Err500(e.to_string())),
     };
 
     Ok(res)
 }
 
-pub fn service_activate(service: String) -> Result<(), String> {
+pub fn service_activate(service: String) -> Result<(), DabError> {
     //#########Controller.1.activate#########
     #[derive(Serialize)]
     struct ControllerActivateRequest {
@@ -234,7 +235,7 @@ pub fn service_activate(service: String) -> Result<(), String> {
     Ok(())
 }
 
-pub fn service_is_available(service: &str) -> Result<bool, String> {
+pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct Status {
@@ -244,7 +245,13 @@ pub fn service_is_available(service: &str) -> Result<bool, String> {
 
     match rdk_request::<RdkResponse<Vec<Status>>> (format!("Controller.1.status@{service}").as_str()) {
         Err(message) => {
-            if message == "ERROR_UNKNOWN_KEY" {
+            let error_message = match &message {
+                DabError::Err400(msg) => msg,
+                DabError::Err500(msg) => msg,
+                DabError::Err501(msg) => msg,
+            };
+
+            if error_message == "ERROR_UNKNOWN_KEY" {
                 return Ok(false);
             }
             return Err(message);
@@ -351,25 +358,25 @@ pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
 
 // Telemetry operations
 
-pub fn get_device_memory() -> Result<u32, String> {
+pub fn get_device_memory() -> Result<u32, DabError> {
     Ok(0)
 }
 
 //Read key inputs from file
 
-pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
+pub fn read_keymap_json(file_path: &str) -> Result < String, DabError > {
     let mut file_content = String::new();
     File::open(file_path)
         .map_err(|e| {
             if e.kind() != std::io::ErrorKind::NotFound {
                 println!("Error opening {}: {}", file_path, e);
             }
-            e.to_string()
+            DabError::Err500(e.to_string())
         })?
         .read_to_string(&mut file_content)
         .map_err(|e| {
             println!("Error reading {}: {}", file_path, e);
-            e.to_string()
+            DabError::Err500(e.to_string())
         })?;
     Ok(file_content)
 }

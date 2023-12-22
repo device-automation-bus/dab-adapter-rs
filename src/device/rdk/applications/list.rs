@@ -1,7 +1,7 @@
 use crate::dab::structs::Application;
 use crate::dab::structs::ApplicationListRequest;
 use crate::dab::structs::ListApplicationsResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: ApplicationListRequest) -> Result<String, String> {
+pub fn process(_dab_request: ApplicationListRequest) -> Result < String, DabError > {
     let mut ResponseOperator = ListApplicationsResponse::default();
     // *** Fill in the fields of the struct Application here ***
 

@@ -1,5 +1,4 @@
-#[allow(unused_imports)]
-use serde_json::json;
+use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationRequest;
 use crate::dab::structs::LaunchApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
@@ -12,7 +11,7 @@ use std::{thread, time};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, String> {
+pub fn process(_dab_request: LaunchApplicationRequest) -> Result < String, DabError > {
     let mut ResponseOperator = LaunchApplicationResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationResponse here ***
 
@@ -151,7 +150,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, String>
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
+                return Err(DabError::Err500("Error calling org.rdk.RDKShell.launch".to_string()));
             }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
@@ -167,7 +166,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, String>
             let rdkresponse: RdkResponseLaunch =
                 serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
+                return Err(DabError::Err500("Error calling org.rdk.RDKShell.launch".to_string()));
             }
         }
     } else {
@@ -226,14 +225,14 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, String>
     }
 
     if app_state != "FOREGROUND" {
-        return Err("Check state request(5 second) timeout, app may not be visible to user.".to_string());
+        return Err(DabError::Err500("Check state request(5 second) timeout, app may not be visible to user.".to_string()));
     }
 
     // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
 
-pub fn move_to_front_set_focus(callsign: String) -> Result<(), String> {
+pub fn move_to_front_set_focus(callsign: String) -> Result< String, DabError > {
     //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
 
     // RDK Request Common Structs
@@ -272,5 +271,5 @@ pub fn move_to_front_set_focus(callsign: String) -> Result<(), String> {
     };
     let json_string = serde_json::to_string(&request).unwrap();
     http_post(json_string)?;
-    Ok(())
+    Ok("{}".to_string())
 }

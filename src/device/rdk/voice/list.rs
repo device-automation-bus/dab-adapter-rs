@@ -1,7 +1,7 @@
-#[allow(unused_imports)]
+
 use crate::dab::structs::VoiceListRequest;
 use crate::dab::structs::ListVoiceSystemsResponse;
-
+use crate::dab::structs::DabError;
 use crate::dab::structs::VoiceSystem;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: VoiceListRequest) -> Result<String, String> {
+pub fn process(_dab_request: VoiceListRequest) -> Result < String, DabError > {
     let mut ResponseOperator = ListVoiceSystemsResponse::default();
     // *** Fill in the fields of the struct VoiceSystem here ***
 

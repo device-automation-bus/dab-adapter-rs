@@ -1,10 +1,11 @@
+use crate::dab::structs::DabError;
 use crate::dab::structs::ListSupportedOperation;
 use crate::dab::structs::OperationsListRequest;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: OperationsListRequest) -> Result<String, String> {
+pub fn process(_dab_request: OperationsListRequest) -> Result < String, DabError > {
     let mut ResponseOperator = ListSupportedOperation::default();
     // *** Fill in the fields of the struct ListSupportedOperation here ***
 

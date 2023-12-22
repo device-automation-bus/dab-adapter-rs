@@ -1,7 +1,5 @@
 use super::voice_functions::configureVoice;
-#[allow(unused_imports)]
-use serde_json::json;
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DabError;
 use crate::dab::structs::SetVoiceSystemRequest;
 use crate::dab::structs::SetVoiceSystemResponse;
 
@@ -9,30 +7,19 @@ use crate::dab::structs::SetVoiceSystemResponse;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: SetVoiceSystemRequest) -> Result<String, String> {
+pub fn process(_dab_request: SetVoiceSystemRequest) -> Result < String, DabError > {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
     
     // TODO: Add other RDK specific voice protocol support confirmation.
     if _dab_request.voiceSystem.name != "AmazonAlexa" {
         // Unsupported VoiceSystem.
-        let response = ErrorResponse {
-            status: 400,
-            error: "Setting voiceSystem failed. Unsupported voiceSystem.".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+            return Err(DabError::Err400("Setting voiceSystem failed. Unsupported voiceSystem.".to_string()));
     }
 
     configureVoice(_dab_request.voiceSystem.enabled)?;
     // TODO: validation of response.
     // if response.success == false {
-    //     // Thunder JSONRPC failed
-    //     let response = ErrorResponse {
-    //         status: 400,
-    //         error: "Platform operation failed.".to_string(),
-    //     };
-    //     let Response_json = json!(response);
-    //     return Err(serde_json::to_string(&Response_json).unwrap());
+    //     return Err(DabError::Err400("Platform operation failed.".to_string());
     // }
 
     ResponseOperator.voiceSystem.enabled = _dab_request.voiceSystem.enabled;
