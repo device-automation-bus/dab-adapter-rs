@@ -113,6 +113,7 @@ use crate::dab::structs::VideoInputSource;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
+use crate::device::rdk::interface::service_is_available;
 use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use lazy_static::lazy_static;
@@ -120,7 +121,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 
-use super::get::get_rdk_cec;
 use super::get::get_rdk_tts;
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
@@ -278,7 +278,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = get_rdk_cec()?;
+    ResponseOperator.cec = service_is_available ("org.rdk.HdmiCec_2")?;
 
     ResponseOperator.lowLatencyMode = true;
 

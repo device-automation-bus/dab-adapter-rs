@@ -158,19 +158,27 @@ pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkNullParams {}
 
-    rdk_request_with_params(method, RdkNullParams {})
+    rdk_request_impl::<RdkNullParams,R>(method, None)
 }
 
 pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
     method: &str,
     params: P,
 ) -> Result<R, String> {
+    rdk_request_impl(method, Some(params))
+}
+
+fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
+    method: &str,
+    params: Option<P>,
+) -> Result<R, String> {
     #[derive(Serialize)]
     struct RdkRequest<P> {
         jsonrpc: String,
         id: i32,
         method: String,
-        params: P,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        params: Option<P>,
     }
 
     static mut JSONRPC_ID: i32 = 1;
@@ -198,7 +206,7 @@ pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
 
     if val["error"] != serde_json::Value::Null {
         return Err(val["error"]["message"].as_str().unwrap().into());
-    } else if val["result"] != serde_json::Value::Null {
+    } else if !val["result"].is_null() && val["result"]["success"].is_boolean() {
         if !val["result"]["success"].as_bool().unwrap() {
             return Err(format!("{} failed", method));
         }
@@ -251,6 +259,25 @@ pub fn service_activate(service: String) -> Result<(), String> {
             return Err(serde_json::to_string(&error).unwrap());
         }
         Ok(_) => return Ok(()),
+    }
+}
+
+pub fn service_is_available(service: &str) -> Result<bool, String> {
+    #[allow(dead_code)]
+    #[derive(Deserialize)]
+    struct Status {
+        autostart: bool,
+        callsign: String,
+    }
+
+    match rdk_request::<RdkResponse<Vec<Status>>> (format!("Controller.1.status@{service}").as_str()) {
+        Err(message) => {
+            if message == "ERROR_UNKNOWN_KEY" {
+                return Ok(false);
+            }
+            return Err(message);
+        }
+        Ok(_) => return Ok(true)
     }
 }
 
