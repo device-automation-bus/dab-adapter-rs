@@ -154,10 +154,7 @@ pub fn main() {
         "applications/exit".to_string(),
         RequestTypes::ApplicationExitRequest,
     );
-    handlers.insert(
-        "device/info".to_string(),
-        RequestTypes::DeviceInfoRequest,
-    );
+    handlers.insert("device/info".to_string(), RequestTypes::DeviceInfoRequest);
     handlers.insert(
         "system/restart".to_string(),
         RequestTypes::SystemRestartRequest,
@@ -186,22 +183,13 @@ pub fn main() {
         "input/long-key-press".to_string(),
         RequestTypes::InputLongKeyPressRequest,
     );
-    handlers.insert(
-        "output/image".to_string(),
-        RequestTypes::OutputImageRequest,
-    );
+    handlers.insert("output/image".to_string(), RequestTypes::OutputImageRequest);
     handlers.insert(
         "health-check/get".to_string(),
         RequestTypes::HealthCheckGetRequest,
     );
-    handlers.insert(
-        "voice/list".to_string(),
-        RequestTypes::VoiceListRequest,
-    );
-    handlers.insert(
-        "voice/set".to_string(),
-        RequestTypes::VoiceSetRequest,
-    );
+    handlers.insert("voice/list".to_string(), RequestTypes::VoiceListRequest);
+    handlers.insert("voice/set".to_string(), RequestTypes::VoiceSetRequest);
     handlers.insert(
         "voice/send-audio".to_string(),
         RequestTypes::VoiceSendAudioRequest,
@@ -210,10 +198,7 @@ pub fn main() {
         "voice/send-text".to_string(),
         RequestTypes::VoiceSendTextRequest,
     );
-    handlers.insert(
-        "version".to_string(),
-        RequestTypes::VersionRequest,
-    );
+    handlers.insert("version".to_string(), RequestTypes::VersionRequest);
 
     if create_retire_thread {
         let _handle = thread::Builder::new()

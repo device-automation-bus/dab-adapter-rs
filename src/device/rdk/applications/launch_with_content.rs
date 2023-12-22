@@ -1,28 +1,36 @@
-#[allow(unused_imports)]
-use serde_json::json;
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
-use crate::device::rdk::interface::http_post;
 use crate::device::rdk::applications::launch::move_to_front_set_focus;
+use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
+#[allow(unused_imports)]
+use serde_json::json;
 
-use urlencoding::decode;
 use std::{thread, time};
+use urlencoding::decode;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<String, DabError> {
     let mut ResponseOperator = LaunchApplicationWithContentResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationWithContentResponse here ***
+
+    if _dab_request.appId.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'appId' parameter".to_string(),
+        ));
+    }
 
     if !(_dab_request.appId == "Cobalt"
         || _dab_request.appId == "Youtube"
         || _dab_request.appId == "YouTube")
     {
-        return Err(DabError::Err400("This operator currently only supports Youtube".to_string()));
+        return Err(DabError::Err400(
+            "This operator currently only supports Youtube".to_string(),
+        ));
     }
 
     // ****** RDK Request Common Structs ********
@@ -187,10 +195,11 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result < St
             };
             let json_string = serde_json::to_string(&request).unwrap();
             let response = http_post(json_string)?;
-            let rdkresponse: RdkResponseLaunch =
-                serde_json::from_str(&response).unwrap();
+            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err(DabError::Err500("Error calling org.rdk.RDKShell.launch".to_string()));
+                return Err(DabError::Err500(
+                    "Error calling org.rdk.RDKShell.launch".to_string(),
+                ));
             }
         }
     }
@@ -212,18 +221,20 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result < St
 
     // ******************* wait until app state 8*************************
     let mut app_state: String = "STOPPED".to_string();
-    for _idx in 1..=20 { // 5 seconds (20*250ms)
+    for _idx in 1..=20 {
+        // 5 seconds (20*250ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
-        if app_state == "FOREGROUND".to_string()
-        {
+        if app_state == "FOREGROUND".to_string() {
             break;
         }
     }
 
     if app_state != "FOREGROUND" {
-        return Err(DabError::Err500("Check state request(5 second) timeout, app may not be visible to user.".to_string()));
+        return Err(DabError::Err500(
+            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
+        ));
     }
 
     // *******************************************************************

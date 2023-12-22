@@ -1,11 +1,9 @@
-
 use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;
 use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::service_activate;
 use serde::{Deserialize, Serialize};
-
 
 use base64::{engine::general_purpose, Engine as _};
 use bytes::Bytes;
@@ -23,7 +21,7 @@ use tokio::time::{self, Duration};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: CaptureScreenshotRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabError> {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let mut ResponseOperator = CaptureScreenshotResponse::default();
@@ -109,8 +107,12 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result < String, DabEr
                 // *******************************************************************
                 Ok(serde_json::to_string(&ResponseOperator).unwrap())
             }
-            Ok(None) => Err(DabError::Err500("The channel was closed before a message was received".to_string())),
-            Err(_) => Err(DabError::Err500("Timed out waiting for a message from the channel".to_string())),
+            Ok(None) => Err(DabError::Err500(
+                "The channel was closed before a message was received".to_string(),
+            )),
+            Err(_) => Err(DabError::Err500(
+                "Timed out waiting for a message from the channel".to_string(),
+            )),
         }
     })
 }

@@ -1,5 +1,5 @@
-use crate::dab::structs::DabError;
 use crate::dab::structs::AudioOutputMode;
+use crate::dab::structs::DabError;
 use futures::executor::block_on;
 use lazy_static::lazy_static;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -18,12 +18,16 @@ pub fn init(device_ip: &str, debug: bool) {
     }
 }
 
-pub fn get_device_id() -> Result < String, DabError > {
+pub fn get_device_id() -> Result<String, DabError> {
     let json_string =
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
     let response = http_post(json_string)?;
     let rdkresponse: serde_json::Value = serde_json::from_str(&response).unwrap();
-    let device_id = rdkresponse["result"]["estb_mac"].as_str().ok_or(DabError::Err500("RDK Error: org.rdk.System.getDeviceInfo.result.estb_mac not found".to_string()))?;
+    let device_id = rdkresponse["result"]["estb_mac"]
+        .as_str()
+        .ok_or(DabError::Err500(
+            "RDK Error: org.rdk.System.getDeviceInfo.result.estb_mac not found".to_string(),
+        ))?;
     Ok(device_id.replace(":", "").to_string())
 }
 
@@ -43,7 +47,7 @@ pub fn http_download(url: String) -> Result<(), DabError> {
     }
 }
 
-pub fn http_post(json_string: String) -> Result < String, DabError > {
+pub fn http_post(json_string: String) -> Result<String, DabError> {
     let client = Client::new();
     let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
 
@@ -141,7 +145,7 @@ pub fn rdk_request<R: DeserializeOwned>(method: &str) -> Result<R, DabError> {
     #[derive(Serialize)]
     struct RdkNullParams {}
 
-    rdk_request_impl::<RdkNullParams,R>(method, None)
+    rdk_request_impl::<RdkNullParams, R>(method, None)
 }
 
 pub fn rdk_request_with_params<P: Serialize, R: DeserializeOwned>(
@@ -188,7 +192,9 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
     };
 
     if val["error"] != serde_json::Value::Null {
-        return Err(DabError::Err500(val["error"]["message"].as_str().unwrap().into()));
+        return Err(DabError::Err500(
+            val["error"]["message"].as_str().unwrap().into(),
+        ));
     } else if val["result"] != serde_json::Value::Null {
         if !val["result"]["success"].as_bool().unwrap() {
             return Err(DabError::Err500(format!("{} failed", method)));
@@ -243,7 +249,8 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
         callsign: String,
     }
 
-    match rdk_request::<RdkResponse<Vec<Status>>> (format!("Controller.1.status@{service}").as_str()) {
+    match rdk_request::<RdkResponse<Vec<Status>>>(format!("Controller.1.status@{service}").as_str())
+    {
         Err(message) => {
             let error_message = match &message {
                 DabError::Err400(msg) => msg,
@@ -256,7 +263,7 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
             }
             return Err(message);
         }
-        Ok(_) => return Ok(true)
+        Ok(_) => return Ok(true),
     }
 }
 
@@ -364,7 +371,7 @@ pub fn get_device_memory() -> Result<u32, DabError> {
 
 //Read key inputs from file
 
-pub fn read_keymap_json(file_path: &str) -> Result < String, DabError > {
+pub fn read_keymap_json(file_path: &str) -> Result<String, DabError> {
     let mut file_content = String::new();
     File::open(file_path)
         .map_err(|e| {

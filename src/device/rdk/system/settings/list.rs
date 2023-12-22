@@ -1,7 +1,7 @@
-use crate::dab::structs::DabError;
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::AudioVolume;
+use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettingsRequest;
 use crate::dab::structs::ListSystemSettingsResponse;
@@ -21,7 +21,7 @@ use std::collections::HashMap;
 
 use super::get::get_rdk_tts;
 
-fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError > {
+fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -66,7 +66,7 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError > {
     Ok(res)
 }
 
-pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, DabError > {
+pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -90,7 +90,7 @@ pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, DabError > {
     Ok(response)
 }
 
-pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, DabError > {
+pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -118,7 +118,7 @@ pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, DabErr
     Ok(response)
 }
 
-pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, DabError > {
+pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -143,7 +143,7 @@ pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, DabEr
     Ok(rdkresponse.result.supportedAudioModes)
 }
 
-fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, DabError > {
+fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, DabError> {
     let mut res = get_rdk_supported_audio_modes(&get_rdk_audio_port()?)?
         .iter()
         .filter_map(|mode| rdk_sound_mode_to_dab(mode))
@@ -159,7 +159,7 @@ fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, DabError > {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: ListSystemSettingsRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabError> {
     let mut ResponseOperator = ListSystemSettingsResponse::default();
     // *** Fill in the fields of the struct ListSystemSettings here ***
 
@@ -176,7 +176,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result < String, DabE
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = service_is_available ("org.rdk.HdmiCec_2")?;
+    ResponseOperator.cec = service_is_available("org.rdk.HdmiCec_2")?;
 
     ResponseOperator.lowLatencyMode = false;
 

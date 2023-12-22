@@ -1,20 +1,19 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::dab::structs::DabError;
 use crate::dab::structs::DeviceInfoRequest;
 use crate::dab::structs::DisplayType;
 use crate::dab::structs::GetDeviceInformationResponse;
-use crate::dab::structs::DabError;
 use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 
-
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: DeviceInfoRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
     let mut ResponseOperator = GetDeviceInformationResponse::default();
     // *** Fill in the fields of the struct DeviceInformation here ***
 
@@ -204,7 +203,7 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result < String, DabError > {
     let response = http_post(json_string)?;
     let Systeminfo: SysteminfoResponse;
     Systeminfo = serde_json::from_str(&response).unwrap();
-    
+
     //#########DeviceIdentification.1.deviceidentification#########
 
     #[derive(Serialize)]
@@ -308,7 +307,7 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result < String, DabError > {
             interface.ipAddress = ipaddr;
         }
 
-        for dnsparam in [ IPSettings.result.primarydns, IPSettings.result.secondarydns ] {
+        for dnsparam in [IPSettings.result.primarydns, IPSettings.result.secondarydns] {
             if let Some(dns) = dnsparam {
                 if !dns.is_empty() {
                     interface.dns.push(dns)
@@ -321,11 +320,11 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result < String, DabError > {
 
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|err| {err.to_string()});
-        
-    match now_ms{
+        .map_err(|err| err.to_string());
+
+    match now_ms {
         Err(err) => return Err(DabError::Err400(err)),
-        _ => {},
+        _ => {}
     }
 
     let ms_since_epoch = (now_ms.unwrap().as_secs() - Systeminfo.result.uptime) * 1000;

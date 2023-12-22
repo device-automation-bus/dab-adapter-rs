@@ -13,8 +13,7 @@ use crate::device::rdk::interface::service_deactivate;
 use crate::device::rdk::interface::RdkResponse;
 use serde::{Deserialize, Serialize};
 
-
-fn get_rdk_language() -> Result < String, DabError > {
+fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct GetUILanguage {
@@ -28,7 +27,7 @@ fn get_rdk_language() -> Result < String, DabError > {
     Ok(rdkresponse.result.ui_language)
 }
 
-fn get_rdk_resolution() -> Result<OutputResolution, DabError > {
+fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
     service_activate("org.rdk.FrameRate".to_string())?;
 
     #[allow(dead_code)]
@@ -56,7 +55,7 @@ fn get_rdk_resolution() -> Result<OutputResolution, DabError > {
     })
 }
 
-pub fn get_rdk_connected_video_displays() -> Result < String, DabError > {
+pub fn get_rdk_connected_video_displays() -> Result<String, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -73,10 +72,12 @@ pub fn get_rdk_connected_video_displays() -> Result < String, DabError > {
         .connectedVideoDisplays
         .get(0)
         .cloned()
-        .ok_or(DabError::Err500("Device doesn't have any connected video port.".to_string()))
+        .ok_or(DabError::Err500(
+            "Device doesn't have any connected video port.".to_string(),
+        ))
 }
 
-pub fn get_rdk_hdr_current_setting() -> Result<HdrOutputMode, DabError > {
+pub fn get_rdk_hdr_current_setting() -> Result<HdrOutputMode, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -98,7 +99,7 @@ pub fn get_rdk_hdr_current_setting() -> Result<HdrOutputMode, DabError > {
     }
 }
 
-pub fn get_rdk_audio_port() -> Result < String, DabError > {
+pub fn get_rdk_audio_port() -> Result<String, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -115,10 +116,12 @@ pub fn get_rdk_audio_port() -> Result < String, DabError > {
         .connectedAudioPorts
         .get(0)
         .cloned()
-        .ok_or(DabError::Err500("Device doesn't have any connected audio port.".to_string()))
+        .ok_or(DabError::Err500(
+            "Device doesn't have any connected audio port.".to_string(),
+        ))
 }
 
-fn get_rdk_audio_volume() -> Result<u32, DabError > {
+fn get_rdk_audio_volume() -> Result<u32, DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -146,7 +149,7 @@ fn get_rdk_audio_volume() -> Result<u32, DabError > {
     }
 }
 
-fn get_rdk_mute() -> Result<bool, DabError > {
+fn get_rdk_mute() -> Result<bool, DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -170,7 +173,7 @@ fn get_rdk_mute() -> Result<bool, DabError > {
     Ok(rdkresponse.result.muted)
 }
 
-pub fn get_rdk_tts() -> Result<bool, DabError > {
+pub fn get_rdk_tts() -> Result<bool, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -185,7 +188,7 @@ pub fn get_rdk_tts() -> Result<bool, DabError > {
     Ok(rdkresponse.result.isenabled)
 }
 
-pub fn get_rdk_cec() -> Result<bool, DabError > {
+pub fn get_rdk_cec() -> Result<bool, DabError> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct CecGetEnabled {
@@ -198,7 +201,7 @@ pub fn get_rdk_cec() -> Result<bool, DabError > {
     Ok(rdkresponse.result.enabled)
 }
 
-fn get_rdk_connected_audio_source() -> Result<AudioOutputSource, DabError > {
+fn get_rdk_connected_audio_source() -> Result<AudioOutputSource, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -227,7 +230,7 @@ fn get_rdk_connected_audio_source() -> Result<AudioOutputSource, DabError > {
     Ok(response.get(0).unwrap().clone())
 }
 
-fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, DabError > {
+fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -258,7 +261,7 @@ fn get_rdk_audio_output_mode() -> Result<AudioOutputMode, DabError > {
     }
 }
 
-pub fn process(_dab_request: GetSystemSettingsRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, DabError> {
     let mut response = GetSystemSettingsResponse::default();
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 

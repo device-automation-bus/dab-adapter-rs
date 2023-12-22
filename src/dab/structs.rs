@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-pub type SharedMap = 
-    HashMap<String, RequestTypes>;
+pub type SharedMap = HashMap<String, RequestTypes>;
 
 #[derive(Debug)]
 pub enum DabError {
@@ -11,7 +10,7 @@ pub enum DabError {
 }
 
 #[derive(Clone)]
-pub enum RequestTypes {	
+pub enum RequestTypes {
     OperationsListRequest,
     ApplicationListRequest,
     ApplicationLaunchRequest,
@@ -339,9 +338,7 @@ pub struct AudioVolume {
 }
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
-pub struct ListSystemSettingsRequest{
-
-}
+pub struct ListSystemSettingsRequest {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]

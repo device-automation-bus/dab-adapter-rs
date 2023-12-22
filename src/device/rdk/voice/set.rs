@@ -3,17 +3,18 @@ use crate::dab::structs::DabError;
 use crate::dab::structs::SetVoiceSystemRequest;
 use crate::dab::structs::SetVoiceSystemResponse;
 
-
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: SetVoiceSystemRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: SetVoiceSystemRequest) -> Result<String, DabError> {
     let mut ResponseOperator = SetVoiceSystemResponse::default();
-    
+
     // TODO: Add other RDK specific voice protocol support confirmation.
     if _dab_request.voiceSystem.name != "AmazonAlexa" {
         // Unsupported VoiceSystem.
-            return Err(DabError::Err400("Setting voiceSystem failed. Unsupported voiceSystem.".to_string()));
+        return Err(DabError::Err400(
+            "Setting voiceSystem failed. Unsupported voiceSystem.".to_string(),
+        ));
     }
 
     configureVoice(_dab_request.voiceSystem.enabled)?;
