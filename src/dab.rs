@@ -1,18 +1,10 @@
-use serde_json::json;
+use serde_json::Value;
 pub mod device_telemetry;
 pub mod mqtt_client;
 pub mod structs;
-use crate::dab::structs::DabError;
-use mqtt_client::MqttClient;
-use mqtt_client::MqttMessage;
-use structs::SharedMap;
-use structs::DiscoveryResponse;
-use structs::ErrorResponse;
-use structs::Messages;
-use structs::NotificationLevel;
-use structs::RequestTypes;
-use structs::TelemetryMessage;
-
+use mqtt_client::{ MqttClient,MqttMessage };
+use structs::{  DabResponse,DabError,SharedMap,DiscoveryResponse,ErrorResponse,
+                Messages,NotificationLevel,RequestTypes,TelemetryMessage};
 use crate::device::rdk as hw_specific;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -187,7 +179,9 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 let payload = msg_received.payload;
 
                 // Process the message
-                let response = if function_topic == "dab/discovery" {
+                let response = if payload.trim().is_empty() {
+                    Err(DabError::Err400("No payload. Dab Request needs to be at least empty {}".to_string()))
+                } else if function_topic == "dab/discovery" {
                     println!("OK: {}", function_topic);
                     Ok(serde_json::to_string(&DiscoveryResponse {
                         ip: ip_address.clone(),
@@ -235,9 +229,18 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 let payload = match response{
                     Ok(r) => {
                         // The request was successful.
-                        let mut response_json = json!(r);
-                        response_json["status"] = json!(200);
-                        response_json.to_string()
+                        let template = DabResponse {
+                            status: 200,
+                        };
+                        let dab_json = serde_json::to_value(template).expect("Error serializing DabResponse");
+                        // Parse the JSON string
+                        let mut dab_response:Value = serde_json::from_str(&r).expect("Error parsing JSON string");
+                        if dab_response.is_object() {
+                            for (key, value) in dab_json.as_object().unwrap() {
+                                dab_response[key] = value.clone();
+                            }
+                        }
+                        dab_response.to_string()
                     },
                     Err(e) => match e {
                             DabError::Err400(msg) => {

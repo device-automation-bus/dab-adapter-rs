@@ -43,10 +43,10 @@ pub struct Request {
     keyCode: Option<String>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct NotImplemented {
+pub struct DabResponse {
     pub status: u16,
-    pub error: String,
 }
 
 #[allow(non_snake_case)]
