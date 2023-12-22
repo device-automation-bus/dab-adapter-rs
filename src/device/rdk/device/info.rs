@@ -1,10 +1,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-#[allow(unused_imports)]
+
 use crate::dab::structs::DeviceInfoRequest;
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::DisplayType;
 use crate::dab::structs::GetDeviceInformationResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
@@ -15,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, String> {
+pub fn process(_dab_request: DeviceInfoRequest) -> Result < String, DabError > {
     let mut ResponseOperator = GetDeviceInformationResponse::default();
     // *** Fill in the fields of the struct DeviceInformation here ***
 
@@ -320,12 +319,16 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, String> {
         ResponseOperator.networkInterfaces.push(interface);
     }
 
-    let ms_since_epoch = (SystemTime::now()
+    let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|err| {
-            serde_json::to_string(&ErrorResponse { status: 500, error: err.to_string() }).unwrap()
-        })?
-        .as_secs() - Systeminfo.result.uptime) * 1000;
+        .map_err(|err| {err.to_string()});
+        
+    match now_ms{
+        Err(err) => return Err(DabError::Err400(err)),
+        _ => {},
+    }
+
+    let ms_since_epoch = (now_ms.unwrap().as_secs() - Systeminfo.result.uptime) * 1000;
 
     ResponseOperator.serialNumber = Systeminfo.result.serialnumber;
     ResponseOperator.uptimeSince = ms_since_epoch;

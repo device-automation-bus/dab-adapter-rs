@@ -1,23 +1,23 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::SetSystemSettingsRequest;
 use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::RdkResponseSimple;
-#[allow(unused_imports)]
+
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
-#[allow(unused_imports)]
+
 use serde::{Deserialize, Serialize};
-#[allow(unused_imports)]
+
 
 use serde_json::Value;
 use std::collections::HashMap;
 
-fn set_rdk_language(language: String) -> Result<(), String> {
+fn set_rdk_language(language: String) -> Result<(), DabError> {
     #[derive(Serialize)]
     struct Param {
         ui_language: String,
@@ -33,7 +33,7 @@ fn set_rdk_language(language: String) -> Result<(), String> {
     Ok(())
 }
 
-pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result<String, String> {
+pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result < String, DabError > {
     let resolution_map = [
         ([640, 480], "480"),
         ([720, 576], "576"),
@@ -46,10 +46,10 @@ pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result<Str
             return Ok(format!("{}p{}", res_str, resolution.frequency));
         }
     }
-    Err("Unsupported video format".into())
+    Err(DabError::Err500("Unsupported video format".to_string()))
 }
 
-fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
+fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Serialize, Deserialize)]
@@ -73,7 +73,7 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_audio_volume(volume: u32) -> Result<(), String> {
+fn set_rdk_audio_volume(volume: u32) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -92,7 +92,7 @@ fn set_rdk_audio_volume(volume: u32) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_mute(mute: bool) -> Result<(), String> {
+fn set_rdk_mute(mute: bool) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -111,7 +111,7 @@ fn set_rdk_mute(mute: bool) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_cec(enabled: bool) -> Result<(), String> {
+fn set_rdk_cec(enabled: bool) -> Result<(), DabError> {
     #[derive(Serialize)]
     struct Param {
         enabled: bool,
@@ -125,7 +125,7 @@ fn set_rdk_cec(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> {
+fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -139,7 +139,7 @@ fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> 
     };
 
     if source == AudioOutputSource::HDMI {
-        req_params.audioPort = "HDMI0".into();
+        req_params.audioPort = "HDMI0".to_string();
     }
 
     let _rdkresponse: RdkResponseSimple =
@@ -147,7 +147,7 @@ fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), String> 
     Ok(())
 }
 
-fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
+fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize, Default)]
     struct Param {
@@ -162,10 +162,10 @@ fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
             req_params.hdr_mode = true;
         }
         HdrOutputMode::HdrOnPlayback => {
-            return Err(format!(
+            return Err(DabError::Err500(format!(
                 "Setting hdr mode '{}' is not supported",
                 "HdrOnPlayback"
-            ))
+            )))
         }
         HdrOutputMode::DisableHdr => {
             req_params.hdr_mode = false;
@@ -177,22 +177,22 @@ fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), String> {
     Ok(())
 }
 
-fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<String, String> {
+fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result < String, DabError > {
     use AudioOutputMode::*;
 
     match mode {
-        Stereo => Ok("STEREO".into()),
-        PassThrough => Ok("PASSTHRU".into()),
-        Auto => Ok("AUTO".into()),
+        Stereo => Ok("STEREO".to_string()),
+        PassThrough => Ok("PASSTHRU".to_string()),
+        Auto => Ok("AUTO".to_string()),
         MultichannelPcm => get_rdk_supported_audio_modes(port)?
             .iter()
             .find(|mode| ["SURROUND", "DOLBYDIGITAL", "DOLBYDIGITALPLUS"].contains(&mode.as_str()))
             .cloned()
-            .ok_or("Audio port doesn't support multichannel.".into()),
+            .ok_or(DabError::Err500("Audio port doesn't support multichannel.".to_string())),
     }
 }
 
-fn set_rdk_audio_output_mode(mode: AudioOutputMode) -> Result<(), String> {
+fn set_rdk_audio_output_mode(mode: AudioOutputMode) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Default, Serialize)]
     struct Param {
@@ -212,7 +212,7 @@ fn set_rdk_audio_output_mode(mode: AudioOutputMode) -> Result<(), String> {
     Ok(())
 }
 
-fn set_rdk_text_to_speech(val: bool) -> Result<(), String> {
+fn set_rdk_text_to_speech(val: bool) -> Result<(), DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -227,7 +227,7 @@ fn set_rdk_text_to_speech(val: bool) -> Result<(), String> {
     Ok(())
 }
 
-pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, String> {
+pub fn process(_dab_request: SetSystemSettingsRequest) -> Result < String, DabError > {
     let _packet = serde_json::to_string(&_dab_request).unwrap();
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 
@@ -255,10 +255,10 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, String>
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
             "pictureMode" | "videoInputSource" | "lowLatencyMode" | _ => {
-                return Err(format!("Setting '{}' is not supported", key))
+                return Err(DabError::Err400(format!("Setting '{}' is not supported", key)))
             }
         }
     }
 
-    Ok("".into())
+    Ok("{}".to_string())
 }

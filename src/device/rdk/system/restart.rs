@@ -1,4 +1,4 @@
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::RestartRequest;
 use crate::dab::structs::RestartResponse;
 use crate::device::rdk::interface::http_post;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: RestartRequest) -> Result<String, String> {
+pub fn process(_dab_request: RestartRequest) -> Result < String, DabError > {
     let mut ResponseOperator = RestartResponse::default();
     // *** Fill in the fields of the struct RestartResponse here ***
 

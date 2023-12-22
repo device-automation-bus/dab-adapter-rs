@@ -1,10 +1,8 @@
-use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::LongKeyPressRequest;
 use crate::dab::structs::LongKeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::{Deserialize, Serialize};use crate::dab::structs::DabError;
 use serde_json::{self, Value};
 use std::thread;
 use std::time::Duration;
@@ -13,31 +11,19 @@ use std::time::Instant;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: LongKeyPressRequest) -> Result<String, String> {
+pub fn process(_dab_request: LongKeyPressRequest) -> Result < String, DabError > {
     let mut ResponseOperator = LongKeyPressResponse::default();
     // *** Fill in the fields of the struct LongKeyPressResponse here ***
 
     if _dab_request.durationMs == 0 {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'durationMs' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+            return Err(DabError::Err400("request missing 'durationMs' parameter".to_string()));
     }
 
     let mut KeyCode: u16;
 
     match get_keycode(_dab_request.keyCode.clone()) {
         Some(k) => KeyCode = *k,
-        None => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "keyCode' not found".to_string(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
+        None => return Err(DabError::Err400("keyCode' not found".to_string())),
     }
 
     //#########org.rdk.RDKShell.generateKey#########

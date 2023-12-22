@@ -1,8 +1,7 @@
-#[allow(unused_imports)]
+
 use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::service_activate;
 use serde::{Deserialize, Serialize};
@@ -24,7 +23,7 @@ use tokio::time::{self, Duration};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, String> {
+pub fn process(_dab_request: CaptureScreenshotRequest) -> Result < String, DabError > {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let mut ResponseOperator = CaptureScreenshotResponse::default();
@@ -52,7 +51,7 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, String>
         tokio::spawn(graceful);
 
         //######### Activate org.rdk.ScreenCapture #########
-        service_activate("org.rdk.ScreenCapture".to_string()).unwrap();
+        service_activate("org.rdk.ScreenCapture".to_string())?;
 
         //#########org.rdk.ScreenCapture.uploadScreenCapture#########
         #[derive(Serialize)]
@@ -110,8 +109,8 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, String>
                 // *******************************************************************
                 Ok(serde_json::to_string(&ResponseOperator).unwrap())
             }
-            Ok(None) => Err("The channel was closed before a message was received".to_string()),
-            Err(_) => Err("Timed out waiting for a message from the channel".to_string()),
+            Ok(None) => Err(DabError::Err500("The channel was closed before a message was received".to_string())),
+            Err(_) => Err(DabError::Err500("Timed out waiting for a message from the channel".to_string())),
         }
     })
 }

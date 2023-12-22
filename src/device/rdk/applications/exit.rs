@@ -1,17 +1,16 @@
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
+
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use crate::dab::structs::DabError;
 use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, String> {
+pub fn process(_dab_request: ExitApplicationRequest) -> Result < String, DabError > {
     let mut ResponseOperator = ExitApplicationResponse::default();
     // *** Fill in the fields of the struct ExitApplicationResponse here ***
 
@@ -121,7 +120,5 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, String> {
             break;
         }
     }
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
