@@ -1,8 +1,9 @@
+use crate::dab::structs::DabError;
 use crate::dab::structs::LongKeyPressRequest;
 use crate::dab::structs::LongKeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
-use serde::{Deserialize, Serialize};use crate::dab::structs::DabError;
+use serde::{Deserialize, Serialize};
 use serde_json::{self, Value};
 use std::thread;
 use std::time::Duration;
@@ -11,12 +12,20 @@ use std::time::Instant;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: LongKeyPressRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: LongKeyPressRequest) -> Result<String, DabError> {
     let mut ResponseOperator = LongKeyPressResponse::default();
     // *** Fill in the fields of the struct LongKeyPressResponse here ***
 
+    if _dab_request.keyCode.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'keyCode' parameter".to_string(),
+        ));
+    }
+
     if _dab_request.durationMs == 0 {
-            return Err(DabError::Err400("request missing 'durationMs' parameter".to_string()));
+        return Err(DabError::Err400(
+            "request missing 'durationMs' parameter".to_string(),
+        ));
     }
 
     let mut KeyCode: u16;

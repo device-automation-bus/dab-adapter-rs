@@ -1,12 +1,11 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
-use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::interface::rdk_request;
+use crate::device::rdk::interface::RdkResponse;
 use serde::Deserialize;
 
-
-pub fn get_app_state (callsign: String) -> Result < String, DabError > {
+pub fn get_app_state(callsign: String) -> Result<String, DabError> {
     #[derive(Deserialize)]
     #[allow(dead_code)]
     struct State {
@@ -22,8 +21,7 @@ pub fn get_app_state (callsign: String) -> Result < String, DabError > {
         success: bool,
     }
 
-    let rdkresponse: RdkResponse<GetState> = 
-        rdk_request("org.rdk.RDKShell.getState")?;
+    let rdkresponse: RdkResponse<GetState> = rdk_request("org.rdk.RDKShell.getState")?;
 
     for item in rdkresponse.result.state {
         if item.callsign == callsign {
@@ -40,9 +38,15 @@ pub fn get_app_state (callsign: String) -> Result < String, DabError > {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: GetApplicationStateRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: GetApplicationStateRequest) -> Result<String, DabError> {
     let mut ResponseOperator = GetApplicationStateResponse::default();
     // *** Fill in the fields of the struct GetApplicationStateResponse here ***
+
+    if _dab_request.appId.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'appId' parameter".to_string(),
+        ));
+    }
 
     ResponseOperator.state = get_app_state(_dab_request.appId)?;
 

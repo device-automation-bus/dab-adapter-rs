@@ -1,11 +1,11 @@
+use super::voice_functions::sendVoiceCommand;
 use crate::dab::structs::DabError;
 use crate::dab::structs::SendTextRequest;
-use super::voice_functions::sendVoiceCommand;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: SendTextRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: SendTextRequest) -> Result<String, DabError> {
     use std::process::Command;
     use tts_rust::{languages::Languages, tts::GTTSClient};
 

@@ -1,18 +1,22 @@
-
+use crate::dab::structs::DabError;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
-use crate::dab::structs::DabError;
 use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: ExitApplicationRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError> {
     let mut ResponseOperator = ExitApplicationResponse::default();
     // *** Fill in the fields of the struct ExitApplicationResponse here ***
+    if _dab_request.appId.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'appId' parameter".to_string(),
+        ));
+    }
 
     let mut is_background = false;
     if _dab_request.background.is_some() && _dab_request.background.unwrap() {
@@ -109,8 +113,9 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result < String, DabErro
         }
     }
 
-    // ******************* wait until app state *************************
-    for _idx in 1..=20 { // 2 seconds (20*100ms)
+    // *******************************************************************
+    for _idx in 1..=20 {
+        // 2 seconds (20*100ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(100));
         ResponseOperator.state = get_app_state(_dab_request.appId.clone())?;

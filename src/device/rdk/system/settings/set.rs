@@ -2,8 +2,8 @@ use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
-use crate::dab::structs::SetSystemSettingsRequest;
 use crate::dab::structs::OutputResolution;
+use crate::dab::structs::SetSystemSettingsRequest;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::RdkResponseSimple;
 
@@ -12,7 +12,6 @@ use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 
 use serde::{Deserialize, Serialize};
-
 
 use serde_json::Value;
 use std::collections::HashMap;
@@ -33,7 +32,7 @@ fn set_rdk_language(language: String) -> Result<(), DabError> {
     Ok(())
 }
 
-pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result < String, DabError > {
+pub fn convert_resolution_to_string(resolution: &OutputResolution) -> Result<String, DabError> {
     let resolution_map = [
         ([640, 480], "480"),
         ([720, 576], "576"),
@@ -177,7 +176,7 @@ fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), DabError> {
     Ok(())
 }
 
-fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result < String, DabError > {
+fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result<String, DabError> {
     use AudioOutputMode::*;
 
     match mode {
@@ -188,7 +187,9 @@ fn rdk_sound_mode_from_dab(mode: AudioOutputMode, port: &String) -> Result < Str
             .iter()
             .find(|mode| ["SURROUND", "DOLBYDIGITAL", "DOLBYDIGITALPLUS"].contains(&mode.as_str()))
             .cloned()
-            .ok_or(DabError::Err500("Audio port doesn't support multichannel.".to_string())),
+            .ok_or(DabError::Err500(
+                "Audio port doesn't support multichannel.".to_string(),
+            )),
     }
 }
 
@@ -227,7 +228,7 @@ fn set_rdk_text_to_speech(val: bool) -> Result<(), DabError> {
     Ok(())
 }
 
-pub fn process(_dab_request: SetSystemSettingsRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabError> {
     let _packet = serde_json::to_string(&_dab_request).unwrap();
     let mut json_map: HashMap<&str, Value> = serde_json::from_str(&_packet).unwrap();
 

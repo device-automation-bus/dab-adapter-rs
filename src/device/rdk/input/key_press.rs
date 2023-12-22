@@ -5,13 +5,18 @@ use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 
-
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_dab_request: KeyPressRequest) -> Result < String, DabError > {
+pub fn process(_dab_request: KeyPressRequest) -> Result<String, DabError> {
     let mut ResponseOperator = KeyPressResponse::default();
     // *** Fill in the fields of the struct KeyPressResponse here ***
+
+    if _dab_request.keyCode.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'keyCode' parameter".to_string(),
+        ));
+    }
 
     let mut KeyCode: u16;
 
