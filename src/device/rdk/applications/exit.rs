@@ -174,7 +174,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
     }
 
-    // *******************************************************************
+    // ******************* wait until app state *************************
     for _idx in 1..=20 { // 2 seconds (20*100ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(100));

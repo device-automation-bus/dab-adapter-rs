@@ -12,10 +12,12 @@ use crate::dab::structs::ErrorResponse;
 #[allow(unused_imports)]
 use crate::dab::structs::LaunchApplicationRequest;
 use crate::dab::structs::LaunchApplicationResponse;
+use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use urlencoding::decode;
+use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -288,6 +290,22 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
         //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
         move_to_front_set_focus(req_params.callsign.clone());
+    }
+
+    // ******************* wait until app state *************************
+    let mut app_state: String = "STOPPED".to_string();
+    for _idx in 1..=20 { // 5 seconds (20*250ms)
+        // TODO: refactor to listen to Thunder events with websocket.
+        thread::sleep(time::Duration::from_millis(250));
+        app_state = get_app_state(req_params.callsign.clone())?;
+        if app_state == "FOREGROUND".to_string()
+        {
+            break;
+        }
+    }
+
+    if app_state != "FOREGROUND" {
+        return Err("Check state request(5 second) timeout, app may not be visible to user.".to_string());
     }
 
     // *******************************************************************
