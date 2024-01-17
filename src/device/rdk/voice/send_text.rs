@@ -38,6 +38,20 @@ pub fn process(packet: String) -> Result<String, String> {
 
     let Dab_Request: SendTextRequest = IncomingMessage.unwrap();
 
+    if Dab_Request.voiceSystem.is_empty() {
+        let response = ErrorResponse {
+            status: 400,
+            error: "Missing 'voiceSystem' parameter".to_string(),
+        };
+        let Response_json = json!(response);
+        return Err(serde_json::to_string(&Response_json).unwrap());
+    }
+
+    // TODO: Add other RDK specific voice protocol support confirmation.
+    if Dab_Request.voiceSystem.to_string() != "AmazonAlexa" {
+        return Err("Unsupported 'voiceSystem'.".to_string());
+    }
+
     if Dab_Request.requestText.is_empty() {
         let response = ErrorResponse {
             status: 400,
