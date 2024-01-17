@@ -4,7 +4,8 @@ use crate::dab::structs::ErrorResponse;
 use crate::dab::structs::SendTextRequest;
 use crate::device::rdk::interface::RdkResponseSimple;
 use crate::hw_specific::interface::rdk_request_with_params;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use crate::device::rdk::interface::http_post;
 
 pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     let adpcm_step_table: [i16; 89] = [
@@ -168,9 +169,76 @@ fn enable_ptt() -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 #[allow(non_snake_case)]
-pub fn sendVoiceCommand() -> Result<(), String> {
-    enable_ptt()?;
+fn is_voice_enabled(voiceSystem: String) -> bool {
+    let mut avs_enabled = false;
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: String,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.VoiceControl.voiceStatus".into(),
+        params: "{}".into(),
+    };
+
+    #[derive(Deserialize)]
+    struct RdkResponse {
+        jsonrpc: String,
+        id: i32,
+        result: VoiceStatusResult,
+    }
+
+    #[derive(Deserialize)]
+    struct VoiceStatusResult {
+        capabilities: Vec<String>,
+        urlPtt: String,
+        urlHf: String,
+        prv: bool,
+        wwFeedback: bool,
+        ptt: SubStatus,
+        ff: SubStatus,
+        success: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct SubStatus {
+        status: String,
+    }
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response_json = http_post(json_string);
+
+    match response_json {
+        Ok(val2) => {
+            let rdkresponse: RdkResponse = serde_json::from_str(&val2).unwrap();
+            // Current Alexa solution is PTT & starts with protocol 'avs://'
+            if rdkresponse.result.urlPtt.to_string().contains("avs:") && voiceSystem == "AmazonAlexa" {
+                if rdkresponse.result.ptt.status.to_string().contains("ready") {
+                    avs_enabled = true;
+                }
+            }
+        }
+
+        Err(err) => {
+            println!("Erro: {}", err);
+        }
+    }
+    return avs_enabled;
+}
+
+#[allow(non_snake_case)]
+pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), String> {
+    // Do not configure if already enabled as immediate use may fail.
+    if !is_voice_enabled("AmazonAlexa".to_string()) {
+        enable_ptt()?;
+    }
 
     #[derive(Serialize)]
     struct Param {
@@ -180,7 +248,7 @@ pub fn sendVoiceCommand() -> Result<(), String> {
     }
 
     let req_params = Param {
-        audio_file: "/tmp/tts.wav".into(),
+        audio_file: audio_file_in,
         request_type: "ptt_audio_file".into(),
     };
 
