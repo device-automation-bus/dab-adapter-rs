@@ -1,8 +1,10 @@
 use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::RdkResponseSimple;
+use crate::device::rdk::interface::{ws_close, ws_open, ws_receive, ws_send};
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
 pub fn encode_adpcm(samples: &[i16]) -> Vec<u8> {
     let adpcm_step_table: [i16; 89] = [
@@ -222,6 +224,8 @@ fn is_voice_enabled(voiceSystem: String) -> Result<bool, DabError> {
     Ok(avs_enabled)
 }
 
+use tokio::runtime::Runtime;
+
 #[allow(non_snake_case)]
 pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
@@ -230,20 +234,55 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         enable_ptt()?;
     }
 
-    #[derive(Serialize)]
-    struct Param {
-        audio_file: String,
-        #[serde(rename = "type")]
-        request_type: String,
-    }
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        // Register websocket to receive events.
+        let mut ws_stream = ws_open().await?;
 
-    let req_params = Param {
-        audio_file: audio_file_in,
-        request_type: "ptt_audio_file".into(),
-    };
+        let payload = json!({
+            "jsonrpc": "2.0",
+            "id": "3",
+            "method": "org.rdk.VoiceControl.register",
+            "params": {
+                "event": "onSessionEnd"
+            }
+        });
 
-    let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
+        ws_send(&mut ws_stream, payload).await?;
+        // Ignore response for now.
+        ws_receive(&mut ws_stream).await?;
 
-    Ok(())
+        #[derive(Serialize)]
+        struct Param {
+            audio_file: String,
+            #[serde(rename = "type")]
+            request_type: String,
+        }
+
+        let req_params = Param {
+            audio_file: audio_file_in,
+            request_type: "ptt_audio_file".into(),
+        };
+
+        let _rdkresponse: RdkResponseSimple =
+            rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
+
+        let mut attempts = 0;
+        loop {
+            let response = ws_receive(&mut ws_stream).await?;
+
+            if response.get("method") == Some(&Value::String("onSessionEnd".to_string())) {
+                ws_close(&mut ws_stream).await?;
+                return Ok(());
+            } else {
+                if attempts >= 5 {
+                    ws_close(&mut ws_stream).await?;
+                    return Err(DabError::Err500(
+                        "Failed to receive onSessionEnd event".to_string(),
+                    ));
+                }
+                attempts += 1;
+            }
+        }
+    })
 }
