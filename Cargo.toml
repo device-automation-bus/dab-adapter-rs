@@ -35,6 +35,9 @@ crossbeam = "0.8.1"
 base64 = "0.21.0"
 notify = "6.0.1"
 urlencoding = "2.0.0"
+url = "2.2"
+tokio-tungstenite = "0.15"
+futures-util = "0.3"
 
 [build-dependencies]
 built = { version = "0.6", features = ["git2", "chrono", "semver"] }
