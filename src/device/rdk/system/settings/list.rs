@@ -280,7 +280,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.cec = service_is_available ("org.rdk.HdmiCec_2")?;
 
-    ResponseOperator.lowLatencyMode = true;
+    ResponseOperator.lowLatencyMode = false;
 
     ResponseOperator.mute = true;
 
