@@ -271,7 +271,7 @@ pub fn process(_packet: String) -> Result<String, String> {
                 set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
-            "pictureMode" | "videoInputSource" | _ => {
+            "pictureMode" | "videoInputSource" | "lowLatencyMode" | _ => {
                 return Err(format!("Setting '{}' is not supported", key))
             }
         }

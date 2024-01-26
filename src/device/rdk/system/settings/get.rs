@@ -295,7 +295,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     response.hdrOutputMode = get_rdk_hdr_current_setting()?;
     response.audioOutputMode = get_rdk_audio_output_mode()?;
     response.audioOutputSource = get_rdk_connected_audio_source()?;
-    response.lowLatencyMode = true;
+    response.lowLatencyMode = false;
     response.textToSpeech = get_rdk_tts()?;
 
     let mut response_json = json!(response);
