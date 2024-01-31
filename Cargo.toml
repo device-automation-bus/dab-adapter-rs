@@ -29,7 +29,6 @@ image = "0.24"
 tiff = "0.9"
 flate2 = "1.0"
 local-ip-address = "0.5"
-tts_rust = "0.3.5"
 built = { version = "0.6", features = ["chrono", "semver"] }
 crossbeam = "0.8.1"
 base64 = "0.21.0"
