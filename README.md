@@ -5,13 +5,57 @@ The DAB <-> RDK adapter can be executed both on the RDK device or using an exter
 
 ## Building ##
 
+## For Development/Testing - Option 1: Build on a PC and execute on a RDK device ##
+
+Use [the cross tool](https://github.com/cross-rs/cross) to build `dab-adapter` for the target architecture.
+
+In a PC, install cross:
+
+```
+$ cargo install cross
+```
+
+Build the application targeting the `armv7-unknown-linux-gnueabihf` architecture:
+
+```
+$ cross build --target armv7-unknown-linux-gnueabihf --release
+```
+
+The binary application will be the `target/armv7-unknown-linux-gnueabihf/release/dab-adapter` file.
+
+Copy the application to the RDK device.
+
+```
+$ scp -O -v -oHostKeyAlgorithms=+ssh-rsa target/armv7-unknown-linux-gnueabihf/release/dab-adapter root@<rdk-device-ip>:/usr/bin/
+```
+
+Reboot the RDK device. If the RDK image was previously built with `dab-adapter`, the systemd service will auto-start the application after boot.
+
+## For Development/Testing - Option 2: Build on a PC and Running on a PC ##
+
 Since this software uses Cargo package manager, the building process is straightforward:
 
 ```
 $ cargo build
 ```
 
-The output binary will be located at `./target/debug/dab-adapter`.
+To execute dab-adapter in your PC, be sure you have mosquitto broker installed, and point to the target board IP.
+
+```
+$ cargo run -- -d <rdk-device-ip>
+```
+
+**Note:** The voice operators will not be available when running dab-adapter on PC. To use the voice operators, run `dab-adapter` on a RDK device.
+
+## For Deployment ##
+
+Install [cargo bitbake](https://github.com/meta-rust/cargo-bitbake) and create a bitbake recipe and integrate it on Yocto build of RDK.
+
+```
+$ cargo install --locked cargo-bitbake
+$ cargo bitbake
+```
+
 
 ## Usage ##
 
