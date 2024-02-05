@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use std::collections::HashMap;
 pub type SharedMap = HashMap<String, RequestTypes>;
 
@@ -383,36 +384,23 @@ pub struct GetSystemSettingsResponse {
 }
 
 #[allow(non_snake_case)]
+#[skip_serializing_none]
 #[derive(Default, Serialize, Deserialize)]
 pub struct SetSystemSettingsRequest {
-    #[serde(default)]
-    pub language: String,
-    #[serde(default)]
-    pub outputResolution: OutputResolution,
-    #[serde(default)]
-    pub memc: bool,
-    #[serde(default)]
-    pub cec: bool,
-    #[serde(default)]
-    pub lowLatencyMode: bool,
-    #[serde(default)]
-    pub matchContentFrameRate: MatchContentFrameRate,
-    #[serde(default)]
-    pub hdrOutputMode: HdrOutputMode,
-    #[serde(default)]
-    pub pictureMode: PictureMode,
-    #[serde(default)]
-    pub audioOutputMode: AudioOutputMode,
-    #[serde(default)]
-    pub audioOutputSource: AudioOutputSource,
-    #[serde(default)]
-    pub videoInputSource: VideoInputSource,
-    #[serde(default)]
-    pub audioVolume: u32,
-    #[serde(default)]
-    pub mute: bool,
-    #[serde(default)]
-    pub textToSpeech: bool,
+    pub language: Option<String>,
+    pub outputResolution: Option<OutputResolution>,
+    pub memc: Option<bool>,
+    pub cec: Option<bool>,
+    pub lowLatencyMode: Option<bool>,
+    pub matchContentFrameRate: Option<MatchContentFrameRate>,
+    pub hdrOutputMode: Option<HdrOutputMode>,
+    pub pictureMode: Option<PictureMode>,
+    pub audioOutputMode: Option<AudioOutputMode>,
+    pub audioOutputSource: Option<AudioOutputSource>,
+    pub videoInputSource: Option<VideoInputSource>,
+    pub audioVolume: Option<u32>,
+    pub mute: Option<bool>,
+    pub textToSpeech: Option<bool>,
 }
 
 #[allow(non_snake_case)]
