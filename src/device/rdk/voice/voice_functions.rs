@@ -4,7 +4,7 @@ use crate::device::rdk::interface::RdkResponseSimple;
 use crate::device::rdk::interface::{ws_close, ws_open, ws_receive, ws_send};
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 
 #[allow(non_snake_case)]
 pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
@@ -124,12 +124,17 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         // Register websocket to receive events.
         let mut ws_stream = ws_open().await?;
 
+        // Alexa specific implementation; listen to "onServerMessage" for "RequestProcessingCompleted".
+        // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
+        //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
+        // } 
+        // For other voice implementation; use "onSessionEnd".
         let payload = json!({
             "jsonrpc": "2.0",
             "id": "3",
             "method": "org.rdk.VoiceControl.register",
             "params": {
-                "event": "onSessionEnd"
+                "event": "onServerMessage"
             }
         });
 
@@ -156,9 +161,22 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         loop {
             let response = ws_receive(&mut ws_stream).await?;
 
-            if response.get("method") == Some(&Value::String("onSessionEnd".to_string())) {
-                ws_close(&mut ws_stream).await?;
-                return Ok(());
+            // Alexa specific response.
+            if let Some(params) = response.get("params") {
+                if let Some(xr_speech_avs) = params.get("xr_speech_avs") {
+                    if let Some(directive) = xr_speech_avs.get("directive") {
+                        if let Some(header) = directive.get("header") {
+                            if let Some(name) = header.get("name") {
+                                if let Some(name_str) = name.as_str() {
+                                    if name_str == "RequestProcessingCompleted" {
+                                        ws_close(&mut ws_stream).await?;
+                                        return Ok(());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
                 if attempts >= 5 {
                     ws_close(&mut ws_stream).await?;
