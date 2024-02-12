@@ -9,5 +9,5 @@ use crate::device::rdk::interface::http_download;
 pub fn process(_dab_request: SendAudioRequest) -> Result<String, DabError> {
     http_download(_dab_request.fileLocation)?;
     sendVoiceCommand("/tmp/tts.wav".into())?;
-    Ok("".into())
+    Ok("{}".to_string())
 }
