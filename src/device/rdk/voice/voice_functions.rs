@@ -128,7 +128,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
         //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
         // } 
-        // For other voice implementation; use "onSessionEnd".
+        // TODO: Handle other voice implementation using "onSessionEnd".
         let payload = json!({
             "jsonrpc": "2.0",
             "id": "3",
@@ -161,30 +161,28 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         loop {
             let response = ws_receive(&mut ws_stream).await?;
 
-            // Alexa specific response.
-            if let Some(params) = response.get("params") {
-                if let Some(xr_speech_avs) = params.get("xr_speech_avs") {
-                    if let Some(directive) = xr_speech_avs.get("directive") {
-                        if let Some(header) = directive.get("header") {
-                            if let Some(name) = header.get("name") {
-                                if let Some(name_str) = name.as_str() {
-                                    if name_str == "RequestProcessingCompleted" {
-                                        ws_close(&mut ws_stream).await?;
-                                        return Ok(());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                if attempts >= 5 {
-                    ws_close(&mut ws_stream).await?;
-                    return Err(DabError::Err500(
-                        "Failed to receive onSessionEnd event".to_string(),
-                    ));
-                }
-                attempts += 1;
+            // Alexa specific response; listen to "onServerMessage" for "RequestProcessingCompleted".
+            // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
+            //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
+            // }
+            // TODO: Handle other voice implementation using "onSessionEnd".
+            if response.get("params")
+                .and_then(|params| params.get("xr_speech_avs"))
+                .and_then(|xr_speech_avs| xr_speech_avs.get("directive"))
+                .and_then(|directive| directive.get("header"))
+                .and_then(|header| header.get("name"))
+                .and_then(|name| name.as_str())
+                .map_or(false, |name_str| name_str == "RequestProcessingCompleted") {
+                ws_close(&mut ws_stream).await?;
+                return Ok(());
+            }
+
+            attempts += 1;
+            if attempts >= 10 {
+                ws_close(&mut ws_stream).await?;
+                return Err(DabError::Err500(
+                    "Timed out waiting for 'RequestProcessingCompleted' event from Alexa.".to_string(),
+                ));
             }
         }
     })
