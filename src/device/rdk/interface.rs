@@ -68,15 +68,22 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
     }
 
     let response = block_on(async {
-        client
+        match client
             .post(rdk_address)
             .body_string(json_string)
             .header("Content-Type", "application/json")
             .await
-            .unwrap()
-            .body_string()
-            .await
+        {
+            Ok(mut response) => {
+                match response.body_string().await {
+                    Ok(body) => Ok(body),
+                    Err(e) => Err(format!("Error while getting the body: {}",e)),
+                }
+            }
+            Err(e) => Err(format!("Error while sending the request: {}",e)),
+        }
     });
+
     match response {
         Ok(r) => {
             let str = r.to_string();

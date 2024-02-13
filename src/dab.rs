@@ -180,6 +180,8 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 let correlation_data = msg_received.correlation_data;
                 let payload = msg_received.payload;
 
+                let substring = "dab/".to_owned() + &device_id + "/";
+
                 // Process the message
                 let response = if payload.trim().is_empty() {
                     Err(DabError::Err400(
@@ -193,7 +195,6 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                     })
                     .unwrap())
                 } else {
-                    let substring = "dab/".to_owned() + &device_id + "/";
                     let operation = function_topic.replace(&substring, "");
 
                     if &operation == "messages" {
@@ -291,10 +292,11 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                     function_topic: response_topic.clone(),
                     response_topic: "".to_string(),
                     correlation_data: correlation_data.clone(),
-                    payload: payload,
+                    payload: payload.clone(),
                 };
                 // Publish the response
                 mqtt_client.publish(msg_tx);
+                println!("Publishing response: {} {:?}", response_topic.clone().replace(&substring, ""), payload.as_str());
             }
             Err(err) => {
                 if let Some(msg) = err {
