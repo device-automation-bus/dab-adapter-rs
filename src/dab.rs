@@ -128,7 +128,9 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
         Ok(id) => id,
         Err(_) => {
             println!("RDK: Error getting device ID");
-            "unknown".to_string()
+            // Without a valid Device ID; DAB functionality cannot progress.
+            // Exit now so that systemd can restart it again.
+            std::process::exit(0x00);
         }
     };
     println!("DAB Device ID: {}", device_id);
