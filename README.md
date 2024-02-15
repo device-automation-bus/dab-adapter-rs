@@ -124,9 +124,9 @@ This version currently supports the following DAB operations:
 | applications/exit                |    Yes    |
 | device/info                      |    Yes    |
 | system/restart                   |    Yes    |
-| system/settings/list             |     -     |
-| system/settings/get              |     -     |
-| system/settings/set              |     -     |
+| system/settings/list             |    Yes    |
+| system/settings/get              |    Yes    |
+| system/settings/set              |    Yes    |
 | input/key/list                   |    Yes    |
 | input/key-press                  |    Yes    |
 | input/long-key-press             |    Yes    |
@@ -136,6 +136,6 @@ This version currently supports the following DAB operations:
 | app-telemetry/start              |     -     |
 | app-telemetry/stop               |     -     |
 | health-check/get                 |    Yes    |
-| voice/list                       |     -     |
+| voice/list                       |    Yes    |
 | voice/send-audio                 |    Yes    |
 | voice/send-text                  |    Yes    |
