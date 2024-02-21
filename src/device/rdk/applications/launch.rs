@@ -227,6 +227,8 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
         if app_state == "FOREGROUND".to_string() {
+            // Tune to give breathing space for Thunder & RDKShell plugin.
+            thread::sleep(time::Duration::from_millis(250));
             break;
         }
     }

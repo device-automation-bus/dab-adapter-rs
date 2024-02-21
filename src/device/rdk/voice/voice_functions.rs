@@ -5,6 +5,7 @@ use crate::device::rdk::interface::{ws_close, ws_open, ws_receive, ws_send};
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::{thread, time};
 
 #[allow(non_snake_case)]
 pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
@@ -114,8 +115,8 @@ use tokio::runtime::Runtime;
 #[allow(non_snake_case)]
 pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
-    let voice_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
-    if !voice_enabled {
+    let axela_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
+    if !axela_enabled {
         enable_ptt()?;
     }
 
@@ -134,7 +135,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             "id": "3",
             "method": "org.rdk.VoiceControl.register",
             "params": {
-                "event": "onServerMessage"
+                "event": "onSessionEnd"
             }
         });
 
@@ -161,19 +162,16 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         loop {
             let response = ws_receive(&mut ws_stream).await?;
 
-            // Alexa specific response; listen to "onServerMessage" for "RequestProcessingCompleted".
-            // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
-            //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
-            // }
-            // TODO: Handle other voice implementation using "onSessionEnd".
             if response.get("params")
-                .and_then(|params| params.get("xr_speech_avs"))
-                .and_then(|xr_speech_avs| xr_speech_avs.get("directive"))
-                .and_then(|directive| directive.get("header"))
-                .and_then(|header| header.get("name"))
-                .and_then(|name| name.as_str())
-                .map_or(false, |name_str| name_str == "RequestProcessingCompleted") {
+                .and_then(|params| params.get("result"))
+                .and_then(|result| result.as_str())
+                .map_or(false, |name_str| name_str == "success") {
                 ws_close(&mut ws_stream).await?;
+                // Tune to match Alexa's breathing and processing time.
+                if axela_enabled {
+                    println!("Got onSessionEnd.params.result.success; wait for 2sec for Alexa.");
+                    thread::sleep(time::Duration::from_secs(2));
+                }
                 return Ok(());
             }
 
@@ -181,7 +179,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             if attempts >= 10 {
                 ws_close(&mut ws_stream).await?;
                 return Err(DabError::Err500(
-                    "Timed out waiting for 'RequestProcessingCompleted' event from Alexa.".to_string(),
+                    "Timed out waiting for 'onSessionEnd' event.".to_string(),
                 ));
             }
         }
