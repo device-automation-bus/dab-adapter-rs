@@ -7,7 +7,13 @@ use crate::device::rdk::interface::http_download;
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_dab_request: SendAudioRequest) -> Result<String, DabError> {
-    http_download(_dab_request.fileLocation)?;
-    sendVoiceCommand("/tmp/tts.wav".into())?;
+    match let downloadresponse = http_download(_dab_request.fileLocation) {
+        Ok(downloadresponse) => (),
+        Err(e) => return e;
+    }
+    match let voiceresponse = sendVoiceCommand("/tmp/tts.wav".into()) {
+        Ok(voiceresponse) => (),
+        Err(e) => return e;
+    }
     Ok("{}".to_string())
 }
