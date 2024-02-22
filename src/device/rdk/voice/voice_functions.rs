@@ -27,14 +27,9 @@ pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
         },
     };
 
-    let rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params);
-    if !rdkresponse.result.success {
-        return Err(DabError::Err500(
-            "RDK API 'configureVoice' failed.".to_string(),
-        ));
-    }
-
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params)?;
+    
     Ok(())
 }
 
@@ -53,13 +48,8 @@ fn enable_ptt() -> Result<(), DabError> {
         ptt: Ptt { enable: true },
     };
 
-    let rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params);
-    if !rdkresponse.result.success {
-        return Err(DabError::Err500(
-            "Failed to enable PTT for voice control.".to_string(),
-        ));
-    }
+    let _rdkresponse: RdkResponseSimple =
+        rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params)?;
 
     Ok(())
 }
@@ -127,10 +117,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
     let axela_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
     if !axela_enabled {
-        match let rdkresponse = enable_ptt() {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        enable_ptt()?;
     }
 
     let rt = Runtime::new().unwrap();
@@ -147,9 +134,10 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             }
         });
 
-        match let wsresponse = ws_send(&mut ws_stream, payload).await {
+        let wsresponse = ws_send(&mut ws_stream, payload).await;
+        match wsresponse {
             Ok(_) => (),
-            Err(e) => return Err(e),
+            Err(e) => { return Err(e); },
         }
 
         // Ignore response for now.
@@ -167,13 +155,8 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             request_type: "ptt_audio_file".into(),
         };
 
-        let rdkresponse: RdkResponseSimple =
-            rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params);
-        if !rdkresponse.result.success {
-            return Err(DabError::Err500(
-                "RDK API 'voiceSessionRequest' failed.".to_string(),
-            ));
-        }
+        let _rdkresponse: RdkResponseSimple =
+            rdk_request_with_params("org.rdk.VoiceControl.voiceSessionRequest", req_params)?;
 
         let mut attempts = 0;
         loop {
