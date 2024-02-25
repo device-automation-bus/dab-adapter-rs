@@ -384,7 +384,7 @@ pub fn get_device_memory() -> Result<u32, String> {
 }
 
 //Read key inputs from file
-
+// This is optional override configuration. Do not return error.
 pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
     let mut file_content = String::new();
     File::open(file_path)
@@ -400,4 +400,33 @@ pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
             e.to_string()
         })?;
     Ok(file_content)
+}
+
+// Function to get thunder property value. Properties are read-only and will always return a valid value if not error.
+pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String, String> {
+    let json_string = format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{}\"}}", method_name);
+    let response = http_post(json_string);
+    match response {
+        Ok(r) => {
+            let response: serde_json::Value = serde_json::from_str(&r).unwrap();
+            let value = &response["result"][key_name];
+            if value.is_null() {
+                return Err(format!("Key '{}' not found.", key_name));
+            }
+            let result = match value {
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Number(n) => n.to_string(),
+                serde_json::Value::Object(o) => serde_json::to_string(o).unwrap(),
+                _ => return Err(format!("Unsupported type for key '{}'", key_name)),
+            };
+            Ok(result)
+        }
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        },
+    }
 }

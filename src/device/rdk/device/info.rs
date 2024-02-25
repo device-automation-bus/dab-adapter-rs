@@ -54,6 +54,7 @@ use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_thunder_property;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -107,51 +108,10 @@ pub fn process(_packet: String) -> Result<String, String> {
             ConnectedVideoDisplays = serde_json::from_str(&response).unwrap();
         }
     }
-    //#########org.rdk.System.getDeviceInfo#########
-    #[derive(Serialize)]
-    struct GetDeviceInfoRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = GetDeviceInfoRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.System.getDeviceInfo".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetDeviceInfoResult,
-    }
-
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResult {
-        make: String, // maps to `manufacturer`
-        bluetooth_mac: String,
-        boxIP: String,
-        build_type: String,
-        esn: String,
-        estb_mac: String,
-        eth_mac: String,
-        friendly_id: String,
-        imageRevision: String, // maps to `firmwareVersion`
-        imageVersion: String,  // maps to `firmwareBuild`
-        version: String,
-        software_version: String,
-        model_number: String, // maps to `model`
-        wifi_mac: String,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    let DeviceInfo: GetDeviceInfoResponse;
-    match response_json {
+    //######### manufacturer: Use DeviceInfo similar properties #########
+    // {"jsonrpc":"2.0","id":42,"result":{"make":"Amlogic_Inc"}}
+    match get_thunder_property("DeviceInfo.make", "make") {
+        Ok(make) => ResponseOperator.manufacturer = make,
         Err(err) => {
             let error = ErrorResponse {
                 status: 500,
@@ -159,8 +119,63 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
-        Ok(response) => {
-            DeviceInfo = serde_json::from_str(&response).unwrap();
+    }
+
+    //######### model: Use DeviceInfo similar properties #########
+    // {"jsonrpc":"2.0","id":42,"result":{"sku":"AH212"}}
+    match get_thunder_property("DeviceInfo.modelid", "sku") {
+        Ok(model) => ResponseOperator.model = model,
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+    }
+
+    //######### serialNumber: Use DeviceInfo similar properties #########
+    // {"jsonrpc":"2.0","id":42,"result":{"serialnumber":"AH212US000012345"}}
+    match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
+        Ok(serialnumber) => ResponseOperator.serialNumber = serialnumber,
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+    }
+
+    //######### chipset: Use DeviceIdentification similar properties ######### 
+    // {"jsonrpc":"2.0","id":42,"method":"DeviceIdentification.deviceidentification"}
+    // {"jsonrpc":"2.0","id":42,"result":{"firmwareversion":"1.0.0","chipset":"BCM2711","identifier":"WPEuCfrLF45"}}
+    match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
+        Ok(chipset) => ResponseOperator.chipset = chipset,
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
+        }
+    }
+
+    //######### firmwareVersion & firmwareBuild: Use DeviceInfo similar properties #########
+    // {"jsonrpc":"2.0","id":42,"method":"DeviceInfo.firmwareversion"}
+    // {"jsonrpc":"2.0","id":42,"result":{"imagename":"PX051AEI_VBN_2203_sprint_20220331225312sdy_NG","sdk":"17.3","mediarite":"8.3.53","yocto":"dunfell"}}
+    match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
+        Ok(firmwareversion) => {
+            // Both firmwareVersion and firmwareBuild are same for RDKV devices.
+            ResponseOperator.firmwareVersion = firmwareversion.clone();
+            ResponseOperator.firmwareBuild = firmwareversion;
+        },
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
         }
     }
 
@@ -287,9 +302,20 @@ pub fn process(_packet: String) -> Result<String, String> {
         pub uptime: u64, // maps to `uptimeSince`
         pub totalram: u64,
         pub freeram: u64,
+        pub totalswap: u64,
+        pub freeswap: u64,
         pub devicename: String,
         pub cpuload: String,
+        pub cpuloadavg: CPULoadAvg,
         pub serialnumber: String, // maps to `serialNumber`
+        pub time: String,
+    }
+
+    #[derive(Deserialize)]
+    struct CPULoadAvg {
+        pub avg1min: u64,
+        pub avg5min: u64,
+        pub avg15min: u64,
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
@@ -308,51 +334,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             Systeminfo = serde_json::from_str(&response).unwrap();
         }
     }
-    //#########DeviceIdentification.1.deviceidentification#########
 
-    #[derive(Serialize)]
-    struct DeviceidentificationRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    #[derive(Deserialize)]
-    struct DeviceidentificationResult {
-        pub firmwareversion: String,
-        pub chipset: String, // maps to `chipset`
-        pub deviceid: String,
-    }
-
-    let request = DeviceidentificationRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "DeviceIdentification.1.deviceidentification".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct DeviceidentificationResponse {
-        jsonrpc: String,
-        id: i32,
-        result: DeviceidentificationResult,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    let Deviceidentification: DeviceidentificationResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            Deviceidentification = serde_json::from_str(&response).unwrap();
-        }
-    }
     //######### Correlate Fields #########
 
     for iface in Interfaces.result.interfaces.iter_mut() {
@@ -451,13 +433,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         })?
         .as_secs() - Systeminfo.result.uptime) * 1000;
 
-    ResponseOperator.serialNumber = Systeminfo.result.serialnumber;
     ResponseOperator.uptimeSince = ms_since_epoch;
-    ResponseOperator.manufacturer = DeviceInfo.result.make;
-    ResponseOperator.firmwareVersion = DeviceInfo.result.imageRevision;
-    ResponseOperator.firmwareBuild = DeviceInfo.result.imageVersion;
-    ResponseOperator.model = DeviceInfo.result.model_number;
-    ResponseOperator.chipset = Deviceidentification.result.chipset;
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
     ResponseOperator.deviceId = get_device_id();
