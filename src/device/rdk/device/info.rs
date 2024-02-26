@@ -54,7 +54,7 @@ use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::get_thunder_property;
+use crate::device::rdk::interface::get_rdk_device_info;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -108,76 +108,67 @@ pub fn process(_packet: String) -> Result<String, String> {
             ConnectedVideoDisplays = serde_json::from_str(&response).unwrap();
         }
     }
-    //######### manufacturer: Use DeviceInfo similar properties #########
-    // {"jsonrpc":"2.0","id":42,"result":{"make":"Amlogic_Inc"}}
-    match get_thunder_property("DeviceInfo.make", "make") {
-        Ok(make) => ResponseOperator.manufacturer = make,
-        Err(err) => {
+
+    //######### Map from Static Hashmap: Begin #########
+    match get_rdk_device_info(String::from("manufacturer")) {
+        Some(k) => ResponseOperator.manufacturer = k.clone().to_string(),
+        None => {
             let error = ErrorResponse {
                 status: 500,
-                error: err,
+                error: "Error; no match for property ".to_string() + "manufacturer.",
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
     }
 
-    //######### model: Use DeviceInfo similar properties #########
-    // {"jsonrpc":"2.0","id":42,"result":{"sku":"AH212"}}
-    match get_thunder_property("DeviceInfo.modelid", "sku") {
-        Ok(model) => ResponseOperator.model = model,
-        Err(err) => {
+    match get_rdk_device_info(String::from("model")) {
+        Some(k) => ResponseOperator.model = k.clone().to_string(),
+        None => {
             let error = ErrorResponse {
                 status: 500,
-                error: err,
+                error: "Error; no match for property ".to_string() + "model.",
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
     }
 
-    //######### serialNumber: Use DeviceInfo similar properties #########
-    // {"jsonrpc":"2.0","id":42,"result":{"serialnumber":"AH212US000012345"}}
-    match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
-        Ok(serialnumber) => ResponseOperator.serialNumber = serialnumber,
-        Err(err) => {
+    match get_rdk_device_info(String::from("serialnumber")) {
+        Some(k) => ResponseOperator.serialNumber = k.clone().to_string(),
+        None => {
             let error = ErrorResponse {
                 status: 500,
-                error: err,
+                error: "Error; no match for property ".to_string() + "serialnumber.",
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
     }
 
-    //######### chipset: Use DeviceIdentification similar properties ######### 
-    // {"jsonrpc":"2.0","id":42,"method":"DeviceIdentification.deviceidentification"}
-    // {"jsonrpc":"2.0","id":42,"result":{"firmwareversion":"1.0.0","chipset":"BCM2711","identifier":"WPEuCfrLF45"}}
-    match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
-        Ok(chipset) => ResponseOperator.chipset = chipset,
-        Err(err) => {
+    match get_rdk_device_info(String::from("chipset")) {
+        Some(k) => ResponseOperator.chipset = k.clone().to_string(),
+        None => {
             let error = ErrorResponse {
                 status: 500,
-                error: err,
+                error: "Error; no match for property ".to_string() + "chipset.",
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
     }
 
-    //######### firmwareVersion & firmwareBuild: Use DeviceInfo similar properties #########
-    // {"jsonrpc":"2.0","id":42,"method":"DeviceInfo.firmwareversion"}
-    // {"jsonrpc":"2.0","id":42,"result":{"imagename":"PX051AEI_VBN_2203_sprint_20220331225312sdy_NG","sdk":"17.3","mediarite":"8.3.53","yocto":"dunfell"}}
-    match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
-        Ok(firmwareversion) => {
+    match get_rdk_device_info(String::from("firmwareversion")) {
+        Some(k) => {
             // Both firmwareVersion and firmwareBuild are same for RDKV devices.
-            ResponseOperator.firmwareVersion = firmwareversion.clone();
-            ResponseOperator.firmwareBuild = firmwareversion;
+            ResponseOperator.firmwareVersion = k.clone().to_string();
+            ResponseOperator.firmwareBuild = k.clone().to_string();
         },
-        Err(err) => {
+        None => {
             let error = ErrorResponse {
                 status: 500,
-                error: err,
+                error: "Error; no match for property ".to_string() + "firmwareversion.",
             };
             return Err(serde_json::to_string(&error).unwrap());
         }
     }
+    //######### Map from Static Hashmap: End #########
 
     //#########org.rdk.RDKShell.getScreenResolution#########
     #[derive(Serialize)]
