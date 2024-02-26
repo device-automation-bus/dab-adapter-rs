@@ -18,7 +18,7 @@ pub fn init(device_ip: &str, debug: bool) {
 }
 
 pub fn get_device_id() -> String {
-    // Update the static details. Nothing to do with the response.
+    // Trigger to update the static details. Nothing to do with the response now.
     match get_rdk_device_info(String::from("model")) {
         Some(_) => (),
         None => (),
@@ -353,6 +353,8 @@ lazy_static! {
     };
 }
 
+// Static device info; no need to panic or break runtime. Implementation is based on the assumption
+// that platform response will be constant for a specific build.
 lazy_static! {
     static ref RDK_DEVICE_INFO: HashMap<String, String> = {
         let mut rdk_device_info = HashMap::new();
@@ -430,8 +432,8 @@ pub fn get_device_memory() -> Result<u32, String> {
     Ok(0)
 }
 
-//Read key inputs from file
-// This is optional override configuration. Do not return error.
+// Read key inputs from file
+// Optional override configuration; do not panic or break runtime.
 pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
     let mut file_content = String::new();
     File::open(file_path)
@@ -458,7 +460,7 @@ fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Re
     }
 }
 
-// Function to get thunder property value. Properties are read-only and will always return a valid value if not error.
+// Function to get thunder property value. Properties are read-only and will always return a valid value on API success.
 // If the key is not found in the response, it will return a dummy response in debug mode.
 pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String, String> {
     let json_string = format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{}\"}}", method_name);
