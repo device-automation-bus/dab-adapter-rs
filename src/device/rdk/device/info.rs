@@ -221,21 +221,12 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     let mut device_uptime: u64 = match get_thunder_property("DeviceInfo.systeminfo","uptime") {
         Ok(uptime) => uptime.parse::<u64>().unwrap_or(0),
-        Err(_) => {
-            // Use from '/proc/uptime' if 'DeviceInfo.systeminfo' is not available
-            if let Ok(contents) = std::fs::read_to_string("/proc/uptime") {
-                if let Some(uptime_str) = contents.split_whitespace().next() {
-                    if let Ok(uptime) = uptime_str.parse::<f64>() {
-                        uptime as u64
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                }
-            } else {
-                0
-            }
+        Err(err) => {
+            let error = ErrorResponse {
+                status: 500,
+                error: err,
+            };
+            return Err(serde_json::to_string(&error).unwrap());
         },
     };
 
