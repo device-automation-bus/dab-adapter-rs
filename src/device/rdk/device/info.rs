@@ -54,7 +54,7 @@ use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::get_rdk_device_info;
+use crate::device::rdk::interface::{get_rdk_device_info, get_thunder_property};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -218,64 +218,26 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     //#########DeviceInfo.systeminfo#########
-    #[derive(Serialize)]
-    struct SysteminfoRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
 
-    let request = SysteminfoRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "DeviceInfo.systeminfo".into(),
+    let mut device_uptime: u64 = match get_thunder_property("DeviceInfo.systeminfo","uptime") {
+        Ok(uptime) => uptime.parse::<u64>().unwrap_or(0),
+        Err(_) => {
+            // Use from '/proc/uptime' if 'DeviceInfo.systeminfo' is not available
+            if let Ok(contents) = std::fs::read_to_string("/proc/uptime") {
+                if let Some(uptime_str) = contents.split_whitespace().next() {
+                    if let Ok(uptime) = uptime_str.parse::<f64>() {
+                        uptime as u64
+                    } else {
+                        0
+                    }
+                } else {
+                    0
+                }
+            } else {
+                0
+            }
+        },
     };
-
-    #[derive(Deserialize)]
-    struct SysteminfoResponse {
-        jsonrpc: String,
-        id: i32,
-        result: SysteminfoResult,
-    }
-
-    #[derive(Deserialize)]
-    struct SysteminfoResult {
-        pub version: String,
-        pub uptime: u64, // maps to `uptimeSince`
-        pub totalram: u64,
-        pub freeram: u64,
-        pub totalswap: u64,
-        pub freeswap: u64,
-        pub devicename: String,
-        pub cpuload: String,
-        pub cpuloadavg: CPULoadAvg,
-        pub serialnumber: String, // maps to `serialNumber`
-        pub time: String,
-    }
-
-    #[derive(Deserialize)]
-    struct CPULoadAvg {
-        pub avg1min: u64,
-        pub avg5min: u64,
-        pub avg15min: u64,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    let Systeminfo: SysteminfoResponse;
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(response) => {
-            Systeminfo = serde_json::from_str(&response).unwrap();
-        }
-    }
 
     //######### Correlate Fields #########
 
@@ -373,7 +335,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         .map_err(|err| {
             serde_json::to_string(&ErrorResponse { status: 500, error: err.to_string() }).unwrap()
         })?
-        .as_secs() - Systeminfo.result.uptime) * 1000;
+        .as_secs() - device_uptime) * 1000;
 
     ResponseOperator.uptimeSince = ms_since_epoch;
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
