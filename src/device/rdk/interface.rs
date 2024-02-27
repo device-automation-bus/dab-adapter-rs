@@ -18,14 +18,8 @@ pub fn init(device_ip: &str, debug: bool) {
 }
 
 pub fn get_device_id() -> String {
-    // Trigger to update the static details. Nothing to do with the response now.
-    match get_rdk_device_info(String::from("model")) {
-        Some(_) => (),
-        None => (),
-    }
-
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\",\"params\":{\"params\":[\"estb_mac\"]}}".to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
@@ -392,8 +386,17 @@ lazy_static! {
     };
 }
 
-pub fn get_rdk_device_info(propertyname: String) -> Option<&'static String> {
-    RDK_DEVICE_INFO.get(&propertyname)
+pub fn get_rdk_device_info(propertyname: &str) -> Result<String, String> {
+    match RDK_DEVICE_INFO.get(propertyname) {
+        Some(val) => Ok(val.clone()),
+        None => {
+            let error = ErrorResponse {
+                status: 500,
+                error: format!("Error; no match for property {propertyname}.")
+            };
+            Err(serde_json::to_string(&error).unwrap())
+        }
+    }
 }
 
 pub fn get_ip_address() -> String {

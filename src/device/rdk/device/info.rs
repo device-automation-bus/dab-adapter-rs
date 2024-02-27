@@ -110,64 +110,15 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     //######### Map from Static Hashmap: Begin #########
-    match get_rdk_device_info(String::from("manufacturer")) {
-        Some(k) => ResponseOperator.manufacturer = k.clone().to_string(),
-        None => {
-            let error = ErrorResponse {
-                status: 500,
-                error: "Error; no match for property ".to_string() + "manufacturer.",
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-    }
 
-    match get_rdk_device_info(String::from("model")) {
-        Some(k) => ResponseOperator.model = k.clone().to_string(),
-        None => {
-            let error = ErrorResponse {
-                status: 500,
-                error: "Error; no match for property ".to_string() + "model.",
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-    }
-
-    match get_rdk_device_info(String::from("serialnumber")) {
-        Some(k) => ResponseOperator.serialNumber = k.clone().to_string(),
-        None => {
-            let error = ErrorResponse {
-                status: 500,
-                error: "Error; no match for property ".to_string() + "serialnumber.",
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-    }
-
-    match get_rdk_device_info(String::from("chipset")) {
-        Some(k) => ResponseOperator.chipset = k.clone().to_string(),
-        None => {
-            let error = ErrorResponse {
-                status: 500,
-                error: "Error; no match for property ".to_string() + "chipset.",
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-    }
-
-    match get_rdk_device_info(String::from("firmwareversion")) {
-        Some(k) => {
-            // Both firmwareVersion and firmwareBuild are same for RDKV devices.
-            ResponseOperator.firmwareVersion = k.clone().to_string();
-            ResponseOperator.firmwareBuild = k.clone().to_string();
-        },
-        None => {
-            let error = ErrorResponse {
-                status: 500,
-                error: "Error; no match for property ".to_string() + "firmwareversion.",
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-    }
+    ResponseOperator.manufacturer = get_rdk_device_info("manufacturer")?;
+    ResponseOperator.model = get_rdk_device_info("model")?;
+    ResponseOperator.serialNumber = get_rdk_device_info("serialnumber")?;
+    ResponseOperator.chipset = get_rdk_device_info("chipset")?;
+    // Both firmwareVersion and firmwareBuild are same for RDKV devices.
+    ResponseOperator.firmwareVersion = get_rdk_device_info("firmwareversion")?;
+    ResponseOperator.firmwareBuild = get_rdk_device_info("firmwareversion")?;
+    
     //######### Map from Static Hashmap: End #########
 
     //#########org.rdk.RDKShell.getScreenResolution#########
