@@ -8,6 +8,7 @@ use crate::dab::structs::NetworkInterface;
 use crate::dab::structs::NetworkInterfaceType;
 use crate::device::rdk::interface::get_device_id;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::{get_rdk_device_info, get_thunder_property};
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
@@ -48,51 +49,18 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
     let response = http_post(json_string)?;
     let ConnectedVideoDisplays: GetConnectedVideoDisplaysResponse;
     ConnectedVideoDisplays = serde_json::from_str(&response).unwrap();
-    //#########org.rdk.System.getDeviceInfo#########
-    #[derive(Serialize)]
-    struct GetDeviceInfoRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
 
-    let request = GetDeviceInfoRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "org.rdk.System.getDeviceInfo".into(),
-    };
+    //######### Map from Static Hashmap: Begin #########
 
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResponse {
-        jsonrpc: String,
-        id: i32,
-        result: GetDeviceInfoResult,
-    }
+    ResponseOperator.manufacturer = get_rdk_device_info("manufacturer")?;
+    ResponseOperator.model = get_rdk_device_info("model")?;
+    ResponseOperator.serialNumber = get_rdk_device_info("serialnumber")?;
+    ResponseOperator.chipset = get_rdk_device_info("chipset")?;
+    // Both firmwareVersion and firmwareBuild are same for RDKV devices.
+    ResponseOperator.firmwareVersion = get_rdk_device_info("firmwareversion")?;
+    ResponseOperator.firmwareBuild = get_rdk_device_info("firmwareversion")?;
 
-    #[derive(Deserialize)]
-    struct GetDeviceInfoResult {
-        make: String, // maps to `manufacturer`
-        bluetooth_mac: String,
-        boxIP: String,
-        build_type: String,
-        esn: String,
-        estb_mac: String,
-        eth_mac: String,
-        friendly_id: String,
-        imageRevision: String, // maps to `firmwareVersion`
-        imageVersion: String,  // maps to `firmwareBuild`
-        version: String,
-        software_version: String,
-        model_number: String, // maps to `model`
-        wifi_mac: String,
-        success: bool,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response = http_post(json_string)?;
-
-    let DeviceInfo: GetDeviceInfoResponse;
-    DeviceInfo = serde_json::from_str(&response).unwrap();
+    //######### Map from Static Hashmap: End #########
 
     //#########org.rdk.RDKShell.getScreenResolution#########
     #[derive(Serialize)]
@@ -168,75 +136,12 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
     Interfaces = serde_json::from_str(&response).unwrap();
 
     //#########DeviceInfo.systeminfo#########
-    #[derive(Serialize)]
-    struct SysteminfoRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    let request = SysteminfoRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "DeviceInfo.systeminfo".into(),
+ 
+    let mut device_uptime: u64 = match get_thunder_property("DeviceInfo.systeminfo","uptime") {
+        Ok(uptime) => uptime.parse::<u64>().unwrap_or(0),
+        Err(err) => return Err(err),
     };
 
-    #[derive(Deserialize)]
-    struct SysteminfoResponse {
-        jsonrpc: String,
-        id: i32,
-        result: SysteminfoResult,
-    }
-
-    #[derive(Deserialize)]
-    struct SysteminfoResult {
-        pub version: String,
-        pub uptime: u64, // maps to `uptimeSince`
-        pub totalram: u64,
-        pub freeram: u64,
-        pub devicename: String,
-        pub cpuload: String,
-        pub serialnumber: String, // maps to `serialNumber`
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response = http_post(json_string)?;
-    let Systeminfo: SysteminfoResponse;
-    Systeminfo = serde_json::from_str(&response).unwrap();
-
-    //#########DeviceIdentification.1.deviceidentification#########
-
-    #[derive(Serialize)]
-    struct DeviceidentificationRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-    }
-
-    #[derive(Deserialize)]
-    struct DeviceidentificationResult {
-        pub firmwareversion: String,
-        pub chipset: String, // maps to `chipset`
-        pub deviceid: String,
-    }
-
-    let request = DeviceidentificationRequest {
-        jsonrpc: "2.0".into(),
-        id: 3,
-        method: "DeviceIdentification.1.deviceidentification".into(),
-    };
-
-    #[derive(Deserialize)]
-    struct DeviceidentificationResponse {
-        jsonrpc: String,
-        id: i32,
-        result: DeviceidentificationResult,
-    }
-
-    let json_string = serde_json::to_string(&request).unwrap();
-    let response = http_post(json_string)?;
-    let Deviceidentification: DeviceidentificationResponse;
-    Deviceidentification = serde_json::from_str(&response).unwrap();
     //######### Correlate Fields #########
 
     for iface in Interfaces.result.interfaces.iter_mut() {
@@ -327,15 +232,9 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
         _ => {}
     }
 
-    let ms_since_epoch = (now_ms.unwrap().as_secs() - Systeminfo.result.uptime) * 1000;
+    let ms_since_epoch = (now_ms.unwrap().as_secs() - device_uptime) * 1000;
 
-    ResponseOperator.serialNumber = Systeminfo.result.serialnumber;
     ResponseOperator.uptimeSince = ms_since_epoch;
-    ResponseOperator.manufacturer = DeviceInfo.result.make;
-    ResponseOperator.firmwareVersion = DeviceInfo.result.imageRevision;
-    ResponseOperator.firmwareBuild = DeviceInfo.result.imageVersion;
-    ResponseOperator.model = DeviceInfo.result.model_number;
-    ResponseOperator.chipset = Deviceidentification.result.chipset;
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
     ResponseOperator.deviceId = get_device_id()?;

@@ -30,7 +30,7 @@ pub fn init(device_ip: &str, debug: bool) {
 
 pub fn get_device_id() -> Result<String, DabError> {
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\",\"params\":{\"params\":[\"estb_mac\"]}}".to_string();
     let response = http_post(json_string)?;
     let rdkresponse: serde_json::Value = serde_json::from_str(&response).unwrap();
     let device_id = rdkresponse["result"]["estb_mac"]
@@ -401,6 +401,65 @@ lazy_static! {
     };
 }
 
+// Static device info; no need to panic or break runtime. Implementation is based on the assumption
+// that platform response will be constant for a specific build.
+lazy_static! {
+    static ref RDK_DEVICE_INFO: HashMap<String, String> = {
+        let mut rdk_device_info = HashMap::new();
+        match get_thunder_property("DeviceInfo.make", "make") {
+            Ok(make) => { rdk_device_info.insert(String::from("manufacturer"), String::from(make)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("manufacturer"), String::from("Unknown-manufacturer"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.modelid", "skus") {
+            Ok(model) => { rdk_device_info.insert(String::from("model"), String::from(model)); },
+            Err(_err) => { 
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("model"), String::from("Unknown-model"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.serialnumber", "") {
+            Ok(serialnumber) => { rdk_device_info.insert(String::from("serialnumber"), String::from(serialnumber)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("serialnumber"), String::from("Unknown-serialnumber"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
+            Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("chipset"), String::from("Unknown-chipset"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
+            Ok(firmwareversion) => { rdk_device_info.insert(String::from("firmwareversion"), String::from(firmwareversion)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("firmwareversion"), String::from("Unknown-FWVersion"));
+                }
+            },
+        };
+        rdk_device_info
+    };
+}
+
+pub fn get_rdk_device_info(propertyname: &str) -> Result<String, DabError> {
+    match RDK_DEVICE_INFO.get(propertyname) {
+        Some(val) => Ok(val.clone()),
+        None => {
+            let error_message = DabError::Err500(format!("No match for property {propertyname}."));
+            return Err(error_message);
+        }
+    }
+}
+
 pub fn get_ip_address() -> String {
     unsafe { DEVICE_ADDRESS.clone() }
 }
@@ -437,8 +496,8 @@ pub fn get_device_memory() -> Result<u32, DabError> {
     Ok(0)
 }
 
-//Read key inputs from file
-
+// Read key inputs from file
+// Optional override configuration; do not panic or break runtime.
 pub fn read_keymap_json(file_path: &str) -> Result<String, DabError> {
     let mut file_content = String::new();
     File::open(file_path)
@@ -454,4 +513,31 @@ pub fn read_keymap_json(file_path: &str) -> Result<String, DabError> {
             DabError::Err500(e.to_string())
         })?;
     Ok(file_content)
+}
+
+fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Result<String, String> {
+    match value {
+        serde_json::Value::String(s) => Ok(s.clone()),
+        serde_json::Value::Number(n) => Ok(n.to_string()),
+        serde_json::Value::Object(o) => serde_json::to_string(o).map_err(|_| format!("Failed to serialize object for key '{}'.", key_name)),
+        _ => Err(format!("Unsupported type for key '{}' in response.", key_name)),
+    }
+}
+
+// Function to get thunder property value. Properties are read-only and will always return a valid value on API success.
+// If the key is not found in the response, it will return a dummy response in debug mode.
+pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String, DabError> {
+    let json_string = format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{}\"}}", method_name);
+    let response = http_post(json_string)?;
+    let response_value: serde_json::Value = serde_json::from_str(&response).map_err(|e| DabError::Err500(format!("Failed to parse response: {}", e)))?;
+    let result = response_value.get("result").ok_or(DabError::Err500(format!("Key 'result' not found in response for method '{}'.", method_name)))?;
+    if result.is_null() {
+        return Err(DabError::Err500(format!("Key 'result' is null in response for method '{}'.", method_name)));
+    }
+    if key_name.is_empty() {
+        return Ok(result.to_string());
+    } else {
+        let key_value = result.get(key_name).ok_or(DabError::Err500(format!("Key '{}' not found in response for method '{}'.", key_name, method_name)))?;
+        convert_value_type_to_string(key_value, key_name).map_err(|e| DabError::Err500(e))
+    }
 }
