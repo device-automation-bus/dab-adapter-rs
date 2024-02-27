@@ -134,11 +134,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             }
         });
 
-        let wsresponse = ws_send(&mut ws_stream, payload).await;
-        match wsresponse {
-            Ok(_) => (),
-            Err(e) => { return Err(e); },
-        }
+        ws_send(&mut ws_stream, payload).await?;
 
         // Ignore response for now.
         ws_receive(&mut ws_stream).await?;
@@ -176,7 +172,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             }
 
             attempts += 1;
-            if attempts >= 10 {
+            if attempts >= 20 {
                 ws_close(&mut ws_stream).await?;
                 return Err(DabError::Err500(
                     "Timed out waiting for 'onSessionEnd' event.".to_string(),

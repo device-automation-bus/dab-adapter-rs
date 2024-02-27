@@ -414,7 +414,7 @@ lazy_static! {
                 }
             },
         };
-        match get_thunder_property("DeviceInfo.modelid", "skus") {
+        match get_thunder_property("DeviceInfo.modelid", "sku") {
             Ok(model) => { rdk_device_info.insert(String::from("model"), String::from(model)); },
             Err(_err) => { 
                 if cfg!(debug_assertions) {
@@ -422,7 +422,7 @@ lazy_static! {
                 }
             },
         };
-        match get_thunder_property("DeviceInfo.serialnumber", "") {
+        match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
             Ok(serialnumber) => { rdk_device_info.insert(String::from("serialnumber"), String::from(serialnumber)); },
             Err(_err) => {
                 if cfg!(debug_assertions) {

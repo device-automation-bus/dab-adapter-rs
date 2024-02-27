@@ -59,11 +59,7 @@ pub fn process(_dab_request: SendTextRequest) -> Result<String, DabError> {
 
     child.wait().expect("failed to wait for child process");
 
-    let voiceresponse = sendVoiceCommand("/tmp/tts.wav".into());
-    match voiceresponse {
-        Ok(_) => (),
-        Err(e) => { return Err(e); },
-    }
+    sendVoiceCommand("/tmp/tts.wav".into())?;
 
     Ok("{}".to_string())
 }
