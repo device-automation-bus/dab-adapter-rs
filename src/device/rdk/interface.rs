@@ -11,9 +11,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
+use std::{thread, time};
 use surf::Client;
 use tokio::net::TcpStream;
-use tokio::runtime::Runtime;
 use tokio::time::{timeout, Duration};
 use tokio_tungstenite::{
     connect_async, tungstenite::protocol::Message, MaybeTlsStream, WebSocketStream,
@@ -249,140 +249,56 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
 
 pub fn service_activate(service: String) -> Result<(), DabError> {
     //#########Controller.1.activate#########
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        // Register websocket to receive events.
-        let mut ws_stream = ws_open().await?;
-
-        let deactivate_payload = json!({
-            "jsonrpc":"2.0",
-            "id":1,
-            "method":"Controller.1.activate",
-            "params":{
-                "callsign":service.clone()
-            }
-        });
-
-        let mut statechange_payload = json!({
-            "jsonrpc":"2.0",
-            "id":2,
-            "method":"Controller.1.Register",
-            "params":"statechange"
-        });
-
-        ws_send(&mut ws_stream, statechange_payload.clone()).await?;
-
-        // Ignore response for now.
-        ws_receive(&mut ws_stream).await?;
-
-        ws_send(&mut ws_stream, deactivate_payload).await?;
-
-        let mut attempts = 0;
-        loop {
-            let response = ws_receive(&mut ws_stream).await?;
-            // {"jsonrpc":"2.0","method":"client.events.1.statechange","params":{"callsign":"{service}","state":"CurrentState","reason":"..."}}
-            // where CurrentState can be "Unavailable/Deactivated/Deactivation/Activated/Activation/Precondition/Hibernated/Destroyed"
-            println!("Got 'statechange' {}", response.clone());
-            if response.get("params")
-                .and_then(|params| params.get("callsign"))
-                .and_then(|callsign| callsign.as_str())
-                .map_or(false, |name_str| name_str == service) {
-                if response.get("params")
-                    .and_then(|params| params.get("state"))
-                    .and_then(|state| state.as_str())
-                    .map_or(false, |name_str| name_str == "Activated") {
-                    statechange_payload["method"] = "Controller.1.Unregister".into();
-                    ws_send(&mut ws_stream, statechange_payload).await?;
-                    ws_close(&mut ws_stream).await?;
-                    return Ok(());
-                }
-            }
-
-            attempts += 1;
-            if attempts >= 20 {
-                statechange_payload["method"] = "Controller.Unregister".into();
-                ws_send(&mut ws_stream, statechange_payload).await?;
-                ws_close(&mut ws_stream).await?;
-                return Err(DabError::Err500(
-                    "Timed out waiting for 'statechange' event.".to_string(),
-                ));
-            }
+    let activate_payload = json!({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"Controller.1.activate",
+        "params":{
+            "callsign":service.clone()
         }
-    })
+    }).to_string();
+    let response = http_post(activate_payload)?;
+    let response_value: serde_json::Value = serde_json::from_str(&response)
+        .map_err(|e| DabError::Err500(format!("Failed to parse response: {}", e)))?;
+    if response_value.get("result").is_none() {
+        return Err(DabError::Err500(format!("Key 'result' not found in response for method 'Controller.1.activate'.")));
+    }
+    thread::sleep(time::Duration::from_millis(200));
+    if get_service_state(service.as_str())?.to_lowercase() != "activated" {
+        return Err(DabError::Err500(format!("Failed to activate service '{}' after 200ms.", service)));
+    }
+    Ok(())
 }
 
 pub fn service_deactivate(service: String) -> Result<(), DabError> {
     //#########Controller.1.deactivate#########
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        // Register websocket to receive events.
-        let mut ws_stream = ws_open().await?;
-
-        let deactivate_payload = json!({
-            "jsonrpc":"2.0",
-            "id":1,
-            "method":"Controller.1.deactivate",
-            "params":{
-                "callsign":service.clone()
-            }
-        });
-
-        let mut statechange_payload = json!({
-            "jsonrpc":"2.0",
-            "id":2,
-            "method":"Controller.Register",
-            "params":"statechange"
-        });
-
-        ws_send(&mut ws_stream, statechange_payload.clone()).await?;
-
-        // Ignore response for now.
-        ws_receive(&mut ws_stream).await?;
-
-        ws_send(&mut ws_stream, deactivate_payload).await?;
-
-        let mut attempts = 0;
-        loop {
-            let response = ws_receive(&mut ws_stream).await?;
-            // {"jsonrpc":"2.0","method":"client.events.1.statechange","params":{"callsign":"{service}","state":"CurrentState","reason":"..."}}
-            // where CurrentState can be "Unavailable/Deactivated/Deactivation/Activated/Activation/Precondition/Hibernated/Destroyed"
-            println!("Got 'statechange' {}", response.clone());
-            if response.get("params")
-                .and_then(|params| params.get("callsign"))
-                .and_then(|callsign| callsign.as_str())
-                .map_or(false, |name_str| name_str == service) {
-                if response.get("params")
-                    .and_then(|params| params.get("state"))
-                    .and_then(|state| state.as_str())
-                    .map_or(false, |name_str| name_str == "Deactivated") {
-                    statechange_payload["method"] = "Controller.Unregister".into();
-                    ws_send(&mut ws_stream, statechange_payload).await?;
-                    ws_close(&mut ws_stream).await?;
-                    return Ok(());
-                }
-            }
-
-            attempts += 1;
-            if attempts >= 20 {
-                statechange_payload["method"] = "Controller.Unregister".into();
-                ws_send(&mut ws_stream, statechange_payload).await?;
-                ws_close(&mut ws_stream).await?;
-                return Err(DabError::Err500(
-                    "Timed out waiting for 'statechange' event.".to_string(),
-                ));
-            }
+    let activate_payload = json!({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"Controller.1.deactivate",
+        "params":{
+            "callsign":service.clone()
         }
-    })
+    }).to_string();
+    let response = http_post(activate_payload)?;
+    let response_value: serde_json::Value = serde_json::from_str(&response)
+        .map_err(|e| DabError::Err500(format!("Failed to parse response: {}", e)))?;
+    if response_value.get("result").is_none() {
+        return Err(DabError::Err500(format!("Key 'result' not found in response for method 'Controller.1.activate'.")));
+    }
+    thread::sleep(time::Duration::from_millis(200));
+    if get_service_state(service.as_str())?.to_lowercase() != "deactivated" {
+        return Err(DabError::Err500(format!("Failed to deactivate service '{}' after 200ms.", service)));
+    }
+    Ok(())
 }
 
 pub fn get_service_state(service: &str) -> Result<String, DabError> {
     let method = format!("Controller.1.status@{service}");
     let response = rdk_request::<serde_json::Value>(&method)?;
-    println!("Arun Got response: {}", response.clone());
     let state = response["result"][0]["state"]
         .as_str()
         .ok_or(DabError::Err500(format!("Key 'state' not found in response for method '{}'.", method)))?;
-    println!("Arun Got state: {}", state.to_string().clone());
     Ok(state.to_string().to_lowercase().clone())
 }
 
