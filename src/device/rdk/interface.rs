@@ -19,7 +19,7 @@ pub fn init(device_ip: &str, debug: bool) {
 
 pub fn get_device_id() -> String {
     let json_string =
-        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\"}".to_string();
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\",\"params\":{\"params\":[\"estb_mac\"]}}".to_string();
     let response = http_post(json_string);
     match response {
         Ok(r) => {
@@ -347,6 +347,58 @@ lazy_static! {
     };
 }
 
+// Static device info; no need to panic or break runtime. Implementation is based on the assumption
+// that platform response will be constant for a specific build.
+lazy_static! {
+    static ref RDK_DEVICE_INFO: HashMap<String, String> = {
+        let mut rdk_device_info = HashMap::new();
+        match get_thunder_property("DeviceInfo.make", "make") {
+            Ok(make) => { rdk_device_info.insert(String::from("manufacturer"), String::from(make)); },
+            Err(err) => {
+                println!("Error RDK_DEVICE_INFO 'DeviceInfo.make' {}", err);
+            },
+        };
+        match get_thunder_property("DeviceInfo.modelid", "sku") {
+            Ok(model) => { rdk_device_info.insert(String::from("model"), String::from(model)); },
+            Err(err) => {
+                println!("Error RDK_DEVICE_INFO 'DeviceInfo.modelid' {}", err);
+            },
+        };
+        match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
+            Ok(serialnumber) => { rdk_device_info.insert(String::from("serialnumber"), String::from(serialnumber)); },
+            Err(err) => {
+                println!("Error RDK_DEVICE_INFO 'DeviceInfo.serialnumber' {}", err);
+            },
+        };
+        match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
+            Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
+            Err(err) => {
+                println!("Error RDK_DEVICE_INFO 'DeviceIdentification.deviceidentification' {}", err);
+            },
+        };
+        match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
+            Ok(firmwareversion) => { rdk_device_info.insert(String::from("firmwareversion"), String::from(firmwareversion)); },
+            Err(err) => {
+                println!("Error RDK_DEVICE_INFO 'DeviceInfo.firmwareversion' {}", err);
+            },
+        };
+        rdk_device_info
+    };
+}
+
+pub fn get_rdk_device_info(propertyname: &str) -> Result<String, String> {
+    match RDK_DEVICE_INFO.get(propertyname) {
+        Some(val) => Ok(val.clone()),
+        None => {
+            let error = ErrorResponse {
+                status: 500,
+                error: format!("Error; no match for property {propertyname}.")
+            };
+            Err(serde_json::to_string(&error).unwrap())
+        }
+    }
+}
+
 pub fn get_ip_address() -> String {
     unsafe { DEVICE_ADDRESS.clone() }
 }
@@ -383,8 +435,8 @@ pub fn get_device_memory() -> Result<u32, String> {
     Ok(0)
 }
 
-//Read key inputs from file
-
+// Read key inputs from file
+// Optional override configuration; do not panic or break runtime.
 pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
     let mut file_content = String::new();
     File::open(file_path)
@@ -400,4 +452,44 @@ pub fn read_keymap_json(file_path: &str) -> Result<String, String> {
             e.to_string()
         })?;
     Ok(file_content)
+}
+
+fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Result<String, String> {
+    match value {
+        serde_json::Value::String(s) => Ok(s.clone()),
+        serde_json::Value::Number(n) => Ok(n.to_string()),
+        serde_json::Value::Object(o) => serde_json::to_string(o).map_err(|_| format!("Failed to serialize object for key '{}'.", key_name)),
+        _ => Err(format!("Unsupported type for key '{}' in response.", key_name)),
+    }
+}
+
+// Function to get thunder property value. Properties are read-only and will always return a valid value on API success.
+// If the key is not found in the response, it will return a dummy response in debug mode.
+pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String, String> {
+    let json_string = format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{}\"}}", method_name);
+    let response = http_post(json_string).map_err(|err| {
+        let error = ErrorResponse {
+            status: 500,
+            error: err,
+        };
+        serde_json::to_string(&error).unwrap_or_else(|_| "Failed to serialize error.".to_string())
+    })?;
+
+    let response: serde_json::Value = serde_json::from_str(&response).map_err(|_| "Failed to parse response.".to_string())?;
+    let value = if key_name.is_empty() {
+        &response["result"]
+    } else {
+        &response["result"][key_name]
+    };
+
+    if value.is_null() {
+        if cfg!(debug_assertions) {
+            println!("Key '{}' not found in response.", key_name);
+            Ok(format!("Dummy response for {}.", key_name))
+        } else {
+            Err(format!("Key '{}' not found in response.", key_name))
+        }
+    } else {
+        convert_value_type_to_string(value, key_name)
+    }
 }
