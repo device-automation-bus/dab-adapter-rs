@@ -115,8 +115,8 @@ use tokio::runtime::Runtime;
 #[allow(non_snake_case)]
 pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
-    let axela_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
-    if !axela_enabled {
+    let alexa_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
+    if !alexa_enabled {
         enable_ptt()?;
     }
 
@@ -157,8 +157,12 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         let mut attempts = 0;
         loop {
             let response = ws_receive(&mut ws_stream).await?;
+            print!("Got onSessionEnd: {:?}\n", response.clone());
 
-            if response.get("params")
+            // check if response has "method" with "onSessionEnd" and "params" has "result" with "success".
+            if response.get("method")
+                .map_or(false, |method| method.to_string() == "onSessionEnd".to_string()) &&
+                response.get("params")
                 .and_then(|params| params.get("result"))
                 .and_then(|result| result.as_str())
                 .map_or(false, |name_str| name_str == "success") {
@@ -166,7 +170,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
                 ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
                 // Tune to match Alexa's breathing and processing time.
-                if axela_enabled {
+                if alexa_enabled {
                     println!("Got onSessionEnd.params.result.success; wait for 2sec for Alexa.");
                     thread::sleep(time::Duration::from_secs(2));
                 }
