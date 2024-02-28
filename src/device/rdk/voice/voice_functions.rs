@@ -125,7 +125,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         // Register websocket to receive events.
         let mut ws_stream = ws_open().await?;
 
-        let payload = json!({
+        let mut payload = json!({
             "jsonrpc": "2.0",
             "id": "3",
             "method": "org.rdk.VoiceControl.register",
@@ -134,7 +134,7 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             }
         });
 
-        ws_send(&mut ws_stream, payload).await?;
+        ws_send(&mut ws_stream, payload.clone()).await?;
 
         // Ignore response for now.
         ws_receive(&mut ws_stream).await?;
@@ -162,6 +162,8 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
                 .and_then(|params| params.get("result"))
                 .and_then(|result| result.as_str())
                 .map_or(false, |name_str| name_str == "success") {
+                payload["method"] = "org.rdk.VoiceControl.unregister".into();
+                ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
                 // Tune to match Alexa's breathing and processing time.
                 if axela_enabled {
@@ -173,6 +175,8 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
 
             attempts += 1;
             if attempts >= 20 {
+                payload["method"] = "org.rdk.VoiceControl.unregister".into();
+                ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
                 return Err(DabError::Err500(
                     "Timed out waiting for 'onSessionEnd' event.".to_string(),

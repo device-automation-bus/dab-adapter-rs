@@ -2,7 +2,7 @@ use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;
 use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::service_activate;
+use crate::device::rdk::interface::{service_activate, get_service_state};
 use serde::{Deserialize, Serialize};
 
 use base64::{engine::general_purpose, Engine as _};
@@ -22,6 +22,11 @@ use tokio::time::{self, Duration};
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabError> {
+    //######### Activate org.rdk.ScreenCapture #########
+    if get_service_state("org.rdk.ScreenCapture")? != "activated" {
+        service_activate("org.rdk.ScreenCapture".to_string())?;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let mut ResponseOperator = CaptureScreenshotResponse::default();
@@ -47,9 +52,6 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabErro
         });
 
         tokio::spawn(graceful);
-
-        //######### Activate org.rdk.ScreenCapture #########
-        service_activate("org.rdk.ScreenCapture".to_string())?;
 
         //#########org.rdk.ScreenCapture.uploadScreenCapture#########
         #[derive(Serialize)]
