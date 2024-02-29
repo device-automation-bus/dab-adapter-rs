@@ -160,12 +160,12 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
             print!("Got onSessionEnd: {:?}\n", response.clone());
 
             // check if response has "method" with "onSessionEnd" and "params" has "result" with "success".
-            if response.get("method")
-                .map_or(false, |method| method.to_string() == "onSessionEnd".to_string()) &&
-                response.get("params")
-                .and_then(|params| params.get("result"))
-                .and_then(|result| result.as_str())
-                .map_or(false, |name_str| name_str == "success") {
+            /* Eg: {"jsonrpc":"2.0","method":"onSessionEnd","params":{
+                        "remoteId":255,"result":"success","serverStats":{"connectTime":0,"dnsTime":0,"serverIp":""},
+                        "sessionId":"916d763d-ea62-48e9-a527-3a7387ee0352","success":{"transcription":""}
+                    }} */
+            let response_json: serde_json::Value = serde_json::from_str(&response.to_string()).unwrap();
+            if response_json["method"] == "onSessionEnd" && response_json["params"]["result"] == "success" {
                 payload["method"] = "org.rdk.VoiceControl.unregister".into();
                 ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
