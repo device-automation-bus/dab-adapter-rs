@@ -247,6 +247,9 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
     Ok(res)
 }
 
+// Function to activate a service.
+// Parameters: service: The service to activate.
+// Returns Ok on success else DabError.
 pub fn service_activate(service: String) -> Result<(), DabError> {
     //#########Controller.1.activate#########
     let activate_payload = json!({
@@ -270,6 +273,9 @@ pub fn service_activate(service: String) -> Result<(), DabError> {
     Ok(())
 }
 
+// Function to deactivate a service.
+// Parameters: service: The service to deactivate.
+// Returns Ok on success else DabError.
 pub fn service_deactivate(service: String) -> Result<(), DabError> {
     //#########Controller.1.deactivate#########
     let activate_payload = json!({
@@ -293,6 +299,9 @@ pub fn service_deactivate(service: String) -> Result<(), DabError> {
     Ok(())
 }
 
+// Parameters: service: The service to check the state of.
+// Returns the state of the service:"unavailable/deactivated/deactivation/activated/activation/precondition/hibernated/destroyed"
+// on success else DabError.
 pub fn get_service_state(service: &str) -> Result<String, DabError> {
     let method = format!("Controller.1.status@{service}");
     let response = rdk_request::<serde_json::Value>(&method)?;
@@ -302,6 +311,8 @@ pub fn get_service_state(service: &str) -> Result<String, DabError> {
     Ok(state.to_string().to_lowercase().clone())
 }
 
+// Parameters: service: The service to check the availability of.
+// Returns true if the service is available else false on success else DabError.
 pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -336,13 +347,7 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
         keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
         keycode_map.insert(String::from("KEY_MUTE"),173);
-        // keycode_map.insert(String::from("KEY_CHANNEL_UP"),0);
-        // keycode_map.insert(String::from("KEY_CHANNEL_DOWN"),0);
-        // keycode_map.insert(String::from("KEY_MENU"),0);
         keycode_map.insert(String::from("KEY_EXIT"),27);
-        // keycode_map.insert(String::from("KEY_INFO"),0);
-        // keycode_map.insert(String::from("KEY_GUIDE"),0);
-        // keycode_map.insert(String::from("KEY_CAPTIONS"),0);
         keycode_map.insert(String::from("KEY_UP"),38);
         keycode_map.insert(String::from("KEY_PAGE_UP"),33);
         keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
@@ -354,7 +359,6 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_PLAY"),179);
         keycode_map.insert(String::from("KEY_PLAY_PAUSE"),179);
         keycode_map.insert(String::from("KEY_PAUSE"),179);
-        // keycode_map.insert(String::from("KEY_RECORD"),0);
         keycode_map.insert(String::from("KEY_STOP"),178);
         keycode_map.insert(String::from("KEY_REWIND"),227);
         keycode_map.insert(String::from("KEY_FAST_FORWARD"),228);
@@ -370,19 +374,28 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_7"),55);
         keycode_map.insert(String::from("KEY_8"),56);
         keycode_map.insert(String::from("KEY_9"),57);
-        // keycode_map.insert(String::from("KEY_RED"),0);
-        // keycode_map.insert(String::from("KEY_GREEN"),0);
-        // keycode_map.insert(String::from("KEY_YELLOW"),0);
-        // keycode_map.insert(String::from("KEY_BLUE"),0);
 
         if let Ok(json_file) = read_keymap_json("/opt/dab_platform_keymap.json") {
-        // Platform specific keymap file present in the device
-        // Json file should be in below format
-        // {
-        //     "KEY_CHANNEL_UP":104,
-        //     "KEY_CHANNEL_DOWN":109,
-        //     "KEY_MENU":408
-        // }
+            // Platform specific keymap file present in the device
+            // Json file should be in below format
+            /*
+                {
+                    "KEY_CHANNEL_UP": 104,
+                    "KEY_CHANNEL_DOWN": 109,
+                    "KEY_MENU": 408,
+                    "KEY_CHANNEL_UP":0,
+                    "KEY_CHANNEL_DOWN": 0,
+                    "KEY_MENU": 0,
+                    "KEY_INFO": 0,
+                    "KEY_GUIDE": 0,
+                    "KEY_CAPTIONS": 0,
+                    "KEY_RECORD": 0,
+                    "KEY_RED": 0,
+                    "KEY_GREEN": 0,
+                    "KEY_YELLOW": 0,
+                    "KEY_BLUE": 0
+                }
+            */
             if let Ok(new_keymap) = serde_json::from_str::<HashMap<String, u16>>(&json_file) {
                 println!("Imported platform specified keymap /opt/dab_platform_keymap.json.");
                 for (key, value) in new_keymap {
@@ -443,6 +456,8 @@ lazy_static! {
     };
 }
 
+// Parameter: propertyname: The property to get the value of.
+// Returns the value of the property on success else DabError.
 pub fn get_rdk_device_info(propertyname: &str) -> Result<String, DabError> {
     match RDK_DEVICE_INFO.get(propertyname) {
         Some(val) => Ok(val.clone()),
@@ -508,6 +523,9 @@ pub fn read_keymap_json(file_path: &str) -> Result<String, DabError> {
     Ok(file_content)
 }
 
+// Function to convert value type to string. Supported types are String, Number and Object.
+// Parameters: value: The value to convert to string, key_name: The key name of the value.
+// Returns the value as string on success else DabError.
 fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Result<String, String> {
     match value {
         serde_json::Value::String(s) => Ok(s.clone()),
@@ -518,7 +536,8 @@ fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Re
 }
 
 // Function to get thunder property value. Properties are read-only and will always return a valid value on API success.
-// If the key is not found in the response, it will return a dummy response in debug mode.
+// Parameters: method_name: The method name to call, key_name: The key to be matched in the response.
+// Returns the value of the key as String on success else DabError.
 pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String, DabError> {
     let json_string = format!("{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{}\"}}", method_name);
     let response = http_post(json_string)?;

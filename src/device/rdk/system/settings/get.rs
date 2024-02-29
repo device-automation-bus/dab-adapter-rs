@@ -11,6 +11,7 @@ use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::{service_activate, get_service_state};
 use crate::device::rdk::interface::RdkResponse;
 use serde::{Deserialize, Serialize};
+use std::thread;
 
 fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
@@ -27,8 +28,9 @@ fn get_rdk_language() -> Result<String, DabError> {
 }
 
 fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
-    if get_service_state("org.rdk.FrameRate")?.to_lowercase() != "activated" {
+    if get_service_state("org.rdk.FrameRate")? != "activated" {
         service_activate("org.rdk.FrameRate".to_string())?;
+        thread::sleep(std::time::Duration::from_millis(500));
     }
 
     #[allow(dead_code)]

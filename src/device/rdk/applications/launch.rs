@@ -227,8 +227,14 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
         if app_state == "FOREGROUND".to_string() {
-            // Tune to give breathing space for Thunder & RDKShell plugin.
-            thread::sleep(time::Duration::from_millis(250));
+            if !app_created {
+                // Worst case to launch and complete the initialization of plugin runtime and App SDK.
+                // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
+                thread::sleep(time::Duration::from_millis(2000));
+            } else {
+                // Worst case to resume the plugin runtime and App SDK.
+                thread::sleep(time::Duration::from_millis(250));
+            }
             break;
         }
     }

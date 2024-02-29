@@ -122,8 +122,14 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError>
         if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
             || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
         {
-            // Tune to give breathing space for Thunder & RDKShell plugin.
-            thread::sleep(time::Duration::from_millis(250));
+            if is_background {
+                // Worst case to suspend the App SDK & plugin runtime.
+                thread::sleep(time::Duration::from_millis(250));
+            } else {
+                // Worst case to destroy the App SDK & plugin runtime.
+                // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
+                thread::sleep(time::Duration::from_millis(2500));
+            }
             break;
         }
     }

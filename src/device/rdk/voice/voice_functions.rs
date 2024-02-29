@@ -170,9 +170,10 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
                 ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
                 // Tune to match Alexa's breathing and processing time.
+                // ToDo: Replace with a better solution when AVS has proper events.
                 if alexa_enabled {
-                    println!("Got onSessionEnd.params.result.success; wait for 2sec for Alexa.");
-                    thread::sleep(time::Duration::from_secs(2));
+                    println!("Got onSessionEnd.params.result.success; wait for 3sec for Alexa.");
+                    thread::sleep(time::Duration::from_secs(3));
                 }
                 return Ok(());
             }

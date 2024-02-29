@@ -14,6 +14,7 @@ use hyper::{Method, StatusCode};
 use local_ip_address::local_ip;
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::thread;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{self, Duration};
@@ -25,6 +26,7 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabErro
     //######### Activate org.rdk.ScreenCapture #########
     if get_service_state("org.rdk.ScreenCapture")? != "activated" {
         service_activate("org.rdk.ScreenCapture".to_string())?;
+        thread::sleep(Duration::from_millis(500));
     }
 
     let rt = Runtime::new().unwrap();
