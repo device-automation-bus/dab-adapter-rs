@@ -157,8 +157,9 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         let mut attempts = 0;
         loop {
             let response = ws_receive(&mut ws_stream).await?;
-            print!("Got onSessionEnd: {:?}\n", response.clone());
-
+            if cfg!(debug_assertions) {
+                println!("Got onSessionEnd: {:?}\n", response.clone());
+            }
             // check if response has "method" with "onSessionEnd" and "params" has "result" with "success".
             /* Eg: {"jsonrpc":"2.0","method":"onSessionEnd","params":{
                         "remoteId":255,"result":"success","serverStats":{"connectTime":0,"dnsTime":0,"serverIp":""},
