@@ -28,6 +28,14 @@ pub fn init(device_ip: &str, debug: bool) {
         DEVICE_ADDRESS.push_str(&device_ip);
         DEBUG = debug;
     }
+
+    if unsafe { DEBUG } {
+        for app in APP_LIFECYCLE_TIMEOUTS.keys() {
+            for (key, value) in APP_LIFECYCLE_TIMEOUTS.get(app).unwrap() {
+                println!("{:<15} - {:<30} = {:>5}ms.", app, key, value);
+            }
+        }
+    }
 }
 
 pub fn get_device_id() -> Result<String, DabError> {
@@ -375,7 +383,7 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_8"),56);
         keycode_map.insert(String::from("KEY_9"),57);
 
-        if let Ok(json_file) = read_keymap_json("/opt/dab_platform_keymap.json") {
+        if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
             // Platform specific keymap file present in the device
             // Json file should be in below format
             /*
@@ -504,9 +512,9 @@ pub fn get_device_memory() -> Result<u32, DabError> {
     Ok(0)
 }
 
-// Read key inputs from file
+// Read platform override JSON configs from file
 // Optional override configuration; do not panic or break runtime.
-pub fn read_keymap_json(file_path: &str) -> Result<String, DabError> {
+pub fn read_platform_config_json(file_path: &str) -> Result<String, DabError> {
     let mut file_content = String::new();
     File::open(file_path)
         .map_err(|e| {
@@ -552,4 +560,58 @@ pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String,
         let key_value = result.get(key_name).ok_or(DabError::Err500(format!("Key '{}' not found in response for method '{}'.", key_name, method_name)))?;
         convert_value_type_to_string(key_value, key_name).map_err(|e| DabError::Err500(e))
     }
+}
+
+// ############################### APP Lifecycle Time Configs ###############################
+
+type TimeoutMap = HashMap<String, u64>;
+type LifecycleTimeouts = HashMap<String, TimeoutMap>;
+
+lazy_static! {
+    static ref APP_LIFECYCLE_TIMEOUTS: LifecycleTimeouts = {
+        let mut app_lifecycle_timeouts = LifecycleTimeouts::new();
+
+        app_lifecycle_timeouts.insert("netflix".to_string(), {
+            let mut timeouts = TimeoutMap::new();
+            timeouts.insert("cold_launch_timeout_ms".to_string(), 6000);
+            timeouts.insert("resume_launch_timeout_ms".to_string(), 3000);
+            timeouts.insert("exit_to_destroy_timeout_ms".to_string(), 2500);
+            timeouts.insert("exit_to_background_timeout_ms".to_string(), 2000);
+            timeouts
+        });
+
+        match read_platform_config_json("/tmp/dab_platform_app_lifecycle.json") {
+            Ok(json_file) => {
+                match serde_json::from_str::<HashMap<String, HashMap<String, u64>>>(&json_file) {
+                    Ok(app_lifecycle_config) => {
+                        for (app_id, timeout_map) in app_lifecycle_config {
+                            if app_id == "youtube" || app_id == "uk.co.bbc.iplayer" || app_id == "netflix" || app_id == "primevideo" {
+                                app_lifecycle_timeouts.insert(app_id, timeout_map);
+                            }
+                        }
+                        println!("Imported platform specified app lifetime configuration file also.");
+                    }
+                    Err(e) => {
+                        println!("Failed to parse JSON: {} from 'dab_platform_app_lifecycle.json'.", e);
+                    }
+                }
+            }
+            Err(_) => {
+                println!("Using default values for app lifecycle timeouts.");
+            }
+        }
+
+        app_lifecycle_timeouts
+    };
+}
+
+// Function to get lifecycle timeout for an app. After plugin state change how long App implementation/SDK takes to complete the action.
+// Parameters: app_name: The app name (lowercase) to get the timeout for, timeout_type: The type of timeout to get.
+// Returns the timeout in milliseconds on success else default 2500.
+pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> {
+    APP_LIFECYCLE_TIMEOUTS
+        .get(app_name)
+        .and_then(|timeouts| timeouts.get(timeout_type))
+        .cloned()
+        .or_else(|| Some(2500))
 }

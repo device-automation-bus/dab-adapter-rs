@@ -3,6 +3,7 @@ use crate::dab::structs::LaunchApplicationRequest;
 use crate::dab::structs::LaunchApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
 
 use std::{thread, time};
@@ -227,14 +228,15 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
         if app_state == "FOREGROUND".to_string() {
-            if !app_created {
-                // Worst case to launch and complete the initialization of plugin runtime and App SDK.
-                // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
-                thread::sleep(time::Duration::from_millis(2000));
+            let timeout_type = if !app_created {
+                "cold_launch_timeout_ms"
             } else {
-                // Worst case to resume the plugin runtime and App SDK.
-                thread::sleep(time::Duration::from_millis(250));
-            }
+                "resume_launch_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
+            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
         }
     }
