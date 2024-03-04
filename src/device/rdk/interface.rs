@@ -571,7 +571,7 @@ lazy_static! {
     static ref APP_LIFECYCLE_TIMEOUTS: LifecycleTimeouts = {
         let mut app_lifecycle_timeouts = LifecycleTimeouts::new();
 
-        app_lifecycle_timeouts.insert("netflix".to_string(), {
+        app_lifecycle_timeouts.insert("youtube".to_string(), {
             let mut timeouts = TimeoutMap::new();
             timeouts.insert("cold_launch_timeout_ms".to_string(), 6000);
             timeouts.insert("resume_launch_timeout_ms".to_string(), 3000);
