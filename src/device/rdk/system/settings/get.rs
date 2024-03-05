@@ -8,10 +8,10 @@ use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
-use crate::device::rdk::interface::service_activate;
-use crate::device::rdk::interface::service_deactivate;
+use crate::device::rdk::interface::{service_activate, get_service_state};
 use crate::device::rdk::interface::RdkResponse;
 use serde::{Deserialize, Serialize};
+use std::thread;
 
 fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
@@ -28,7 +28,10 @@ fn get_rdk_language() -> Result<String, DabError> {
 }
 
 fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
-    service_activate("org.rdk.FrameRate".to_string())?;
+    if get_service_state("org.rdk.FrameRate")? != "activated" {
+        service_activate("org.rdk.FrameRate".to_string())?;
+        thread::sleep(std::time::Duration::from_millis(500));
+    }
 
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -45,8 +48,6 @@ fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
         .framerate
         .trim_end_matches(']')
         .split('x');
-
-    service_deactivate("org.rdk.RDKShell.getDisplayFrameRate".to_string())?;
 
     Ok(OutputResolution {
         width: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,

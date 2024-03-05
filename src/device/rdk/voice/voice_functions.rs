@@ -5,6 +5,7 @@ use crate::device::rdk::interface::{ws_close, ws_open, ws_receive, ws_send};
 use crate::hw_specific::interface::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::{thread, time};
 
 #[allow(non_snake_case)]
 pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
@@ -28,7 +29,7 @@ pub fn configureVoice(EnableVoice: bool) -> Result<(), DabError> {
 
     let _rdkresponse: RdkResponseSimple =
         rdk_request_with_params("org.rdk.VoiceControl.configureVoice", req_params)?;
-
+    
     Ok(())
 }
 
@@ -114,8 +115,8 @@ use tokio::runtime::Runtime;
 #[allow(non_snake_case)]
 pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
     // Do not configure if already enabled as immediate use may fail.
-    let voice_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
-    if !voice_enabled {
+    let alexa_enabled = is_voice_enabled("AmazonAlexa".to_string())?;
+    if !alexa_enabled {
         enable_ptt()?;
     }
 
@@ -124,21 +125,17 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         // Register websocket to receive events.
         let mut ws_stream = ws_open().await?;
 
-        // Alexa specific implementation; listen to "onServerMessage" for "RequestProcessingCompleted".
-        // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
-        //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
-        // } 
-        // TODO: Handle other voice implementation using "onSessionEnd".
-        let payload = json!({
+        let mut payload = json!({
             "jsonrpc": "2.0",
             "id": "3",
             "method": "org.rdk.VoiceControl.register",
             "params": {
-                "event": "onServerMessage"
+                "event": "onSessionEnd"
             }
         });
 
-        ws_send(&mut ws_stream, payload).await?;
+        ws_send(&mut ws_stream, payload.clone()).await?;
+
         // Ignore response for now.
         ws_receive(&mut ws_stream).await?;
 
@@ -160,28 +157,35 @@ pub fn sendVoiceCommand(audio_file_in: String) -> Result<(), DabError> {
         let mut attempts = 0;
         loop {
             let response = ws_receive(&mut ws_stream).await?;
-
-            // Alexa specific response; listen to "onServerMessage" for "RequestProcessingCompleted".
-            // {"jsonrpc": "2.0", "method": "client.events.onServerMessage", "params": \
-            //   {"xr_speech_avs":{"directive":{"header":{"namespace":"InteractionModel","name":"RequestProcessingCompleted",...},"payload":{}}}}
-            // }
-            // TODO: Handle other voice implementation using "onSessionEnd".
-            if response.get("params")
-                .and_then(|params| params.get("xr_speech_avs"))
-                .and_then(|xr_speech_avs| xr_speech_avs.get("directive"))
-                .and_then(|directive| directive.get("header"))
-                .and_then(|header| header.get("name"))
-                .and_then(|name| name.as_str())
-                .map_or(false, |name_str| name_str == "RequestProcessingCompleted") {
+            if cfg!(debug_assertions) {
+                println!("Got onSessionEnd: {:?}\n", response.clone());
+            }
+            // check if response has "method" with "onSessionEnd" and "params" has "result" with "success".
+            /* Eg: {"jsonrpc":"2.0","method":"onSessionEnd","params":{
+                        "remoteId":255,"result":"success","serverStats":{"connectTime":0,"dnsTime":0,"serverIp":""},
+                        "sessionId":"916d763d-ea62-48e9-a527-3a7387ee0352","success":{"transcription":""}
+                    }} */
+            let response_json: serde_json::Value = serde_json::from_str(&response.to_string()).unwrap();
+            if response_json["method"] == "onSessionEnd" && response_json["params"]["result"] == "success" {
+                payload["method"] = "org.rdk.VoiceControl.unregister".into();
+                ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
+                // Tune to match Alexa's breathing and processing time.
+                // ToDo: Replace with a better solution when AVS has proper events.
+                if alexa_enabled {
+                    println!("Got onSessionEnd.params.result.success; wait for 3sec for Alexa.");
+                    thread::sleep(time::Duration::from_secs(3));
+                }
                 return Ok(());
             }
 
             attempts += 1;
-            if attempts >= 10 {
+            if attempts >= 20 {
+                payload["method"] = "org.rdk.VoiceControl.unregister".into();
+                ws_send(&mut ws_stream, payload).await?;
                 ws_close(&mut ws_stream).await?;
                 return Err(DabError::Err500(
-                    "Timed out waiting for 'RequestProcessingCompleted' event from Alexa.".to_string(),
+                    "Timed out waiting for 'onSessionEnd' event.".to_string(),
                 ));
             }
         }

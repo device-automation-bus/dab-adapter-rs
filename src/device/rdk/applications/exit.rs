@@ -3,6 +3,7 @@ use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
 use std::{thread, time};
 
@@ -122,6 +123,14 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError>
         if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
             || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
         {
+            let timeout_type = if is_background {
+                "exit_to_background_timeout_ms"
+            } else {
+                "exit_to_destroy_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&_dab_request.appId.to_lowercase(), timeout_type).unwrap_or(2500);
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
         }
     }

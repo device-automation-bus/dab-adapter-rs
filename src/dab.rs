@@ -298,7 +298,12 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 };
                 // Publish the response
                 mqtt_client.publish(msg_tx);
-                println!("Publishing response: {} {:?}", response_topic.clone().replace(&substring, ""), payload.as_str());
+                let limited_payload = if cfg!(debug_assertions) {
+                    payload.clone()
+                } else {
+                    payload.chars().take(255).collect::<String>()
+                };
+                println!("Publishing response: {} {:?}", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
             }
             Err(err) => {
                 if let Some(msg) = err {

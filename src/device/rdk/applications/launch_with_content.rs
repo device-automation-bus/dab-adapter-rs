@@ -4,6 +4,7 @@ use crate::dab::structs::LaunchApplicationWithContentResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::launch::move_to_front_set_focus;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use serde_json::json;
@@ -227,6 +228,15 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
         if app_state == "FOREGROUND".to_string() {
+            let timeout_type = if !app_created {
+                "cold_launch_timeout_ms"
+            } else {
+                "resume_launch_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
+            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
         }
     }
