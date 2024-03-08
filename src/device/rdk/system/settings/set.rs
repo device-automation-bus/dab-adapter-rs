@@ -56,14 +56,14 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), DabError> {
         videoDisplay: String,
         resolution: String,
         persist: bool,
-        ignoreEdid: bool,
+        // ignoreEdid: bool, Optional parameter; expected to fail the set call if resolution is not supported by the sink.
     }
 
     let req_params = Param {
         videoDisplay: get_rdk_connected_video_displays()?,
         resolution: convert_resolution_to_string(resolution)?,
         persist: true,
-        ignoreEdid: true,
+        // ignoreEdid: false, Optional parameter; expected to fail the set call if resolution is not supported by the sink.
     };
 
     let _rdkresponse: RdkResponseSimple =
