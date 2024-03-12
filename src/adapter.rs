@@ -30,11 +30,6 @@ struct Opt {
     debug: Option<bool>,
 }
 
-// The file `built.rs` was placed there by cargo and `build.rs`
-mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
-
 fn fd_monitor_thread() {
     use notify::{event, Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
     use std::path::Path;
@@ -77,38 +72,6 @@ fn fd_monitor_thread() {
     process::exit(0x00);
 }
 
-fn display_version() {
-    // Print various information produced by `built`. See the docs for a full list.
-
-    println!(
-        "DAB<->RDK Adapter\nVersion {}, built for {} by {}.",
-        built_info::PKG_VERSION,
-        built_info::TARGET,
-        built_info::RUSTC_VERSION
-    );
-
-    if let Some(hash) = built_info::GIT_COMMIT_HASH {
-        print!("Git commit: {}", hash);
-    }
-
-    match built_info::GIT_HEAD_REF {
-        Some(r) => println!(", branch: `{r}`"),
-        None => println!(""),
-    }
-
-    print!(
-        "Built for a {}-CPU, {}-endian architecture. ",
-        built_info::CFG_TARGET_ARCH,
-        built_info::CFG_ENDIAN
-    );
-
-    let built_time = built::util::strptime(built_info::BUILT_TIME_UTC);
-    println!(
-        "Built on {}",
-        built_time.with_timezone(&built::chrono::offset::Local)
-    );
-}
-
 pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
@@ -117,13 +80,8 @@ pub fn main() {
     let create_retire_thread = opt.retire.unwrap_or(false);
     let debug = opt.debug.unwrap_or(false);
 
-    if opt.version {
-        display_version();
-        return;
-    } else if let Some(hash) = built_info::GIT_COMMIT_HASH {
-        println!("DAB<->RDK Adapter [{}]", hash);
-    }
-
+    println!("DAB<->RDK Adapter");
+    
     // Initialize the device
     hw_specific::interface::init(&device_ip, debug);
 
