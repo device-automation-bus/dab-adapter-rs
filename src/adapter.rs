@@ -80,7 +80,7 @@ pub fn main() {
     let create_retire_thread = opt.retire.unwrap_or(false);
     let debug = opt.debug.unwrap_or(false);
 
-    println!("DAB<->RDK Adapter");
+    println!("DAB<->RDK Adapter ({:?} - {:?})", env!("VERGEN_BUILD_SEMVER"), env!("VERGEN_GIT_SHA_SHORT"));
     
     // Initialize the device
     hw_specific::interface::init(&device_ip, debug);
