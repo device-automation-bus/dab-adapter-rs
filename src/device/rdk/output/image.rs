@@ -1,23 +1,9 @@
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct CaptureScreenshotRequest {
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct CaptureScreenshotResponse {
-//     pub outputImage: String,
-// }
-
-#[allow(unused_imports)]
 use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DabError;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::service_activate;
+use crate::device::rdk::interface::{service_activate, get_service_state};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use base64::{engine::general_purpose, Engine as _};
 use bytes::Bytes;
@@ -28,6 +14,7 @@ use hyper::{Method, StatusCode};
 use local_ip_address::local_ip;
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::thread;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{self, Duration};
@@ -35,7 +22,13 @@ use tokio::time::{self, Duration};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabError> {
+    //######### Activate org.rdk.ScreenCapture #########
+    if get_service_state("org.rdk.ScreenCapture")? != "activated" {
+        service_activate("org.rdk.ScreenCapture".to_string())?;
+        thread::sleep(Duration::from_millis(500));
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         let mut ResponseOperator = CaptureScreenshotResponse::default();
@@ -61,9 +54,6 @@ pub fn process(_packet: String) -> Result<String, String> {
         });
 
         tokio::spawn(graceful);
-
-        //######### Activate org.rdk.ScreenCapture #########
-        service_activate("org.rdk.ScreenCapture".to_string()).unwrap();
 
         //#########org.rdk.ScreenCapture.uploadScreenCapture#########
         #[derive(Serialize)]
@@ -105,18 +95,7 @@ pub fn process(_packet: String) -> Result<String, String> {
         }
 
         let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string.clone());
-
-        match response_json {
-            Err(err) => {
-                let error = ErrorResponse {
-                    status: 500,
-                    error: err,
-                };
-                return Err(serde_json::to_string(&error).unwrap());
-            }
-            Ok(_) => {}
-        }
+        http_post(json_string)?;
 
         //######### Listen for the base64 string from the request handler with a timeout. #########
         match time::timeout(Duration::from_secs(30), rx.recv()).await {
@@ -130,12 +109,14 @@ pub fn process(_packet: String) -> Result<String, String> {
                 ResponseOperator.outputImage = b64;
 
                 // *******************************************************************
-                let mut ResponseOperator_json = json!(ResponseOperator);
-                ResponseOperator_json["status"] = json!(200);
-                Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+                Ok(serde_json::to_string(&ResponseOperator).unwrap())
             }
-            Ok(None) => Err("The channel was closed before a message was received".to_string()),
-            Err(_) => Err("Timed out waiting for a message from the channel".to_string()),
+            Ok(None) => Err(DabError::Err500(
+                "The channel was closed before a message was received".to_string(),
+            )),
+            Err(_) => Err(DabError::Err500(
+                "Timed out waiting for a message from the channel".to_string(),
+            )),
         }
     })
 }

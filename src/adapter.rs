@@ -2,6 +2,8 @@ use clap::Parser;
 mod device;
 pub use device::rdk as hw_specific;
 mod dab;
+use dab::structs::RequestTypes;
+use dab::structs::SharedMap;
 use std::collections::HashMap;
 use std::thread;
 
@@ -107,9 +109,6 @@ fn display_version() {
     );
 }
 
-pub type SharedMap =
-    HashMap<String, Box<dyn FnMut(String) -> Result<String, String> + Send + Sync>>;
-
 pub fn main() {
     let opt = Opt::parse();
     let mqtt_host = opt.broker.unwrap_or(String::from("localhost"));
@@ -133,104 +132,74 @@ pub fn main() {
 
     handlers.insert(
         "operations/list".to_string(),
-        Box::new(hw_specific::operations::list::process),
+        RequestTypes::OperationsListRequest,
     );
     handlers.insert(
         "applications/list".to_string(),
-        Box::new(hw_specific::applications::list::process),
+        RequestTypes::ApplicationListRequest,
     );
     handlers.insert(
         "applications/launch".to_string(),
-        Box::new(hw_specific::applications::launch::process),
+        RequestTypes::ApplicationLaunchRequest,
     );
     handlers.insert(
         "applications/launch-with-content".to_string(),
-        Box::new(hw_specific::applications::launch_with_content::process),
+        RequestTypes::ApplicationLaunchWithContentRequest,
     );
     handlers.insert(
         "applications/get-state".to_string(),
-        Box::new(hw_specific::applications::get_state::process),
+        RequestTypes::ApplicationGetStateRequest,
     );
     handlers.insert(
         "applications/exit".to_string(),
-        Box::new(hw_specific::applications::exit::process),
+        RequestTypes::ApplicationExitRequest,
     );
-    handlers.insert(
-        "device/info".to_string(),
-        Box::new(hw_specific::device::info::process),
-    );
+    handlers.insert("device/info".to_string(), RequestTypes::DeviceInfoRequest);
     handlers.insert(
         "system/restart".to_string(),
-        Box::new(hw_specific::system::restart::process),
+        RequestTypes::SystemRestartRequest,
     );
     handlers.insert(
         "system/settings/list".to_string(),
-        Box::new(hw_specific::system::settings::list::process),
+        RequestTypes::SystemSettingsListRequest,
     );
     handlers.insert(
         "system/settings/get".to_string(),
-        Box::new(hw_specific::system::settings::get::process),
+        RequestTypes::SystemSettingsGetRequest,
     );
     handlers.insert(
         "system/settings/set".to_string(),
-        Box::new(hw_specific::system::settings::set::process),
+        RequestTypes::SystemSettingsSetRequest,
     );
     handlers.insert(
         "input/key/list".to_string(),
-        Box::new(hw_specific::input::key::list::process),
+        RequestTypes::InputKeyListRequest,
     );
     handlers.insert(
         "input/key-press".to_string(),
-        Box::new(hw_specific::input::key_press::process),
+        RequestTypes::InputKeyPressRequest,
     );
     handlers.insert(
         "input/long-key-press".to_string(),
-        Box::new(hw_specific::input::long_key_press::process),
+        RequestTypes::InputLongKeyPressRequest,
     );
-    handlers.insert(
-        "output/image".to_string(),
-        Box::new(hw_specific::output::image::process),
-    );
-    // handlers.insert(
-    //     "device-telemetry/start".to_string(),
-    //     Box::new(hw_specific::device_telemetry::start::process),
-    // );
-    // handlers.insert(
-    //     "device-telemetry/stop".to_string(),
-    //     Box::new(hw_specific::device_telemetry::stop::process),
-    // );
-    // handlers.insert(
-    //     "app-telemetry/start".to_string(),
-    //     Box::new(hw_specific::app_telemetry::start::process),
-    // );
-    // handlers.insert(
-    //     "app-telemetry/stop".to_string(),
-    //     Box::new(hw_specific::app_telemetry::stop::process),
-    // );
+    handlers.insert("output/image".to_string(), RequestTypes::OutputImageRequest);
     handlers.insert(
         "health-check/get".to_string(),
-        Box::new(hw_specific::health_check::get::process),
+        RequestTypes::HealthCheckGetRequest,
     );
-    handlers.insert(
-        "voice/list".to_string(),
-        Box::new(hw_specific::voice::list::process),
-    );
-    handlers.insert(
-        "voice/set".to_string(),
-        Box::new(hw_specific::voice::set::process),
-    );
+    handlers.insert("voice/list".to_string(), RequestTypes::VoiceListRequest);
+    handlers.insert("voice/set".to_string(), RequestTypes::VoiceSetRequest);
     handlers.insert(
         "voice/send-audio".to_string(),
-        Box::new(hw_specific::voice::send_audio::process),
+        RequestTypes::VoiceSendAudioRequest,
     );
     handlers.insert(
         "voice/send-text".to_string(),
-        Box::new(hw_specific::voice::send_text::process),
+        RequestTypes::VoiceSendTextRequest,
     );
-    handlers.insert(
-        "version".to_string(),
-        Box::new(hw_specific::version::process),
-    );
+    handlers.insert("version".to_string(), RequestTypes::VersionRequest);
+
     if create_retire_thread {
         let _handle = thread::Builder::new()
             .name("ExitPathMonitor".to_string())

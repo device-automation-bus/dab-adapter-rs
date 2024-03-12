@@ -1,24 +1,13 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct RestartRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct RestartResponse {}
-
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::RestartRequest;
 use crate::dab::structs::RestartResponse;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: RestartRequest) -> Result<String, DabError> {
     let mut ResponseOperator = RestartResponse::default();
     // *** Fill in the fields of the struct RestartResponse here ***
 
@@ -61,21 +50,8 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        Ok(_) => {}
-    }
+    http_post(json_string)?;
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

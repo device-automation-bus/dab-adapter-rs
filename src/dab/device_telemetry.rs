@@ -1,28 +1,10 @@
-use crate::dab::{mqtt_client::MqttMessage, ErrorResponse, MqttClient, TelemetryMessage};
+use crate::dab::structs::DabError;
+use crate::dab::structs::StartDeviceTelemetryRequest;
+use crate::dab::structs::StartDeviceTelemetryResponse;
+use crate::dab::structs::StopDeviceTelemetryRequest;
+use crate::dab::structs::StopDeviceTelemetryResponse;
+use crate::dab::{mqtt_client::MqttMessage, MqttClient, TelemetryMessage};
 use crate::hw_specific::interface::get_device_memory;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-
-// Implement device-telemetry
-#[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
-pub struct StopDeviceTelemetryRequest {}
-
-#[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
-pub struct StopDeviceTelemetryResponse {}
-
-#[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
-pub struct StartDeviceTelemetryRequest {
-    pub duration: u64,
-}
-
-#[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
-pub struct StartDeviceTelemetryResponse {
-    pub duration: u64,
-}
 
 use std::{
     sync::{
@@ -33,6 +15,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+#[allow(dead_code)]
 pub struct DeviceTelemetry {
     enabled: Arc<AtomicBool>,
     handle: Option<thread::JoinHandle<()>>,
@@ -40,6 +23,7 @@ pub struct DeviceTelemetry {
     device_id: String,
 }
 
+#[allow(dead_code)]
 impl DeviceTelemetry {
     pub fn new(mqtt_client: MqttClient, device_id: String) -> DeviceTelemetry {
         DeviceTelemetry {
@@ -104,42 +88,28 @@ impl DeviceTelemetry {
     }
 
     #[allow(non_snake_case)]
-    pub fn device_telemetry_start_process(&mut self, packet: String) -> Result<String, String> {
+    pub fn device_telemetry_start_process(
+        &mut self,
+        _dab_request: StartDeviceTelemetryRequest,
+    ) -> Result<String, DabError> {
         let mut ResponseOperator = StartDeviceTelemetryResponse::default();
 
-        let IncomingMessage = serde_json::from_str(&packet);
+        self.start(_dab_request.duration);
 
-        match IncomingMessage {
-            Err(err) => {
-                let response = ErrorResponse {
-                    status: 400,
-                    error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-                };
-                let Response_json = json!(response);
-                return Err(serde_json::to_string(&Response_json).unwrap());
-            }
-            _ => (),
-        }
+        ResponseOperator.duration = _dab_request.duration;
 
-        let Dab_Request: StartDeviceTelemetryRequest = IncomingMessage.unwrap();
-
-        self.start(Dab_Request.duration);
-
-        ResponseOperator.duration = Dab_Request.duration;
-
-        let mut ResponseOperator_json = json!(ResponseOperator);
-        ResponseOperator_json["status"] = json!(200);
-        Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+        Ok(serde_json::to_string(&ResponseOperator).unwrap())
     }
 
     #[allow(non_snake_case)]
-    pub fn device_telemetry_stop_process(&mut self, _packet: String) -> Result<String, String> {
+    pub fn device_telemetry_stop_process(
+        &mut self,
+        _dab_request: StopDeviceTelemetryRequest,
+    ) -> Result<String, DabError> {
         let ResponseOperator = StopDeviceTelemetryResponse::default();
 
         self.stop();
 
-        let mut ResponseOperator_json = json!(ResponseOperator);
-        ResponseOperator_json["status"] = json!(200);
-        Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+        Ok(serde_json::to_string(&ResponseOperator).unwrap())
     }
 }

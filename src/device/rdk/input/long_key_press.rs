@@ -1,21 +1,9 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct LongKeyPressRequest{
-// pub keyCode: String,
-// pub durationMs: u32,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct LongKeyPressResponse {}
-
-use crate::dab::structs::ErrorResponse;
+use crate::dab::structs::DabError;
 use crate::dab::structs::LongKeyPressRequest;
 use crate::dab::structs::LongKeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use serde_json::{self, Value};
 use std::thread;
 use std::time::Duration;
@@ -24,56 +12,27 @@ use std::time::Instant;
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: LongKeyPressRequest) -> Result<String, DabError> {
     let mut ResponseOperator = LongKeyPressResponse::default();
     // *** Fill in the fields of the struct LongKeyPressResponse here ***
 
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        Ok(_) => (),
+    if _dab_request.keyCode.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'keyCode' parameter".to_string(),
+        ));
     }
 
-    let Dab_Request: LongKeyPressRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.keyCode.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'keyCode' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
-    }
-
-    if Dab_Request.durationMs == 0 {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'durationMs' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+    if _dab_request.durationMs == 0 {
+        return Err(DabError::Err400(
+            "request missing 'durationMs' parameter".to_string(),
+        ));
     }
 
     let mut KeyCode: u16;
 
-    match get_keycode(Dab_Request.keyCode.clone()) {
+    match get_keycode(_dab_request.keyCode.clone()) {
         Some(k) => KeyCode = *k,
-        None => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "keyCode' not found".to_string(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
+        None => return Err(DabError::Err400("keyCode' not found".to_string())),
     }
 
     //#########org.rdk.RDKShell.generateKey#########
@@ -91,7 +50,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let interval_ms: u64 = 50;
-    let total_time = Dab_Request.durationMs;
+    let total_time = _dab_request.durationMs;
 
     //#########org.rdk.RDKShell.injectKey#########
     #[derive(Serialize)]
@@ -134,18 +93,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     while elapsed_time < total_time {
         let start_time = Instant::now();
 
-        let response_json = http_post(json_string.clone());
-
-        match response_json {
-            Err(err) => {
-                let error = ErrorResponse {
-                    status: 500,
-                    error: err,
-                };
-                return Err(serde_json::to_string(&error).unwrap());
-            }
-            _ => (),
-        }
+        http_post(json_string.clone())?;
 
         let mut end_time = Instant::now().duration_since(start_time).as_millis();
         if end_time < interval_ms.into() {
@@ -157,7 +105,5 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

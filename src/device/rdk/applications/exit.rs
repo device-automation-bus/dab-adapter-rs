@@ -1,59 +1,26 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct ExitApplicationRequest{
-// pub appId: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct ExitApplicationResponse{
-// pub state: String,
-// }
-
-use crate::dab::structs::ErrorResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::{thread, time};
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError> {
     let mut ResponseOperator = ExitApplicationResponse::default();
     // *** Fill in the fields of the struct ExitApplicationResponse here ***
-
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        _ => (),
-    }
-
-    let Dab_Request: ExitApplicationRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.appId.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'appId' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+    if _dab_request.appId.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'appId' parameter".to_string(),
+        ));
     }
 
     let mut is_background = false;
-    if Dab_Request.background.is_some() && Dab_Request.background.unwrap() {
+    if _dab_request.background.is_some() && _dab_request.background.unwrap() {
         is_background = true;
     }
 
@@ -72,7 +39,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let req_params = RequestParams {
-        callsign: Dab_Request.appId.clone(),
+        callsign: _dab_request.appId.clone(),
     };
     // ****************** org.rdk.RDKShell.getState ********************
     #[derive(Serialize)]
@@ -110,22 +77,13 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
-    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response).unwrap();
     let mut app_created = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
-        if app == Dab_Request.appId {
+        if app == _dab_request.appId {
             app_created = true;
         }
     }
@@ -141,16 +99,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
 
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
-
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
+            http_post(json_string)?;
         } else {
             // ****************** org.rdk.RDKShell.destroy ********************
             let request = RdkRequest {
@@ -161,31 +110,29 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
 
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
-
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
+            http_post(json_string)?;
         }
     }
 
-    // ******************* wait until app state *************************
-    for _idx in 1..=20 { // 2 seconds (20*100ms)
+    // *******************************************************************
+    for _idx in 1..=20 {
+        // 2 seconds (20*100ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(100));
-        ResponseOperator.state = get_app_state(Dab_Request.appId.clone())?;
+        ResponseOperator.state = get_app_state(_dab_request.appId.clone())?;
         if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
             || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
         {
+            let timeout_type = if is_background {
+                "exit_to_background_timeout_ms"
+            } else {
+                "exit_to_destroy_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&_dab_request.appId.to_lowercase(), timeout_type).unwrap_or(2500);
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
         }
     }
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

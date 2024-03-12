@@ -1,112 +1,10 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct SettingsListRequest {}
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct OutputResolution{
-// pub width: u32,
-// pub height: u32,
-// pub frequency: f32,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum MatchContentFrameRate{#[default]
-//     EnabledAlways,
-//     EnabledSeamlessOnly,
-//     Disabled,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum HdrOutputMode{#[default]
-//     AlwaysHdr,
-//     HdrOnPlayback,
-//     DisableHdr,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum PictureMode{#[default]
-//     Standard,
-//     Dynamic,
-//     Movie,
-//     Sports,
-//     FilmMaker,
-//     Game,
-//     Auto,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum AudioOutputMode{#[default]
-//     Stereo,
-//     MultichannelPcm,
-//     PassThrough,
-//     Auto,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum AudioOutputSource{#[default]
-//     NativeSpeaker,
-//     Arc,
-//     EArc,
-//     Optical,
-//     Aux,
-//     Bluetooth,
-//     Auto,
-//     HDMI,
-// }
-
-// #[allow(dead_code)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub enum VideoInputSource{#[default]
-//     Tuner,
-//     HDMI1,
-//     HDMI2,
-//     HDMI3,
-//     HDMI4,
-//     Composite,
-//     Component,
-//     Home,
-//     Cast,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct AudioVolume{
-// pub min: u32,
-// pub max: u32,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct ListSystemSettings {
-//     pub language: Vec<String>,
-//     pub outputResolution: Vec<OutputResolution>,
-//     pub memc: bool,
-//     pub cec: bool,
-//     pub lowLatencyMode: bool,
-//     pub matchContentFrameRate: Vec<MatchContentFrameRate>,
-//     pub hdrOutputMode: Vec<HdrOutputMode>,
-//     pub pictureMode: Vec<PictureMode>,
-//     pub audioOutputMode: Vec<AudioOutputMode>,
-//     pub audioOutputSource: Vec<AudioOutputSource>,
-//     pub videoInputSource: Vec<VideoInputSource>,
-//     pub audioVolume: AudioVolume,
-//     pub mute: bool,
-//     pub textToSpeech: bool,
-// }
-
-// use super::LANGUAGES;
-// use super::RESOLUTIONS;
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::AudioVolume;
+use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
-use crate::dab::structs::ListSystemSettings;
+use crate::dab::structs::ListSystemSettingsRequest;
+use crate::dab::structs::ListSystemSettingsResponse;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::VideoInputSource;
@@ -118,12 +16,12 @@ use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
 use std::collections::HashMap;
 
 use super::get::get_rdk_tts;
 
-fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
+fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize)]
@@ -168,7 +66,7 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, String> {
     Ok(res)
 }
 
-pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, String> {
+pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -192,7 +90,7 @@ pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, String> {
     Ok(response)
 }
 
-pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String> {
+pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
@@ -220,7 +118,7 @@ pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, String
     Ok(response)
 }
 
-pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, String> {
+pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, DabError> {
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {
@@ -245,7 +143,7 @@ pub fn get_rdk_supported_audio_modes(port: &String) -> Result<Vec<String>, Strin
     Ok(rdkresponse.result.supportedAudioModes)
 }
 
-fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, String> {
+fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, DabError> {
     let mut res = get_rdk_supported_audio_modes(&get_rdk_audio_port()?)?
         .iter()
         .filter_map(|mode| rdk_sound_mode_to_dab(mode))
@@ -261,8 +159,8 @@ fn get_rdk_audio_output_modes() -> Result<Vec<AudioOutputMode>, String> {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
-    let mut ResponseOperator = ListSystemSettings::default();
+pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabError> {
+    let mut ResponseOperator = ListSystemSettingsResponse::default();
     // *** Fill in the fields of the struct ListSystemSettings here ***
 
     // // Return language tags defined in RFC 5646.
@@ -278,7 +176,7 @@ pub fn process(_packet: String) -> Result<String, String> {
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = service_is_available ("org.rdk.HdmiCec_2")?;
+    ResponseOperator.cec = service_is_available("org.rdk.HdmiCec_2")?;
 
     ResponseOperator.lowLatencyMode = false;
 
@@ -320,7 +218,5 @@ pub fn process(_packet: String) -> Result<String, String> {
     ];
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }

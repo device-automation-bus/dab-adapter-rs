@@ -1,54 +1,24 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct LaunchApplicationRequest{
-// pub appId: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize)]
-// pub struct LaunchApplicationResponse {}
-
-use crate::dab::structs::ErrorResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationRequest;
 use crate::dab::structs::LaunchApplicationResponse;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use urlencoding::decode;
+
 use std::{thread, time};
+use urlencoding::decode;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabError> {
     let mut ResponseOperator = LaunchApplicationResponse::default();
     // *** Fill in the fields of the struct LaunchApplicationResponse here ***
-
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        _ => (),
-    }
-
-    let mut Dab_Request: LaunchApplicationRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.appId.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'appId' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+    if _dab_request.appId.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'appId' parameter".to_string(),
+        ));
     }
 
     // RDK Request Common Structs
@@ -66,7 +36,7 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let req_params = RequestParams {
-        callsign: Dab_Request.appId.clone(),
+        callsign: _dab_request.appId.clone(),
     };
     // ****************** org.rdk.RDKShell.getState ********************
     #[derive(Serialize)]
@@ -117,33 +87,24 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    let response = http_post(json_string)?;
 
-    match response_json {
-        Err(err) => {
-            println!("Erro: {}", err);
-
-            return Err(err);
-        }
-        _ => (),
-    }
-
-    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response_json.unwrap()).unwrap();
+    let rdkresponse: RdkResponseGetState = serde_json::from_str(&response).unwrap();
     let mut app_created = false;
     let mut is_suspended = false;
     for r in rdkresponse.result.state.iter() {
         let app = r.callsign.clone();
-        if app == Dab_Request.appId {
+        if app == _dab_request.appId {
             app_created = true;
             is_suspended = r.state == "suspended";
         }
     }
 
-    let is_cobalt = Dab_Request.appId == "Cobalt"
-        || Dab_Request.appId == "Youtube"
-        || Dab_Request.appId == "YouTube";
+    let is_cobalt = _dab_request.appId == "Cobalt"
+        || _dab_request.appId == "Youtube"
+        || _dab_request.appId == "YouTube";
     let mut param_list = vec![];
-    if let Some(mut parameters) = Dab_Request.parameters.clone() {
+    if let Some(mut parameters) = _dab_request.parameters.clone() {
         if parameters.len() > 0 {
             if is_cobalt {
                 // Decode each parameter before appending to the list
@@ -177,7 +138,7 @@ pub fn process(_packet: String) -> Result<String, String> {
             }
 
             let req_params = Param {
-                callsign: Dab_Request.appId,
+                callsign: _dab_request.appId,
                 r#type: "Cobalt".into(),
                 configuration: CobaltConfig {
                     url: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
@@ -190,21 +151,13 @@ pub fn process(_packet: String) -> Result<String, String> {
                 params: req_params.clone(),
             };
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
+            let response = http_post(json_string)?;
 
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
-
-            let rdkresponse: RdkResponseLaunch =
-                serde_json::from_str(&response_json.unwrap()).unwrap();
+            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
+                return Err(DabError::Err500(
+                    "Error calling org.rdk.RDKShell.launch".to_string(),
+                ));
             }
         } else {
             // ****************** org.rdk.RDKShell.launch ********************
@@ -216,20 +169,12 @@ pub fn process(_packet: String) -> Result<String, String> {
             };
 
             let json_string = serde_json::to_string(&request).unwrap();
-            let response_json = http_post(json_string);
-
-            match response_json {
-                Err(err) => {
-                    println!("Erro: {}", err);
-
-                    return Err(err);
-                }
-                _ => (),
-            }
-            let rdkresponse: RdkResponseLaunch =
-                serde_json::from_str(&response_json.unwrap()).unwrap();
+            let response = http_post(json_string)?;
+            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
             if rdkresponse.result.success == false {
-                return Err("Error calling org.rdk.RDKShell.launch".to_string());
+                return Err(DabError::Err500(
+                    "Error calling org.rdk.RDKShell.launch".to_string(),
+                ));
             }
         }
     } else {
@@ -250,22 +195,14 @@ pub fn process(_packet: String) -> Result<String, String> {
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
-            method: Dab_Request.appId.clone() + ".1.deeplink".into(),
+            method: _dab_request.appId.clone() + ".1.deeplink".into(),
             params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
         };
         let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
+        http_post(json_string)?;
 
-        match response_json {
-            Err(err) => {
-                println!("Erro: {}", err);
-
-                return Err(err);
-            }
-            _ => (),
-        }
         //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
-        move_to_front_set_focus(req_params.callsign.clone());
+        move_to_front_set_focus(req_params.callsign.clone())?;
     }
 
     if is_suspended {
@@ -278,43 +215,43 @@ pub fn process(_packet: String) -> Result<String, String> {
         };
 
         let json_string = serde_json::to_string(&request).unwrap();
-        let response_json = http_post(json_string);
-
-        match response_json {
-            Err(err) => {
-                println!("Erro: {}", err);
-
-                return Err(err);
-            }
-            _ => (),
-        }
+        http_post(json_string)?;
         //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
-        move_to_front_set_focus(req_params.callsign.clone());
+        move_to_front_set_focus(req_params.callsign.clone())?;
     }
 
     // ******************* wait until app state *************************
     let mut app_state: String = "STOPPED".to_string();
-    for _idx in 1..=20 { // 5 seconds (20*250ms)
+    for _idx in 1..=20 {
+        // 5 seconds (20*250ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(250));
         app_state = get_app_state(req_params.callsign.clone())?;
-        if app_state == "FOREGROUND".to_string()
-        {
+        if app_state == "FOREGROUND".to_string() {
+            let timeout_type = if !app_created {
+                "cold_launch_timeout_ms"
+            } else {
+                "resume_launch_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
+            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
         }
     }
 
     if app_state != "FOREGROUND" {
-        return Err("Check state request(5 second) timeout, app may not be visible to user.".to_string());
+        return Err(DabError::Err500(
+            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
+        ));
     }
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
 
-pub fn move_to_front_set_focus(callsign: String) {
+pub fn move_to_front_set_focus(callsign: String) -> Result<String, DabError> {
     //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
 
     // RDK Request Common Structs
@@ -343,14 +280,8 @@ pub fn move_to_front_set_focus(callsign: String) {
         params: req_params.clone(),
     };
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
+    http_post(json_string)?;
 
-    match response_json {
-        Err(err) => {
-            println!("moveToFront ERROR Erro: {}", err);
-        }
-        _ => (),
-    }
     let request = RdkRequest {
         jsonrpc: "2.0".into(),
         id: 3,
@@ -358,12 +289,6 @@ pub fn move_to_front_set_focus(callsign: String) {
         params: req_params.clone(),
     };
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            println!("SetFocus ERROR Erro: {}", err);
-        }
-        _ => (),
-    }
+    http_post(json_string)?;
+    Ok("{}".to_string())
 }

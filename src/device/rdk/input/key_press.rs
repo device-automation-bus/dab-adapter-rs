@@ -1,67 +1,28 @@
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyPressRequest{
-// pub keyCode: String,
-// }
-
-// #[allow(non_snake_case)]
-// #[derive(Default,Serialize,Deserialize)]
-// pub struct KeyPressResponse {}
-
-#[allow(unused_imports)]
-use crate::dab::structs::ErrorResponse;
-#[allow(unused_imports)]
+use crate::dab::structs::DabError;
 use crate::dab::structs::KeyPressRequest;
 use crate::dab::structs::KeyPressResponse;
 use crate::device::rdk::interface::get_keycode;
 use crate::device::rdk::interface::http_post;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn process(_packet: String) -> Result<String, String> {
+pub fn process(_dab_request: KeyPressRequest) -> Result<String, DabError> {
     let mut ResponseOperator = KeyPressResponse::default();
     // *** Fill in the fields of the struct KeyPressResponse here ***
 
-    let IncomingMessage = serde_json::from_str(&_packet);
-
-    match IncomingMessage {
-        Err(err) => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "Error parsing request: ".to_string() + err.to_string().as_str(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
-        Ok(_) => (),
-    }
-
-    let Dab_Request: KeyPressRequest = IncomingMessage.unwrap();
-
-    if Dab_Request.keyCode.is_empty() {
-        let response = ErrorResponse {
-            status: 400,
-            error: "request missing 'keyCode' parameter".to_string(),
-        };
-        let Response_json = json!(response);
-        return Err(serde_json::to_string(&Response_json).unwrap());
+    if _dab_request.keyCode.is_empty() {
+        return Err(DabError::Err400(
+            "request missing 'keyCode' parameter".to_string(),
+        ));
     }
 
     let mut KeyCode: u16;
 
-    match get_keycode(Dab_Request.keyCode.clone()) {
+    match get_keycode(_dab_request.keyCode.clone()) {
         Some(k) => KeyCode = *k,
-        None => {
-            let response = ErrorResponse {
-                status: 400,
-                error: "keyCode' not found".to_string(),
-            };
-            let Response_json = json!(response);
-            return Err(serde_json::to_string(&Response_json).unwrap());
-        }
+        None => return Err(DabError::Err400("keyCode' not found".to_string())),
     }
 
     //#########org.rdk.RDKShell.injectKey#########
@@ -100,21 +61,8 @@ pub fn process(_packet: String) -> Result<String, String> {
     }
 
     let json_string = serde_json::to_string(&request).unwrap();
-    let response_json = http_post(json_string);
-
-    match response_json {
-        Err(err) => {
-            let error = ErrorResponse {
-                status: 500,
-                error: err,
-            };
-            return Err(serde_json::to_string(&error).unwrap());
-        }
-        _ => (),
-    }
+    http_post(json_string)?;
 
     // *******************************************************************
-    let mut ResponseOperator_json = json!(ResponseOperator);
-    ResponseOperator_json["status"] = json!(200);
-    Ok(serde_json::to_string(&ResponseOperator_json).unwrap())
+    Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
