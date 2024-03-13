@@ -6,6 +6,7 @@ description = "Enables compatibility of devices based on Reference Design Kit (R
 version = "0.6.0"
 edition = "2021"
 repository = "https://github.com/device-automation-bus/dab-adapter-rs.git"
+build = "build.rs"
 
 [[bin]]
 name = "dab-adapter"
@@ -39,3 +40,4 @@ futures-util = "0.3"
 
 [build-dependencies]
 rustfmt = "0.10.0"
+vergen = { version = "=6.0.2", default-features = false, features = ["build", "git"] }

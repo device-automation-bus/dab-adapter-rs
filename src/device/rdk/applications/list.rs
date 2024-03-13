@@ -64,7 +64,7 @@ pub fn process(_dab_request: ApplicationListRequest) -> Result<String, DabError>
                 };
                 ResponseOperator.applications.push(app);
             }
-            &_ => println!("Out of scope of DAB2.0 Spec."),
+            &_ => {},
         }
     }
 
