@@ -580,7 +580,7 @@ lazy_static! {
             timeouts
         });
 
-        match read_platform_config_json("/tmp/dab_platform_app_lifecycle.json") {
+        match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
             Ok(json_file) => {
                 match serde_json::from_str::<HashMap<String, HashMap<String, u64>>>(&json_file) {
                     Ok(app_lifecycle_config) => {
