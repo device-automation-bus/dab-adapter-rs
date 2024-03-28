@@ -103,6 +103,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
     let is_cobalt = _dab_request.appId == "Cobalt"
         || _dab_request.appId == "Youtube"
         || _dab_request.appId == "YouTube";
+    let is_netflix = _dab_request.appId == "Netflix";
     let mut param_list = vec![];
     if let Some(mut parameters) = _dab_request.parameters.clone() {
         if parameters.len() > 0 {
@@ -116,67 +117,73 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         }
     }
 
-    if !app_created {
-        if is_cobalt {
-            // ****************** org.rdk.RDKShell.launch with Cobalt parameters ********************
-            #[derive(Serialize, Clone)]
-            struct CobaltConfig {
-                url: String,
-            }
-            #[derive(Serialize, Clone)]
-            struct Param {
-                callsign: String,
-                r#type: String,
-                configuration: CobaltConfig,
-            }
-            #[derive(Serialize)]
-            struct RdkRequest {
-                jsonrpc: String,
-                id: i32,
-                method: String,
-                params: Param,
-            }
+    #[derive(Serialize, Clone)]
+    enum Config {
+        Cobalt { url: String },
+        Netflix { querystring: String },
+    }
 
-            let req_params = Param {
+    #[derive(Serialize, Clone)]
+    struct Param {
+        callsign: String,
+        r#type: String,
+        configuration: Option<Config>,
+    }
+
+    #[derive(Serialize)]
+    struct RdkRequestWithParam {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: Param,
+    }
+
+    fn send_rdkshell_launch_request(params: Param) -> Result<(), DabError> {
+        let request = RdkRequestWithParam {
+            jsonrpc: "2.0".into(),
+            id: 3,
+            method: "org.rdk.RDKShell.launch".into(),
+            params,
+        };
+        let json_string = serde_json::to_string(&request).unwrap();
+        let response = http_post(json_string)?;
+        let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
+        if rdkresponse.result.success == false {
+            return Err(DabError::Err500(
+                "Error calling org.rdk.RDKShell.launch".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    if !app_created {
+        let req_params = if is_cobalt {
+            Param {
                 callsign: _dab_request.appId,
                 r#type: "Cobalt".into(),
-                configuration: CobaltConfig {
+                configuration: Some(Config::Cobalt {
                     url: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                },
-            };
-            let request = RdkRequest {
-                jsonrpc: "2.0".into(),
-                id: 3,
-                method: "org.rdk.RDKShell.launch".into(),
-                params: req_params.clone(),
-            };
-            let json_string = serde_json::to_string(&request).unwrap();
-            let response = http_post(json_string)?;
-
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
-            if rdkresponse.result.success == false {
-                return Err(DabError::Err500(
-                    "Error calling org.rdk.RDKShell.launch".to_string(),
-                ));
+                }),
+            }
+        } else if is_netflix {
+            Param {
+                callsign: _dab_request.appId,
+                r#type: "Netflix".into(),
+                configuration: Some(Config::Netflix {
+                    querystring: format!("{}", param_list.join("&")),
+                }),
             }
         } else {
-            // ****************** org.rdk.RDKShell.launch ********************
-            let request = RdkRequest {
-                jsonrpc: "2.0".into(),
-                id: 3,
-                method: "org.rdk.RDKShell.launch".into(),
-                params: req_params.clone(),
-            };
-
-            let json_string = serde_json::to_string(&request).unwrap();
-            let response = http_post(json_string)?;
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
-            if rdkresponse.result.success == false {
-                return Err(DabError::Err500(
-                    "Error calling org.rdk.RDKShell.launch".to_string(),
-                ));
+            Param {
+                callsign: _dab_request.appId,
+                //// Add the RDKShell type from https://rdkcentral.github.io/rdkservices/#/api/RDKShellPlugin?id=getavailabletypes
+                //// matching the incoming AppId.
+                r#type: "LightningApp".into(),
+                //// Configuration is optinal; required only when app needs any configuration override.
+                configuration: None,
             }
-        }
+        };
+        send_rdkshell_launch_request(req_params)?;
     } else {
         // ****************** Cobalt.1.deeplink ********************
         #[derive(Serialize)]
@@ -233,7 +240,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             } else {
                 "resume_launch_timeout_ms"
             };
-            
+
             let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
             // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
             std::thread::sleep(time::Duration::from_millis(sleep_time));
