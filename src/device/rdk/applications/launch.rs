@@ -5,6 +5,7 @@ use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use std::{thread, time};
 use urlencoding::decode;
@@ -73,19 +74,6 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         result: GetStateResult,
     }
 
-    #[derive(Deserialize)]
-    struct LaunchResult {
-        launchType: String,
-        success: bool,
-    }
-
-    #[derive(Deserialize)]
-    struct RdkResponseLaunch {
-        jsonrpc: String,
-        id: i32,
-        result: LaunchResult,
-    }
-
     let json_string = serde_json::to_string(&request).unwrap();
     let response = http_post(json_string)?;
 
@@ -117,69 +105,27 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         }
     }
 
-    #[derive(Serialize, Clone)]
-    enum Config {
-        Cobalt { url: String },
-        Netflix { querystring: String },
-    }
-
-    #[derive(Serialize, Clone)]
-    struct Param {
-        callsign: String,
-        r#type: String,
-        configuration: Option<Config>,
-    }
-
-    #[derive(Serialize)]
-    struct RdkRequestWithParam {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: Param,
-    }
-
-    fn send_rdkshell_launch_request(params: Param) -> Result<(), DabError> {
-        let request = RdkRequestWithParam {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.RDKShell.launch".into(),
-            params,
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        let response = http_post(json_string)?;
-        let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
-        if rdkresponse.result.success == false {
-            return Err(DabError::Err500(
-                "Error calling org.rdk.RDKShell.launch".to_string(),
-            ));
-        }
-        Ok(())
-    }
-
     if !app_created {
         let req_params = if is_cobalt {
-            Param {
+            let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
+            let config = json!({"url": url});
+            RDKShellParams {
                 callsign: _dab_request.appId,
                 r#type: "Cobalt".into(),
-                configuration: Some(Config::Cobalt {
-                    url: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                }),
+                configuration: Some(config.to_string()),
             }
         } else if is_netflix {
-            Param {
+            let querystring = format!("{}", param_list.join("&"));
+            let config = json!({"querystring": querystring});
+            RDKShellParams {
                 callsign: _dab_request.appId,
                 r#type: "Netflix".into(),
-                configuration: Some(Config::Netflix {
-                    querystring: format!("{}", param_list.join("&")),
-                }),
+                configuration: Some(config.to_string()),
             }
         } else {
-            Param {
+            RDKShellParams {
                 callsign: _dab_request.appId,
-                //// Add the RDKShell type from https://rdkcentral.github.io/rdkservices/#/api/RDKShellPlugin?id=getavailabletypes
-                //// matching the incoming AppId.
                 r#type: "LightningApp".into(),
-                //// Configuration is optinal; required only when app needs any configuration override.
                 configuration: None,
             }
         };
@@ -225,6 +171,9 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         http_post(json_string)?;
         //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
         move_to_front_set_focus(req_params.callsign.clone())?;
+        if !get_visibility(req_params.callsign.clone())? {
+            set_visibility(req_params.callsign.clone(), true)?;
+        }
     }
 
     // ******************* wait until app state *************************
@@ -256,6 +205,57 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
 
     // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())
+}
+
+// Make these structs public
+
+#[derive(Serialize, Clone)]
+pub struct RDKShellParams {
+    pub callsign: String,
+    pub r#type: String,
+    pub configuration: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RdkRequestWithParamConfig {
+    pub jsonrpc: String,
+    pub id: i32,
+    pub method: String,
+    pub params: RDKShellParams,
+}
+
+#[allow(non_snake_case)]
+#[allow(dead_code)]
+#[allow(unused_mut)]
+pub fn send_rdkshell_launch_request(params: RDKShellParams) -> Result<(), DabError> {    
+    #[derive(Deserialize)]
+    struct LaunchResult {
+        launchType: String,
+        success: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct RdkResponseLaunch {
+        jsonrpc: String,
+        id: i32,
+        result: LaunchResult,
+    }
+
+    let request = RdkRequestWithParamConfig {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.launch".into(),
+        params,
+    };
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response = http_post(json_string)?;
+    let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
+    if rdkresponse.result.success == false {
+        return Err(DabError::Err500(
+            "Error calling org.rdk.RDKShell.launch".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 pub fn move_to_front_set_focus(callsign: String) -> Result<String, DabError> {
@@ -298,4 +298,82 @@ pub fn move_to_front_set_focus(callsign: String) -> Result<String, DabError> {
     let json_string = serde_json::to_string(&request).unwrap();
     http_post(json_string)?;
     Ok("{}".to_string())
+}
+
+pub fn set_visibility(client: String, visible: bool) -> Result<String, DabError> {
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct RequestParams {
+        client: String,
+        callsign: String,
+        visible: bool,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.setVisibility".into(),
+        params: RequestParams {
+            client: client.clone(),
+            callsign: client,
+            visible: visible,
+        },
+    };
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    http_post(json_string)?;
+    Ok("{}".to_string())
+}
+
+#[allow(dead_code)]
+#[allow(unused_mut)]
+pub fn get_visibility(client: String) -> Result<bool, DabError> {
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct RequestParams {
+        client: String,
+        callsign: String,
+    }
+
+    #[derive(Deserialize)]
+    struct VisibilityResult {
+        visible: bool,
+        success: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct RdkResponse {
+        jsonrpc: String,
+        id: i32,
+        result: VisibilityResult,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.getVisibility".into(),
+        params: RequestParams {
+            client: client.clone(),
+            callsign: client.clone(),
+        },
+    };
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    let response = http_post(json_string)?;
+    let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
+    Ok(rdkresponse.result.visible)
 }
