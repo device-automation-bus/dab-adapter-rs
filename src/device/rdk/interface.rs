@@ -509,7 +509,24 @@ pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
 // Telemetry operations
 
 pub fn get_device_memory() -> Result<u32, DabError> {
-    Ok(0)
+    // Both properties are in bytes; convert to KB for DAB.
+    let free_ram_bytes = get_thunder_property("DeviceInfo.systeminfo", "freeram")?;
+    let free_ram_bytes = free_ram_bytes.parse::<u32>()
+        .map_err(|_| DabError::Err500("Failed to parse free RAM".to_string()))? / 1024;
+
+    let total_ram_bytes = get_thunder_property("DeviceInfo.systeminfo", "totalram")?;
+    let total_ram_bytes = total_ram_bytes.parse::<u32>()
+        .map_err(|_| DabError::Err500("Failed to parse total RAM".to_string()))? / 1024;
+
+    Ok(total_ram_bytes - free_ram_bytes)
+}
+
+pub fn get_device_cpu() -> Result<u32, DabError> {
+    let cpu_usage = get_thunder_property("DeviceInfo.systeminfo", "cpuload")?;
+    let cpu_usage = cpu_usage.parse::<u32>()
+        .map_err(|_| DabError::Err500("Failed to parse CPU usage".to_string()))?;
+
+    Ok(cpu_usage)
 }
 
 // Read platform override JSON configs from file

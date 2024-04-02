@@ -5,6 +5,7 @@ use crate::dab::structs::StopDeviceTelemetryRequest;
 use crate::dab::structs::StopDeviceTelemetryResponse;
 use crate::dab::{mqtt_client::MqttMessage, MqttClient, TelemetryMessage};
 use crate::hw_specific::interface::get_device_memory;
+use crate::hw_specific::interface::get_device_cpu;
 
 use std::{
     sync::{
@@ -49,31 +50,28 @@ impl DeviceTelemetry {
 
         self.handle = Some(thread::spawn(move || {
             while enabled.load(Ordering::Relaxed) {
-                let memory = match get_device_memory() {
-                    Ok(mem) => mem,
-                    _ => 0,
-                };
+                let metrics = [("memory", get_device_memory()), ("cpu", get_device_cpu())];
 
-                let payload = serde_json::to_string(&TelemetryMessage {
-                    timestamp: SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                    metric: "memory".to_string(),
-                    value: memory,
-                })
-                .unwrap();
-                let mut zero_vector: Vec<u8> = Vec::new();
-                zero_vector.push(0);
+                let zero_vector = vec![0];
 
-                let msg_tx = MqttMessage {
-                    function_topic: "dab/".to_string() + &device_id + "/telemetry",
-                    response_topic: "".to_string(),
-                    correlation_data: zero_vector,
-                    payload: payload.clone(),
-                };
+                for (metric_name, metric_value) in &metrics {
+                    let value = match metric_value {
+                        Ok(val) => *val,
+                        _ => 0,
+                    };
 
-                mqtt_client.publish(msg_tx);
+                    let payload = Self::get_telemetry_payload(metric_name, value).unwrap();
+
+                    let msg_tx = MqttMessage {
+                        function_topic: format!("dab/{}/device-telemetry/metrics", device_id),
+                        response_topic: "".to_string(),
+                        correlation_data: zero_vector.clone(),
+                        payload,
+                    };
+
+                    mqtt_client.publish(msg_tx);
+                }
+
                 thread::sleep(Duration::from_millis(period));
             }
         }));
@@ -111,5 +109,17 @@ impl DeviceTelemetry {
         self.stop();
 
         Ok(serde_json::to_string(&ResponseOperator).unwrap())
+    }
+
+    fn get_telemetry_payload(metric: &str, value: u32) -> Result<String, serde_json::Error> {
+        let message = TelemetryMessage {
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            metric: metric.to_string(),
+            value,
+        };
+        serde_json::to_string(&message)
     }
 }
