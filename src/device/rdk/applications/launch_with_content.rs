@@ -1,15 +1,15 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
-use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::launch::move_to_front_set_focus;
+use crate::device::rdk::applications::launch::RDKShellParams;
+use crate::device::rdk::applications::launch::send_rdkshell_launch_request;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::get_lifecycle_timeout;
+use crate::hw_specific::applications::launch::get_visibility;
+use crate::hw_specific::applications::launch::set_visibility;
+use crate::hw_specific::applications::launch::wait_till_app_starts;
 use serde::{Deserialize, Serialize};
-#[allow(unused_imports)]
 use serde_json::json;
-
-use std::{thread, time};
 use urlencoding::decode;
 
 #[allow(non_snake_case)]
@@ -88,19 +88,6 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         result: GetStateResult,
     }
 
-    #[derive(Deserialize)]
-    struct LaunchResult {
-        launchType: String,
-        success: bool,
-    }
-
-    #[derive(Deserialize)]
-    struct RdkResponseLaunch {
-        jsonrpc: String,
-        id: i32,
-        result: LaunchResult,
-    }
-
     let json_string = serde_json::to_string(&request).unwrap();
     let response = http_post(json_string)?;
 
@@ -134,13 +121,9 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         param_list.append(&mut parameters);
     }
 
-    if is_cobalt {
-        if app_created {
+    if app_created {
+        if is_cobalt {
             // ****************** Youtube.1.deeplink ********************
-            #[derive(Serialize)]
-            struct Param {
-                url: String,
-            }
             #[derive(Serialize)]
             struct RdkRequest {
                 jsonrpc: String,
@@ -148,9 +131,6 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
                 method: String,
                 params: String,
             }
-
-            // This is Cobalt only, we will need a switch statement for other apps.
-
             let request = RdkRequest {
                 jsonrpc: "2.0".into(),
                 id: 3,
@@ -159,94 +139,45 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
             };
             let json_string = serde_json::to_string(&request).unwrap();
             http_post(json_string)?;
-            //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
-            move_to_front_set_focus(req_params.callsign.clone())?;
-        } else {
-            // ****************** org.rdk.RDKShell.launch ********************
-            #[derive(Serialize)]
-            struct CobaltConfig {
-                url: String,
-            }
-            #[derive(Serialize)]
-            struct Param {
-                callsign: String,
-                r#type: String,
-                configuration: CobaltConfig,
-            }
-            #[derive(Serialize)]
-            struct RdkRequest {
-                jsonrpc: String,
-                id: i32,
-                method: String,
-                params: Param,
-            }
-
-            let req_params = Param {
-                callsign: _dab_request.appId,
-                r#type: "Cobalt".into(),
-                configuration: CobaltConfig {
-                    url: format!("https://www.YouTube.com/tv?{}", param_list.join("&")),
-                },
-            };
-            let request = RdkRequest {
-                jsonrpc: "2.0".into(),
-                id: 3,
-                method: "org.rdk.RDKShell.launch".into(),
-                params: req_params,
-            };
-            let json_string = serde_json::to_string(&request).unwrap();
-            let response = http_post(json_string)?;
-            let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
-            if rdkresponse.result.success == false {
-                return Err(DabError::Err500(
-                    "Error calling org.rdk.RDKShell.launch".to_string(),
-                ));
-            }
         }
-    }
-
-    if is_suspended {
-        // ****************** org.rdk.RDKShell.resumeApplication ********************
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: "org.rdk.RDKShell.launch".into(),
-            params: req_params.clone(),
-        };
-
-        let json_string = serde_json::to_string(&request).unwrap();
-        http_post(json_string)?;
+        // TODO: Add other apps here
+        if is_suspended {
+            // RDKShell.launch will resume the app if it is suspended.
+            let req_params = RDKShellParams {
+                callsign: _dab_request.appId.clone(),
+                r#type: "Cobalt".into(),
+                configuration: None,
+            };
+            send_rdkshell_launch_request(req_params)?;
+        }
         //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
         move_to_front_set_focus(req_params.callsign.clone())?;
-    }
-
-    // ******************* wait until app state 8*************************
-    let mut app_state: String = "STOPPED".to_string();
-    for _idx in 1..=20 {
-        // 5 seconds (20*250ms)
-        // TODO: refactor to listen to Thunder events with websocket.
-        thread::sleep(time::Duration::from_millis(250));
-        app_state = get_app_state(req_params.callsign.clone())?;
-        if app_state == "FOREGROUND".to_string() {
-            let timeout_type = if !app_created {
-                "cold_launch_timeout_ms"
-            } else {
-                "resume_launch_timeout_ms"
-            };
-            
-            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
-            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
-            std::thread::sleep(time::Duration::from_millis(sleep_time));
-            break;
+        if !get_visibility(req_params.callsign.clone())? {
+            set_visibility(req_params.callsign.clone(), true)?;
         }
+    } else {
+        // Cold launch
+        // ****************** org.rdk.RDKShell.launch ******************** //
+        let req_params = if is_cobalt {
+            let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
+            let config = json!({"url": url});
+            RDKShellParams {
+                callsign: _dab_request.appId.clone(),
+                r#type: "Cobalt".into(),
+                configuration: Some(config.to_string()),
+            }
+        } else {
+            // Common webapp?. URL is not provided in the request; hence do not override.
+            RDKShellParams {
+                callsign: _dab_request.appId.clone(),
+                r#type: "LightningApp".into(),
+                configuration: None,
+            }
+        };
+        send_rdkshell_launch_request(req_params)?;
     }
 
-    if app_state != "FOREGROUND" {
-        return Err(DabError::Err500(
-            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
-        ));
-    }
+    wait_till_app_starts(req_params.callsign, app_created)?;
 
-    // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
