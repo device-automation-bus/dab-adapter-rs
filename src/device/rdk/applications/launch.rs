@@ -106,6 +106,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
     }
 
     if !app_created {
+        // Cold launch app.
         let req_params = if is_cobalt {
             let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
             let config = json!({"url": url});
@@ -131,35 +132,42 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         };
         send_rdkshell_launch_request(req_params)?;
     } else {
-        // ****************** Cobalt.1.deeplink ********************
-        #[derive(Serialize)]
-        struct Param {
-            url: String,
-        }
-        #[derive(Serialize)]
-        struct RdkRequest {
-            jsonrpc: String,
-            id: i32,
-            method: String,
-            params: String,
-        }
+        // App is already created.
+        if is_cobalt {
+            // Cobalt plugin specific.
+            #[derive(Serialize)]
+            struct Param {
+                url: String,
+            }
+            #[derive(Serialize)]
+            struct RdkRequest {
+                jsonrpc: String,
+                id: i32,
+                method: String,
+                params: String,
+            }
 
-        // This is Cobalt only, we will need a switch statement for other apps.
-        let request = RdkRequest {
-            jsonrpc: "2.0".into(),
-            id: 3,
-            method: _dab_request.appId.clone() + ".1.deeplink".into(),
-            params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-        };
-        let json_string = serde_json::to_string(&request).unwrap();
-        http_post(json_string)?;
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: _dab_request.appId.clone() + ".1.deeplink".into(),
+                params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+            };
 
-        //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
-        move_to_front_set_focus(req_params.callsign.clone())?;
+            let json_string = serde_json::to_string(&request).unwrap();
+            http_post(json_string)?;
+
+            move_to_front_set_focus(req_params.callsign.clone())?;
+        } else {
+            // Other App specific deeplinking.
+            return Err(DabError::Err500(
+                "Require App specific deeplinking implementation.".to_string(),
+            ));
+        }
     }
 
     if is_suspended {
-        // ****************** org.rdk.RDKShell.resumeApplication ********************
+        // Resume app.
         let request = RdkRequest {
             jsonrpc: "2.0".into(),
             id: 3,
@@ -169,45 +177,18 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
 
         let json_string = serde_json::to_string(&request).unwrap();
         http_post(json_string)?;
-        //****************org.rdk.RDKShell.moveToFront/setFocus******************************//
         move_to_front_set_focus(req_params.callsign.clone())?;
         if !get_visibility(req_params.callsign.clone())? {
             set_visibility(req_params.callsign.clone(), true)?;
         }
     }
 
-    // ******************* wait until app state *************************
-    let mut app_state: String = "STOPPED".to_string();
-    for _idx in 1..=20 {
-        // 5 seconds (20*250ms)
-        // TODO: refactor to listen to Thunder events with websocket.
-        thread::sleep(time::Duration::from_millis(250));
-        app_state = get_app_state(req_params.callsign.clone())?;
-        if app_state == "FOREGROUND".to_string() {
-            let timeout_type = if !app_created {
-                "cold_launch_timeout_ms"
-            } else {
-                "resume_launch_timeout_ms"
-            };
+    wait_till_app_starts(req_params.callsign, app_created)?;
 
-            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
-            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
-            std::thread::sleep(time::Duration::from_millis(sleep_time));
-            break;
-        }
-    }
-
-    if app_state != "FOREGROUND" {
-        return Err(DabError::Err500(
-            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
-        ));
-    }
-
-    // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
 
-// Make these structs public
+//******************************* Generic Implementation for Reuse *******************************/
 
 #[derive(Serialize, Clone)]
 pub struct RDKShellParams {
@@ -376,4 +357,32 @@ pub fn get_visibility(client: String) -> Result<bool, DabError> {
     let response = http_post(json_string)?;
     let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
     Ok(rdkresponse.result.visible)
+}
+
+
+pub fn wait_till_app_starts(req_params: String, app_created: bool) -> Result<(), DabError> {
+    let mut app_state: String = "STOPPED".to_string();
+    for _idx in 1..=20 {
+        thread::sleep(time::Duration::from_millis(250));
+        app_state = get_app_state(req_params.clone())?;
+        if app_state == "FOREGROUND".to_string() {
+            let timeout_type = if !app_created {
+                "cold_launch_timeout_ms"
+            } else {
+                "resume_launch_timeout_ms"
+            };
+            
+            let sleep_time = get_lifecycle_timeout(&req_params.to_lowercase(), timeout_type).unwrap_or(2500);
+            std::thread::sleep(time::Duration::from_millis(sleep_time));
+            break;
+        }
+    }
+
+    if app_state != "FOREGROUND" {
+        return Err(DabError::Err500(
+            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
+        ));
+    }
+
+    Ok(())
 }

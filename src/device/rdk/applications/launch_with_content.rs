@@ -1,19 +1,15 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
 use crate::dab::structs::LaunchApplicationWithContentResponse;
-use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::launch::move_to_front_set_focus;
 use crate::device::rdk::applications::launch::RDKShellParams;
 use crate::device::rdk::applications::launch::send_rdkshell_launch_request;
 use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::get_lifecycle_timeout;
 use crate::hw_specific::applications::launch::get_visibility;
 use crate::hw_specific::applications::launch::set_visibility;
+use crate::hw_specific::applications::launch::wait_till_app_starts;
 use serde::{Deserialize, Serialize};
-#[allow(unused_imports)]
 use serde_json::json;
-
-use std::{thread, time};
 use urlencoding::decode;
 
 #[allow(non_snake_case)]
@@ -181,33 +177,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         send_rdkshell_launch_request(req_params)?;
     }
 
-    // ******************* wait until app state 8*************************
-    let mut app_state: String = "STOPPED".to_string();
-    for _idx in 1..=20 {
-        // 5 seconds (20*250ms)
-        // TODO: refactor to listen to Thunder events with websocket.
-        thread::sleep(time::Duration::from_millis(250));
-        app_state = get_app_state(req_params.callsign.clone())?;
-        if app_state == "FOREGROUND".to_string() {
-            let timeout_type = if !app_created {
-                "cold_launch_timeout_ms"
-            } else {
-                "resume_launch_timeout_ms"
-            };
-            
-            let sleep_time = get_lifecycle_timeout(&req_params.callsign.to_lowercase(), timeout_type).unwrap_or(2500);
-            // TODO: Temporary solution; will be replaced by event listener when plugin shares apt event.
-            std::thread::sleep(time::Duration::from_millis(sleep_time));
-            break;
-        }
-    }
+    wait_till_app_starts(req_params.callsign, app_created)?;
 
-    if app_state != "FOREGROUND" {
-        return Err(DabError::Err500(
-            "Check state request(5 second) timeout, app may not be visible to user.".to_string(),
-        ));
-    }
-
-    // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())
 }
