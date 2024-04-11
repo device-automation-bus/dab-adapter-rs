@@ -58,6 +58,9 @@ pub fn process(_dab_request: OperationsListRequest) -> Result<String, DabError> 
     //     .push("device-telemetry/stop".to_string());
     // ResponseOperator
     //     .operations
+    //     .push("device-telemetry/metrics".to_string());
+    // ResponseOperator
+    //     .operations
     //     .push("app-telemetry/start".to_string());
     // ResponseOperator
     //     .operations

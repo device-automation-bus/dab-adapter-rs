@@ -96,8 +96,13 @@ impl MqttClient {
                 let function_topic = std::string::String::from(packet.topic());
                 let v: Vec<&str> = function_topic.split('/').collect();
                 let operator = v.get(2).unwrap_or(&"");
+                // Ignore 'messages', 'device-telemetry/metrics', and 'app-telemetry/metrics/#' since this is a DAB adapter for device.
                 if operator == &"messages" {
                     return Err(None);
+                } else if operator == &"device-telemetry" || operator == &"app-telemetry" {
+                    if v.get(3).unwrap_or(&"") == &"metrics" {
+                        return Err(None);
+                    }
                 }
 
                 let payload_str = packet.payload_str();
