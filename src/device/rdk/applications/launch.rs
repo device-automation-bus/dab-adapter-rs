@@ -131,7 +131,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             }
         };
         send_rdkshell_launch_request(req_params)?;
-    } else {
+    } else if !is_suspended {
         // App is already created.
         if is_cobalt {
             // Cobalt plugin specific.
