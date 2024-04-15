@@ -3,9 +3,38 @@ use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::RdkResponse;
+use crate::hw_specific::applications::launch::get_visibility;
 use serde::Deserialize;
 
-pub fn get_app_state(callsign: String) -> Result<String, DabError> {
+/**
+ * DAB App State Mapping:
+ *   STOPPED: Application instance is not running.
+ *   FOREGROUND: Application is visible active & focused(accepting inputs).
+ *   BACKGROUND: Application instance is running but not visible & focused.
+*/
+#[derive(Debug)]
+pub enum DABAppState {
+    Stopped,
+    Background,
+    Foreground,
+}
+
+impl DABAppState {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            DABAppState::Stopped => "STOPPED",
+            DABAppState::Background => "BACKGROUND",
+            DABAppState::Foreground => "FOREGROUND",
+        }
+    }
+}
+
+/*
+ * Returns the state of the application mapped to DAB application state.
+ * @param callsign: String
+ * @return String: DAB application state
+*/
+pub fn get_dab_app_state(callsign: String) -> Result<String, DabError> {
     #[derive(Deserialize)]
     #[allow(dead_code)]
     struct State {
@@ -26,13 +55,22 @@ pub fn get_app_state(callsign: String) -> Result<String, DabError> {
     for item in rdkresponse.result.state {
         if item.callsign == callsign {
             match item.state.as_str() {
-                "suspended" => return Ok("BACKGROUND".to_string()),
-                _ => return Ok("FOREGROUND".to_string()),
+                "suspended" => return Ok(DABAppState::Background.as_str().to_string()),
+                "activated" | "resumed" => {
+                    // Launch request mandates that application should be focused and visible.
+                    // Check visibility of the application and return the state as foreground if visible else background
+                    let visibility = get_visibility(callsign)?;
+                    let app_state = if visibility { DABAppState::Foreground } else { DABAppState::Background };
+                    return Ok(app_state.as_str().to_string());
+                },
+                _ => {
+                    println!("Implement verification of: {:?} App state: {}", callsign.clone(), item.state.as_str());
+                }
             }
         }
     }
 
-    Ok("STOPPED".to_string())
+    Ok(DABAppState::Stopped.as_str().to_string())
 }
 
 #[allow(non_snake_case)]
@@ -48,7 +86,7 @@ pub fn process(_dab_request: GetApplicationStateRequest) -> Result<String, DabEr
         ));
     }
 
-    ResponseOperator.state = get_app_state(_dab_request.appId)?;
+    ResponseOperator.state = get_dab_app_state(_dab_request.appId.clone())?;
 
     // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())

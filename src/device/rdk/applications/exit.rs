@@ -1,7 +1,7 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
-use crate::device::rdk::applications::get_state::get_app_state;
+use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::get_lifecycle_timeout;
 use serde::{Deserialize, Serialize};
@@ -119,7 +119,7 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError>
         // 2 seconds (20*100ms)
         // TODO: refactor to listen to Thunder events with websocket.
         thread::sleep(time::Duration::from_millis(100));
-        ResponseOperator.state = get_app_state(_dab_request.appId.clone())?;
+        ResponseOperator.state = get_dab_app_state(_dab_request.appId.clone())?;
         if (is_background && (ResponseOperator.state == "BACKGROUND".to_string()))
             || (!is_background && (ResponseOperator.state == "STOPPED".to_string()))
         {
