@@ -1,6 +1,5 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationRequest;
-use crate::dab::structs::LaunchApplicationResponse;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::get_lifecycle_timeout;
@@ -10,41 +9,41 @@ use serde_json::json;
 use std::{thread, time};
 use urlencoding::decode;
 
+#[derive(Serialize, Clone)]
+pub struct RDKShellRequestParams {
+    pub callsign: String,
+}
+
+#[derive(Serialize)]
+pub struct RdkRequest<T> {
+    pub jsonrpc: String,
+    pub id: i32,
+    pub method: String,
+    pub params: T,
+}
+
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabError> {
-    let mut ResponseOperator = LaunchApplicationResponse::default();
-    // *** Fill in the fields of the struct LaunchApplicationResponse here ***
     if _dab_request.appId.is_empty() {
         return Err(DabError::Err400(
             "request missing 'appId' parameter".to_string(),
         ));
     }
 
-    // RDK Request Common Structs
-    #[derive(Serialize, Clone)]
-    struct RequestParams {
-        callsign: String,
-    }
-
-    #[derive(Serialize)]
-    struct RdkRequest {
-        jsonrpc: String,
-        id: i32,
-        method: String,
-        params: RequestParams,
-    }
-
-    let req_params = RequestParams {
+    let launch_req_params = RDKShellRequestParams {
         callsign: _dab_request.appId.clone(),
     };
-    let mut app_created = false;
+    
     let is_cobalt = _dab_request.appId == "Cobalt"
         || _dab_request.appId == "Youtube"
         || _dab_request.appId == "YouTube";
+    
     let is_netflix = _dab_request.appId == "Netflix";
+    
     let mut param_list = vec![];
+
     if let Some(mut parameters) = _dab_request.parameters.clone() {
         if parameters.len() > 0 {
             if is_cobalt {
@@ -57,17 +56,16 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         }
     }
 
-    let app_state = get_dab_app_state(req_params.callsign.clone())?;
-    println!("LAUNCHER App state: {}", app_state.as_str());
+    let mut app_created = true;
+    let app_state = get_dab_app_state(_dab_request.appId.clone())?;
     match app_state.as_str() {
         "STOPPED" => {
-            app_created = true;
             // Cold launch of app.
             let req_params = if is_cobalt {
                 let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
                 let config = json!({"url": url});
                 RDKShellParams {
-                    callsign: _dab_request.appId,
+                    callsign: _dab_request.appId.clone(),
                     r#type: "Cobalt".into(),
                     configuration: Some(config.to_string()),
                 }
@@ -75,106 +73,73 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
                 let querystring = format!("{}", param_list.join("&"));
                 let config = json!({"querystring": querystring});
                 RDKShellParams {
-                    callsign: _dab_request.appId,
+                    callsign: _dab_request.appId.clone(),
                     r#type: "Netflix".into(),
                     configuration: Some(config.to_string()),
                 }
             } else {
                 RDKShellParams {
-                    callsign: _dab_request.appId,
+                    callsign: _dab_request.appId.clone(),
                     r#type: "LightningApp".into(),
                     configuration: None,
                 }
             };
             send_rdkshell_launch_request(req_params)?;
         },
-        "BACKGROUND" => {
+        "BACKGROUND" | "FOREGROUND" => {
+            app_created = false;
             // App is suspended; resume/relaunch app then deeplink.
             let request = RdkRequest {
                 jsonrpc: "2.0".into(),
                 id: 3,
                 method: "org.rdk.RDKShell.launch".into(),
-                params: req_params.clone(),
+                params: &launch_req_params,
             };
     
             let json_string = serde_json::to_string(&request).unwrap();
             http_post(json_string)?;
-            // Do app specific deeplinking.
-            if is_cobalt {
-                // Cobalt plugin specific.
-                #[derive(Serialize)]
-                struct Param {
-                    url: String,
-                }
-                #[derive(Serialize)]
-                struct RdkRequest {
-                    jsonrpc: String,
-                    id: i32,
-                    method: String,
-                    params: String,
-                }
-    
-                let request = RdkRequest {
-                    jsonrpc: "2.0".into(),
-                    id: 3,
-                    method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                    params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                };
-    
-                let json_string = serde_json::to_string(&request).unwrap();
-                http_post(json_string)?;
-            } else {
-                // Other App specific deeplinking.
-                return Err(DabError::Err500(
-                    "Require App specific deeplinking implementation.".to_string(),
-                ));
-            }
-        },
-        "FOREGROUND" => {
-            // Do app specific deeplinking.
-            if is_cobalt {
-                // Cobalt plugin specific.
-                #[derive(Serialize)]
-                struct Param {
-                    url: String,
-                }
-                #[derive(Serialize)]
-                struct RdkRequest {
-                    jsonrpc: String,
-                    id: i32,
-                    method: String,
-                    params: String,
-                }
-    
-                let request = RdkRequest {
-                    jsonrpc: "2.0".into(),
-                    id: 3,
-                    method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                    params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                };
-    
-                let json_string = serde_json::to_string(&request).unwrap();
-                http_post(json_string)?;
-            } else {
-                // Other App specific deeplinking.
-                return Err(DabError::Err500(
-                    "Require App specific deeplinking implementation.".to_string(),
-                ));
-            }
-        },
 
+            //// FIXME: If parameters(?) are App startup specific, it may not take effect when resuming.
+            // if param_list.len() > 0 {
+            //     return Err(DabError::Err500(
+            //         format!("{} runtime is being resumed; can't pass launch parameters.",
+            //             _dab_request.appId.clone()).to_string(),
+            //     ));
+            // }
+
+            // Do app specific deeplinking.
+            if is_cobalt {
+                // Cobalt plugin specific.
+                let request = RdkRequest {
+                    jsonrpc: "2.0".into(),
+                    id: 3,
+                    method: _dab_request.appId.clone() + ".1.deeplink".into(),
+                    params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+                };
+    
+                let json_string = serde_json::to_string(&request).unwrap();
+                http_post(json_string)?;
+            } else {
+                // Other App specific deeplinking.
+                return Err(DabError::Err500(
+                    "Require App specific deeplinking implementation.".to_string(),
+                ));
+            }
+        },
         _ => {
-            println!("Should not reach here in any condition. Invalid {:?} App state: {}", req_params.callsign.clone(), app_state.as_str());
+            println!("Should not reach here in any condition. Invalid {} App state: {}",
+                _dab_request.appId.clone(), app_state.as_str());
         }
     }
-    move_to_front_set_focus(req_params.callsign.clone())?;
-    if !get_visibility(req_params.callsign.clone())? {
-        set_visibility(req_params.callsign.clone(), true)?;
+
+    move_to_front_set_focus(_dab_request.appId.clone())?;
+    if !get_visibility(_dab_request.appId.clone())? {
+        set_visibility(_dab_request.appId.clone(), true)?;
     }
 
-    wait_till_app_starts(req_params.callsign, app_created)?;
+    wait_till_app_starts(_dab_request.appId, app_created)?;
 
-    Ok(serde_json::to_string(&ResponseOperator).unwrap())
+    Ok("{}".to_string())
 }
 
 //******************************* Generic Implementation for Reuse *******************************/
@@ -187,7 +152,7 @@ pub struct RDKShellParams {
 }
 
 #[derive(Serialize)]
-pub struct RdkRequestWithParamConfig {
+pub struct RDKShellRequestWithParamConfig {
     pub jsonrpc: String,
     pub id: i32,
     pub method: String,
@@ -211,7 +176,7 @@ pub fn send_rdkshell_launch_request(params: RDKShellParams) -> Result<(), DabErr
         result: LaunchResult,
     }
 
-    let request = RdkRequestWithParamConfig {
+    let request = RDKShellRequestWithParamConfig {
         jsonrpc: "2.0".into(),
         id: 3,
         method: "org.rdk.RDKShell.launch".into(),

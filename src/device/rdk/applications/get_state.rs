@@ -58,13 +58,21 @@ pub fn get_dab_app_state(callsign: String) -> Result<String, DabError> {
                 "suspended" => return Ok(DABAppState::Background.as_str().to_string()),
                 "activated" | "resumed" => {
                     // Launch request mandates that application should be focused and visible.
-                    // Check visibility of the application and return the state as foreground if visible else background
                     let visibility = get_visibility(callsign)?;
-                    let app_state = if visibility { DABAppState::Foreground } else { DABAppState::Background };
+                    let app_state = if visibility {
+                        DABAppState::Foreground
+                    } else {
+                        DABAppState::Background
+                    };
                     return Ok(app_state.as_str().to_string());
                 },
                 _ => {
-                    println!("Implement verification of: {:?} App state: {}", callsign.clone(), item.state.as_str());
+                    println!("Implement verification of: {} App state: {}",
+                        callsign.clone(), item.state.as_str());
+                    return Err(DabError::Err500(
+                        format!("RDKShell.getState; {} is in invalid state {}.",
+                            callsign.clone(), item.state.as_str()).to_string(),
+                    ));
                 }
             }
         }
