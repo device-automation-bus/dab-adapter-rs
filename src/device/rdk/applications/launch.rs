@@ -313,6 +313,62 @@ pub fn get_visibility(client: String) -> Result<bool, DabError> {
     Ok(rdkresponse.result.visible)
 }
 
+pub fn rdkshell_suspend(callsign:String) -> Result<String, DabError> {
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct RequestParams {
+        callsign: String,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.suspend".into(),
+        params: RequestParams {
+            callsign: callsign,
+        },
+    };
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    http_post(json_string)?;
+    Ok("{}".to_string())
+}
+
+pub fn rdkshell_destroy(callsign:String) -> Result<String, DabError> {
+    #[derive(Serialize)]
+    struct RdkRequest {
+        jsonrpc: String,
+        id: i32,
+        method: String,
+        params: RequestParams,
+    }
+
+    #[derive(Serialize)]
+    struct RequestParams {
+        callsign: String,
+    }
+
+    let request = RdkRequest {
+        jsonrpc: "2.0".into(),
+        id: 3,
+        method: "org.rdk.RDKShell.destroy".into(),
+        params: RequestParams {
+            callsign: callsign,
+        },
+    };
+
+    let json_string = serde_json::to_string(&request).unwrap();
+    http_post(json_string)?;
+    Ok("{}".to_string())
+}
+
 pub fn wait_till_app_starts(req_params: String, app_created: bool) -> Result<(), DabError> {
     let mut app_state: String = "STOPPED".to_string();
     for _idx in 1..=20 {
