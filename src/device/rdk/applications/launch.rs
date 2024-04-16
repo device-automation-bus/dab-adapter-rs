@@ -88,16 +88,6 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         },
         "BACKGROUND" | "FOREGROUND" => {
             app_created = false;
-            // App is suspended; resume/relaunch app then deeplink.
-            let request = RdkRequest {
-                jsonrpc: "2.0".into(),
-                id: 3,
-                method: "org.rdk.RDKShell.launch".into(),
-                params: &launch_req_params,
-            };
-    
-            let json_string = serde_json::to_string(&request).unwrap();
-            http_post(json_string)?;
 
             //// FIXME: If parameters(?) are App startup specific, it may not take effect when resuming.
             // if param_list.len() > 0 {
@@ -125,6 +115,18 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
                     "Require App specific deeplinking implementation.".to_string(),
                 ));
             }
+
+            // App is suspended; resume/relaunch app.
+            let request = RdkRequest {
+                jsonrpc: "2.0".into(),
+                id: 3,
+                method: "org.rdk.RDKShell.launch".into(),
+                params: &launch_req_params,
+            };
+
+            let json_string = serde_json::to_string(&request).unwrap();
+            http_post(json_string)?;
+
         },
         _ => {
             println!("Should not reach here in any condition. Invalid {} App state: {}",
