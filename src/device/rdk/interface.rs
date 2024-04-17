@@ -579,19 +579,6 @@ pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String,
     }
 }
 
-pub fn get_frequency_from_displayinfo_framerate(framerate: &str) -> Result<f32, std::num::ParseFloatError> {
-    let framerate = framerate
-        .strip_prefix("Framerate")
-        .unwrap_or(framerate)
-        .replace("23976", "23.976")
-        .replace("2997", "29.97")
-        .replace("47952", "47.952")
-        .replace("5994", "59.94")
-        .replace("11988", "119.88");
-
-    framerate.parse::<f32>()
-}
-
 // ############################### APP Lifecycle Time Configs ###############################
 
 type TimeoutMap = HashMap<String, u64>;
