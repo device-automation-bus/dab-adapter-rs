@@ -548,18 +548,6 @@ pub fn read_platform_config_json(file_path: &str) -> Result<String, DabError> {
     Ok(file_content)
 }
 
-// Function to convert value type to string. Supported types are String, Number and Object.
-// Parameters: value: The value to convert to string, key_name: The key name of the value.
-// Returns the value as string on success else DabError.
-fn convert_value_type_to_string(value: &serde_json::Value, key_name: &str) -> Result<String, String> {
-    match value {
-        serde_json::Value::String(s) => Ok(s.clone()),
-        serde_json::Value::Number(n) => Ok(n.to_string()),
-        serde_json::Value::Object(o) => serde_json::to_string(o).map_err(|_| format!("Failed to serialize object for key '{}'.", key_name)),
-        _ => Err(format!("Unsupported type for key '{}' in response.", key_name)),
-    }
-}
-
 // Function to get thunder property value. Properties are read-only and will always return a valid value on API success.
 // Parameters: method_name: The method name to call, key_name: The key to be matched in the response.
 // Returns the value of the key as String on success else DabError.
@@ -571,11 +559,23 @@ pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String,
     if result.is_null() {
         return Err(DabError::Err500(format!("Key 'result' is null in response for method '{}'.", method_name)));
     }
-    if key_name.is_empty() {
-        return Ok(result.to_string());
+
+    let value = if !key_name.is_empty() {
+        result
+            .get(key_name)
+            .ok_or(DabError::Err500(format!("Key '{}' not found in response for method '{}'.", key_name, method_name)))?
     } else {
-        let key_value = result.get(key_name).ok_or(DabError::Err500(format!("Key '{}' not found in response for method '{}'.", key_name, method_name)))?;
-        convert_value_type_to_string(key_value, key_name).map_err(|e| DabError::Err500(e))
+        result
+    };
+
+    match value {
+        serde_json::Value::String(s) => Ok(s.clone()),
+        serde_json::Value::Number(n) => Ok(n.to_string()),
+        serde_json::Value::Object(o) => {
+            serde_json::to_string(o)
+                .map_err(|_| DabError::Err500(format!("Failed to serialize object for key '{}'.", key_name)))
+        },
+        _ => Err(DabError::Err500(format!("Unsupported type for key '{}' in response.", key_name))),
     }
 }
 
