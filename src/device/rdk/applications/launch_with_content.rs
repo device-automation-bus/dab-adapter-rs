@@ -82,24 +82,27 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         },
         "BACKGROUND" | "FOREGROUND" => {
             app_created = false;
-            // FIXME: If parameters(?) are App startup specific, it may not take effect when resuming.
-            if is_cobalt {
-                // Cobalt plugin specific.
-                let request = RdkRequest {
-                    jsonrpc: "2.0".into(),
-                    id: 3,
-                    method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                    params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                };
-    
-                let json_string = serde_json::to_string(&request).unwrap();
-                http_post(json_string)?;
-            } else {
-                // Other App specific deeplinking.
-                return Err(DabError::Err500(
-                    format!("Missing {} specific deeplinking implementation.",
-                        _dab_request.appId.clone()).to_string(),
-                ));
+            // FIXME: If parameters(?) are App startup specific, it may not take effect when resuming "plugin" runtime.
+            // Deeplink is required only if you need to pass "content" to the app runtime.
+            if param_list.len() > 0 {
+                if is_cobalt {
+                    // Cobalt plugin specific.
+                    let request = RdkRequest {
+                        jsonrpc: "2.0".into(),
+                        id: 3,
+                        method: _dab_request.appId.clone() + ".1.deeplink".into(),
+                        params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+                    };
+        
+                    let json_string = serde_json::to_string(&request).unwrap();
+                    http_post(json_string)?;
+                } else {
+                    // TODO: Expand to support other App specific deeplinking.
+                    return Err(DabError::Err500(
+                        format!("Missing {} specific deeplinking implementation.",
+                            _dab_request.appId.clone()).to_string(),
+                    ));
+                }
             }
             // Resume the app runtime.
             let request = RdkRequest {

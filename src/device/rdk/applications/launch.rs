@@ -88,32 +88,27 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         },
         "BACKGROUND" | "FOREGROUND" => {
             app_created = false;
-
-            //// FIXME: If parameters(?) are App startup specific, it may not take effect when resuming.
-            // if param_list.len() > 0 {
-            //     return Err(DabError::Err500(
-            //         format!("{} runtime is being resumed; can't pass launch parameters.",
-            //             _dab_request.appId.clone()).to_string(),
-            //     ));
-            // }
-
-            // Do app specific deeplinking.
-            if is_cobalt {
-                // Cobalt plugin specific.
-                let request = RdkRequest {
-                    jsonrpc: "2.0".into(),
-                    id: 3,
-                    method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                    params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
-                };
-    
-                let json_string = serde_json::to_string(&request).unwrap();
-                http_post(json_string)?;
-            } else {
-                // Other App specific deeplinking.
-                return Err(DabError::Err500(
-                    "Require App specific deeplinking implementation.".to_string(),
-                ));
+            //// FIXME: If parameters(?) are App startup specific, it may not take effect when resuming "plugin" runtime.
+            // Deeplink is required only if you need to pass parameters to the app runtime.
+            if param_list.len() > 0 {
+                // Do app specific deeplinking.
+                if is_cobalt {
+                    // Cobalt plugin specific.
+                    let request = RdkRequest {
+                        jsonrpc: "2.0".into(),
+                        id: 3,
+                        method: _dab_request.appId.clone() + ".1.deeplink".into(),
+                        params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+                    };
+        
+                    let json_string = serde_json::to_string(&request).unwrap();
+                    http_post(json_string)?;
+                } else {
+                    // Other App specific deeplinking.
+                    return Err(DabError::Err500(
+                        "Require App specific deeplinking implementation.".to_string(),
+                    ));
+                }
             }
 
             // App is suspended; resume/relaunch app.
@@ -126,7 +121,6 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
 
             let json_string = serde_json::to_string(&request).unwrap();
             http_post(json_string)?;
-
         },
         _ => {
             println!("Should not reach here in any condition. Invalid {} App state: {}",
