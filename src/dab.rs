@@ -303,7 +303,7 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 } else {
                     payload.chars().take(255).collect::<String>()
                 };
-                println!("Publishing response: {} {:?}", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
+                println!("Publishing response: {} {}\n", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
             }
             Err(err) => {
                 if let Some(msg) = err {

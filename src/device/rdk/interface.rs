@@ -598,6 +598,22 @@ lazy_static! {
         });
 
         match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
+            /* File Format Reference:
+                {
+                    "youtube": {
+                        "cold_launch_timeout_ms": 6000,
+                        "resume_launch_timeout_ms": 3000,
+                        "exit_to_destroy_timeout_ms": 2500,
+                        "exit_to_background_timeout_ms": 2000
+                    },
+                    "netflix": {
+                        "cold_launch_timeout_ms": 6000,
+                        "resume_launch_timeout_ms": 3000,
+                        "exit_to_destroy_timeout_ms": 2500,
+                        "exit_to_background_timeout_ms": 2000
+                    }
+                }
+            */
             Ok(json_file) => {
                 match serde_json::from_str::<HashMap<String, HashMap<String, u64>>>(&json_file) {
                     Ok(app_lifecycle_config) => {
