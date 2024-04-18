@@ -8,10 +8,9 @@ use crate::dab::structs::OutputResolution;
 use crate::device::rdk::interface::rdk_request;
 use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
-use crate::device::rdk::interface::{service_activate, get_service_state};
+use crate::device::rdk::interface::get_thunder_property;
 use crate::device::rdk::interface::RdkResponse;
 use serde::{Deserialize, Serialize};
-use std::thread;
 
 fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
@@ -27,32 +26,34 @@ fn get_rdk_language() -> Result<String, DabError> {
     Ok(rdkresponse.result.ui_language)
 }
 
+fn get_frequency_from_displayinfo_framerate(framerate: &str) -> Result<f32, std::num::ParseFloatError> {
+    let framerate = framerate
+        .strip_prefix("Framerate")
+        .unwrap_or(framerate)
+        .replace("23976", "23.976")
+        .replace("2997", "29.97")
+        .replace("47952", "47.952")
+        .replace("5994", "59.94")
+        .replace("11988", "119.88");
+
+    framerate.parse::<f32>()
+}
+
 fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
-    if get_service_state("org.rdk.FrameRate")? != "activated" {
-        service_activate("org.rdk.FrameRate".to_string())?;
-        thread::sleep(std::time::Duration::from_millis(500));
-    }
+    let displayinfo_width = get_thunder_property("DisplayInfo.width", "")?;
+    let width = displayinfo_width.parse::<u32>().map_err(|_| DabError::Err400("Invalid width(parse to u32 failed)".to_string()))?;
 
-    #[allow(dead_code)]
-    #[derive(Deserialize)]
-    struct GetDisplayFrameRate {
-        framerate: String,
-        success: bool,
-    }
+    let displayinfo_height = get_thunder_property("DisplayInfo.height", "")?;
+    let height = displayinfo_height.parse::<u32>().map_err(|_| DabError::Err400("Invalid height(parse to u32 failed)".to_string()))?;
 
-    let rdkresponse: RdkResponse<GetDisplayFrameRate> =
-        rdk_request("org.rdk.FrameRate.getDisplayFrameRate")?;
-
-    let mut dimensions = rdkresponse
-        .result
-        .framerate
-        .trim_end_matches(']')
-        .split('x');
+    let displayinfo_framerate = get_thunder_property("DisplayInfo.framerate", "")?;
+    let frequency = get_frequency_from_displayinfo_framerate(&displayinfo_framerate)
+        .map_err(|_| DabError::Err400("Invalid framerate(parse to f32 failed)".to_string()))?;
 
     Ok(OutputResolution {
-        width: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
-        height: dimensions.next().unwrap().parse::<i32>().unwrap() as u32,
-        frequency: dimensions.next().unwrap().parse::<i32>().unwrap() as f32,
+        width,
+        height,
+        frequency,
     })
 }
 
