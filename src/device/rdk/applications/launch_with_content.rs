@@ -1,13 +1,10 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationWithContentRequest;
-use crate::device::rdk::applications::launch::move_to_front_set_focus;
 use crate::device::rdk::applications::launch::{RDKShellParams,RDKShellRequestParams};
 use crate::device::rdk::applications::launch::RdkRequest;
 use crate::device::rdk::applications::launch::send_rdkshell_launch_request;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::interface::http_post;
-use crate::hw_specific::applications::launch::get_visibility;
-use crate::hw_specific::applications::launch::set_visibility;
 use crate::hw_specific::applications::launch::wait_till_app_starts;
 use serde_json::json;
 use urlencoding::decode;
@@ -22,10 +19,11 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         ));
     }
 
+    let is_cobalt = _dab_request.appId.to_lowercase() == "cobalt"
+        || _dab_request.appId.to_lowercase() == "youtube";
+
     // TODO: expand this to support more apps.
-    if !(_dab_request.appId == "Cobalt"
-        || _dab_request.appId == "Youtube"
-        || _dab_request.appId == "YouTube")
+    if !is_cobalt
     {
         return Err(DabError::Err400(
             "This operator currently only supports Youtube".to_string(),
@@ -35,10 +33,6 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
     let launch_req_params = RDKShellRequestParams {
         callsign: _dab_request.appId.clone(),
     };
-
-    let is_cobalt = _dab_request.appId == "Cobalt"
-        || _dab_request.appId == "Youtube"
-        || _dab_request.appId == "YouTube";
 
     let mut param_list = vec![];
     // TODO: How to pass contentId to other apps may be different.
@@ -119,11 +113,6 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
             println!("Should not reach here in any condition. Invalid {:?} App state: {}",
                 _dab_request.appId.clone(), app_state.as_str());
         }
-    }
-
-    move_to_front_set_focus(_dab_request.appId.clone())?;
-    if !get_visibility(_dab_request.appId.clone())? {
-        set_visibility(_dab_request.appId.clone(), true)?;
     }
 
     wait_till_app_starts(_dab_request.appId, app_created)?;

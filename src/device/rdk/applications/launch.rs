@@ -36,11 +36,10 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         callsign: _dab_request.appId.clone(),
     };
     
-    let is_cobalt = _dab_request.appId == "Cobalt"
-        || _dab_request.appId == "Youtube"
-        || _dab_request.appId == "YouTube";
+    let is_cobalt = _dab_request.appId.to_lowercase() == "cobalt"
+        || _dab_request.appId.to_lowercase() == "youtube";
     
-    let is_netflix = _dab_request.appId == "Netflix";
+    let is_netflix = _dab_request.appId.to_lowercase() == "netflix";
     
     let mut param_list = vec![];
 
@@ -126,11 +125,6 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             println!("Should not reach here in any condition. Invalid {} App state: {}",
                 _dab_request.appId.clone(), app_state.as_str());
         }
-    }
-
-    move_to_front_set_focus(_dab_request.appId.clone())?;
-    if !get_visibility(_dab_request.appId.clone())? {
-        set_visibility(_dab_request.appId.clone(), true)?;
     }
 
     wait_till_app_starts(_dab_request.appId, app_created)?;
@@ -389,5 +383,10 @@ pub fn wait_till_app_starts(req_params: String, app_created: bool) -> Result<(),
         ));
     }
 
+    if !get_visibility(req_params.clone())? {
+        set_visibility(req_params.clone(), true)?;
+    }
+    move_to_front_set_focus(req_params.clone())?;
+ 
     Ok(())
 }
