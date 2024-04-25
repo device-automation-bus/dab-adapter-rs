@@ -39,12 +39,35 @@ fn get_frequency_from_displayinfo_framerate(framerate: &str) -> Result<f32, std:
     framerate.parse::<f32>()
 }
 
-fn get_rdk_resolution() -> Result<OutputResolution, DabError> {
-    let displayinfo_width = get_thunder_property("DisplayInfo.width", "")?;
-    let width = displayinfo_width.parse::<u32>().map_err(|_| DabError::Err400("Invalid width(parse to u32 failed)".to_string()))?;
+fn get_displaysettings_resolution_widthheight() -> Result<(u32, u32), DabError> {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
+    #[derive(Serialize, Deserialize)]
+    struct Param {
+        videoDisplay: String,
+    }
 
-    let displayinfo_height = get_thunder_property("DisplayInfo.height", "")?;
-    let height = displayinfo_height.parse::<u32>().map_err(|_| DabError::Err400("Invalid height(parse to u32 failed)".to_string()))?;
+    #[allow(non_snake_case)]
+    #[derive(Serialize, Deserialize)]
+    struct ResolutionResponse {
+        resolution: String,
+        w: u32,
+        h: u32,
+        progressive: Option<bool>,
+        success: bool,
+    }
+    let req_params = Param {
+        videoDisplay: get_rdk_connected_video_displays()?,
+    };
+
+    let _rdkresponse: RdkResponse<ResolutionResponse> =
+        rdk_request_with_params("org.rdk.DisplaySettings.getCurrentResolution", req_params)?;
+    return Ok((_rdkresponse.result.w, _rdkresponse.result.h));
+}
+
+fn get_rdk_video_resolution() -> Result<OutputResolution, DabError> {
+    // DAB settings/list needs Video output resolution.
+    let (width, height) = get_displaysettings_resolution_widthheight()?;
 
     let displayinfo_framerate = get_thunder_property("DisplayInfo.framerate", "")?;
     let frequency = get_frequency_from_displayinfo_framerate(&displayinfo_framerate)
@@ -268,7 +291,7 @@ pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, DabErro
     // *** Fill in the fields of the struct GetSystemSettingsResponse here ***
 
     response.language = get_rdk_language()?;
-    response.outputResolution = get_rdk_resolution()?;
+    response.outputResolution = get_rdk_video_resolution()?;
     response.audioVolume = get_rdk_audio_volume()?;
     response.mute = get_rdk_mute()?;
     response.cec = get_rdk_cec()?;

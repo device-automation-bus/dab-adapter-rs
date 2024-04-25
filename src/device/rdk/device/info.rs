@@ -69,7 +69,7 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
         id: i32,
         method: String,
     }
-
+    // Equivalent to DisplayInfo.width and DisplayInfo.height
     let request = GetScreenResolutionRequest {
         jsonrpc: "2.0".into(),
         id: 3,
@@ -235,6 +235,7 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
     let ms_since_epoch = (now_ms.unwrap().as_secs() - device_uptime) * 1000;
 
     ResponseOperator.uptimeSince = ms_since_epoch;
+    // DAB device/info needs : Current screen resolution width & height measured in pixels
     ResponseOperator.screenWidthPixels = ScreenResolution.result.w;
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
     ResponseOperator.deviceId = get_device_id()?;
