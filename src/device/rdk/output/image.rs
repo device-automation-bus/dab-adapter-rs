@@ -53,7 +53,7 @@ pub fn process(_dab_request: CaptureScreenshotRequest) -> Result<String, DabErro
             shutdown_rx.await.ok();
         });
 
-        tokio::spawn(graceful);
+        tokio::spawn(graceful).map_err(|e| DabError::Err500(e.to_string()))?;
 
         //#########org.rdk.ScreenCapture.uploadScreenCapture#########
         #[derive(Serialize)]
