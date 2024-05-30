@@ -307,7 +307,8 @@ pub fn get_visibility(client: String) -> Result<bool, DabError> {
             format!("Error RDKShell.getVisibility {}", rdkresponse.result.message.unwrap_or("".to_string())),
         ));
     }
-    Ok(rdkresponse.result.visible)
+
+    Ok(rdkresponse.result.visible.is_some())
 }
 
 pub fn rdkshell_suspend(callsign:String) -> Result<String, DabError> {
