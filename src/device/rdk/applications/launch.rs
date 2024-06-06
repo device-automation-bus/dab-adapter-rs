@@ -35,12 +35,12 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
     let launch_req_params = RDKShellRequestParams {
         callsign: _dab_request.appId.clone(),
     };
-    
+
     let is_cobalt = _dab_request.appId.to_lowercase() == "cobalt"
         || _dab_request.appId.to_lowercase() == "youtube";
-    
+
     let is_netflix = _dab_request.appId.to_lowercase() == "netflix";
-    
+
     let mut param_list = vec![];
 
     if let Some(mut parameters) = _dab_request.parameters.clone() {
@@ -99,7 +99,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
                         method: _dab_request.appId.clone() + ".1.deeplink".into(),
                         params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
                     };
-        
+
                     let json_string = serde_json::to_string(&request).unwrap();
                     http_post(json_string)?;
                 } else {
@@ -152,10 +152,11 @@ pub struct RDKShellRequestWithParamConfig {
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[allow(unused_mut)]
-pub fn send_rdkshell_launch_request(params: RDKShellParams) -> Result<(), DabError> {    
+pub fn send_rdkshell_launch_request(params: RDKShellParams) -> Result<(), DabError> {
     #[derive(Deserialize)]
     struct LaunchResult {
-        launchType: String,
+        launchType: Option<String>,
+        message: Option<String>,
         success: bool,
     }
 
@@ -177,7 +178,7 @@ pub fn send_rdkshell_launch_request(params: RDKShellParams) -> Result<(), DabErr
     let rdkresponse: RdkResponseLaunch = serde_json::from_str(&response).unwrap();
     if rdkresponse.result.success == false {
         return Err(DabError::Err500(
-            "Error calling org.rdk.RDKShell.launch".to_string(),
+            format!("Error from org.rdk.RDKShell.launch {}", rdkresponse.result.message.unwrap_or("".to_string())),
         ));
     }
     Ok(())
@@ -276,7 +277,8 @@ pub fn get_visibility(client: String) -> Result<bool, DabError> {
 
     #[derive(Deserialize)]
     struct VisibilityResult {
-        visible: bool,
+        visible: Option<bool>,
+        message: Option<String>,
         success: bool,
     }
 
@@ -300,7 +302,13 @@ pub fn get_visibility(client: String) -> Result<bool, DabError> {
     let json_string = serde_json::to_string(&request).unwrap();
     let response = http_post(json_string)?;
     let rdkresponse: RdkResponse = serde_json::from_str(&response).unwrap();
-    Ok(rdkresponse.result.visible)
+    if rdkresponse.result.success == false {
+        return Err(DabError::Err500(
+            format!("Error RDKShell.getVisibility {}", rdkresponse.result.message.unwrap_or("".to_string())),
+        ));
+    }
+
+    Ok(rdkresponse.result.visible.is_some())
 }
 
 pub fn rdkshell_suspend(callsign:String) -> Result<String, DabError> {
@@ -370,7 +378,7 @@ pub fn wait_till_app_starts(req_params: String, app_created: bool) -> Result<(),
             } else {
                 "resume_launch_timeout_ms"
             };
-            
+
             let sleep_time = get_lifecycle_timeout(&req_params.to_lowercase(), timeout_type).unwrap_or(2500);
             std::thread::sleep(time::Duration::from_millis(sleep_time));
             break;
@@ -387,6 +395,6 @@ pub fn wait_till_app_starts(req_params: String, app_created: bool) -> Result<(),
         set_visibility(req_params.clone(), true)?;
     }
     move_to_front_set_focus(req_params.clone())?;
- 
+
     Ok(())
 }

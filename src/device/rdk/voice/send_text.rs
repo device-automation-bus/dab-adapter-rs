@@ -57,7 +57,7 @@ pub fn process(_dab_request: SendTextRequest) -> Result<String, DabError> {
         .spawn()
         .expect("Failed to execute command");
 
-    child.wait().expect("failed to wait for child process");
+    child.wait().map_err(|_e| DabError::Err500("PCM S16LE gst-launch-1.0 conversion failed.".to_string()))?;
 
     sendVoiceCommand("/tmp/tts.wav".into())?;
 
