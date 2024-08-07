@@ -119,7 +119,7 @@ fn set_rdk_cec(enabled: bool) -> Result<(), DabError> {
     let req_params = Param { enabled };
 
     let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.HdmiCec_2.setEnabled", req_params)?;
+        rdk_request_with_params("org.rdk.HdmiCecSource.setEnabled", req_params)?;
 
     Ok(())
 }

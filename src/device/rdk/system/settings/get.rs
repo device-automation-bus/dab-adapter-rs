@@ -1,3 +1,6 @@
+use std::thread;
+use tokio::time::Duration;
+
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
 use crate::dab::structs::DabError;
@@ -10,7 +13,13 @@ use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::get_thunder_property;
 use crate::device::rdk::interface::RdkResponse;
+use crate::hw_specific::interface::get_service_state;
+use crate::hw_specific::interface::service_activate;
 use serde::{Deserialize, Serialize};
+
+
+
+
 
 fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
@@ -214,6 +223,20 @@ pub fn get_rdk_tts() -> Result<bool, DabError> {
 }
 
 pub fn get_rdk_cec() -> Result<bool, DabError> {
+
+    match get_service_state("org.rdk.HdmiCecSource") {
+        Ok(state) => {
+            if state != "activated" {
+                service_activate("org.rdk.HdmiCecSource".to_string())?;
+                thread::sleep(Duration::from_millis(500));
+            }
+        },
+        Err(e) => {
+            println!("RDK error: {:?}", e);
+            return Ok(false)
+        },
+    }
+
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct CecGetEnabled {
@@ -221,8 +244,8 @@ pub fn get_rdk_cec() -> Result<bool, DabError> {
         success: bool,
     }
 
-    let rdkresponse: RdkResponse<CecGetEnabled> = rdk_request("org.rdk.HdmiCec_2.getEnabled")?;
-
+    let rdkresponse: RdkResponse<CecGetEnabled> = rdk_request("org.rdk.HdmiCecSource.getEnabled")?;
+    
     Ok(rdkresponse.result.enabled)
 }
 
