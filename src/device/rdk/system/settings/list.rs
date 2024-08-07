@@ -176,7 +176,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
 
     ResponseOperator.memc = false;
 
-    ResponseOperator.cec = service_is_available("org.rdk.HdmiCec_2")?;
+    ResponseOperator.cec = service_is_available("org.rdk.HdmiCecSource")?;
 
     ResponseOperator.lowLatencyMode = false;
 
