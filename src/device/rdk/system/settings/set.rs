@@ -256,7 +256,10 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabErro
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
             "pictureMode" | "videoInputSource" | "lowLatencyMode" | _ => {
-                return Err(DabError::Err400(format!("Setting '{}' is not supported", key)))
+                return Err(DabError::Err400(format!(
+                    "Setting '{}' is not supported",
+                    key
+                )))
             }
         }
     }
