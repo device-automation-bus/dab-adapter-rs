@@ -119,7 +119,7 @@ fn set_rdk_cec(enabled: bool) -> Result<(), DabError> {
     let req_params = Param { enabled };
 
     let _rdkresponse: RdkResponseSimple =
-        rdk_request_with_params("org.rdk.HdmiCec_2.setEnabled", req_params)?;
+        rdk_request_with_params("org.rdk.HdmiCecSource.setEnabled", req_params)?;
 
     Ok(())
 }
@@ -256,7 +256,10 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabErro
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
             "pictureMode" | "videoInputSource" | "lowLatencyMode" | _ => {
-                return Err(DabError::Err400(format!("Setting '{}' is not supported", key)))
+                return Err(DabError::Err400(format!(
+                    "Setting '{}' is not supported",
+                    key
+                )))
             }
         }
     }
