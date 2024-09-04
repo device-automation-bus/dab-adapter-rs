@@ -48,15 +48,24 @@ fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError> {
         .supportedResolutions
         .iter()
         .filter_map(|item| {
-            if let Some((resolution, framerate)) = item.split_once("p") {
-                if let Some(dimensions) = RDK_RESOLUTION_MAP.get(resolution) {
-                    if let Ok(framerate_n) = framerate.parse::<f32>() {
-                        return Some(OutputResolution {
-                            width: dimensions[0],
-                            height: dimensions[1],
-                            frequency: framerate_n,
-                        });
-                    }
+            let (resolution, framerate) = if let Some((res, rate)) = item.split_once('p') {
+                (res, rate)
+            } else if let Some((res, rate)) = item.split_once('i') {
+                (res, rate)
+            } else {
+                return None;
+            };
+
+            // Default framerate to 60 if not specified.
+            let framerate = if framerate.is_empty() { "60" } else { framerate };
+
+            if let Some(dimensions) = RDK_RESOLUTION_MAP.get(resolution) {
+                if let Ok(framerate_n) = framerate.parse::<f32>() {
+                    return Some(OutputResolution {
+                        width: dimensions[0],
+                        height: dimensions[1],
+                        frequency: framerate_n,
+                    });
                 }
             }
             None
@@ -81,10 +90,12 @@ pub fn get_rdk_hdr_settings() -> Result<Vec<HdrOutputMode>, DabError> {
     let tv_hdr_response: RdkResponse<GetHDRSupport> =
         rdk_request("org.rdk.DisplaySettings.getTvHDRSupport")?;
 
-    let mut response = vec![HdrOutputMode::DisableHdr];
+    let mut response = Vec::new();
 
-    if settop_hdr_response.result.supportsHDR & tv_hdr_response.result.supportsHDR {
-        response.insert(0, HdrOutputMode::AlwaysHdr);
+    if settop_hdr_response.result.supportsHDR && tv_hdr_response.result.supportsHDR {
+        response.push(HdrOutputMode::AlwaysHdr);
+    } else {
+        response.push(HdrOutputMode::DisableHdr);
     }
 
     Ok(response)
