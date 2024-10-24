@@ -347,6 +347,9 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 }
 
+// Key mapping is referenced from the following source:
+// https://github.com/rdkcentral/RDKShell/blob/master/linuxkeys.h
+
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
@@ -355,7 +358,7 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
         keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
         keycode_map.insert(String::from("KEY_MUTE"),173);
-        keycode_map.insert(String::from("KEY_EXIT"),27);
+        // keycode_map.insert(String::from("KEY_EXIT"),27);
         keycode_map.insert(String::from("KEY_UP"),38);
         keycode_map.insert(String::from("KEY_PAGE_UP"),33);
         keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
@@ -364,14 +367,14 @@ lazy_static! {
         keycode_map.insert(String::from("KEY_LEFT"),37);
         keycode_map.insert(String::from("KEY_ENTER"),13);
         keycode_map.insert(String::from("KEY_BACK"),8);
-        keycode_map.insert(String::from("KEY_PLAY"),179);
-        keycode_map.insert(String::from("KEY_PLAY_PAUSE"),179);
-        keycode_map.insert(String::from("KEY_PAUSE"),179);
-        keycode_map.insert(String::from("KEY_STOP"),178);
-        keycode_map.insert(String::from("KEY_REWIND"),227);
-        keycode_map.insert(String::from("KEY_FAST_FORWARD"),228);
-        keycode_map.insert(String::from("KEY_SKIP_REWIND"),177);
-        keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),176);
+        keycode_map.insert(String::from("KEY_PLAY"),13);
+        keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
+        keycode_map.insert(String::from("KEY_PAUSE"),19);
+        // keycode_map.insert(String::from("KEY_STOP"),178);
+        keycode_map.insert(String::from("KEY_REWIND"),224);
+        keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
+        keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
+        keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
         keycode_map.insert(String::from("KEY_0"),48);
         keycode_map.insert(String::from("KEY_1"),49);
         keycode_map.insert(String::from("KEY_2"),50);
@@ -391,8 +394,6 @@ lazy_static! {
                     "KEY_CHANNEL_UP": 104,
                     "KEY_CHANNEL_DOWN": 109,
                     "KEY_MENU": 408,
-                    "KEY_CHANNEL_UP":0,
-                    "KEY_CHANNEL_DOWN": 0,
                     "KEY_MENU": 0,
                     "KEY_INFO": 0,
                     "KEY_GUIDE": 0,
