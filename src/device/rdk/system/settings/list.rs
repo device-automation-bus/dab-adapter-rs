@@ -106,6 +106,8 @@ pub fn get_rdk_supported_audio_source() -> Result<Vec<AudioOutputSource>, DabErr
         let val = match source.as_str() {
             "SPDIF0" => AudioOutputSource::Optical,
             "HDMI0" => AudioOutputSource::HDMI,
+            "IDLR0" => AudioOutputSource::Aux,
+            "SPEAKER0" => AudioOutputSource::NativeSpeaker,
             _ => {
                 continue;
             }
