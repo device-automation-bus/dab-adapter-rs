@@ -38,7 +38,15 @@ pub fn init(device_ip: &str, debug: bool) {
     }
 }
 
+lazy_static! {
+    static ref RDK_DEVICE_ID: String = request_device_id().unwrap();
+}
+
 pub fn get_device_id() -> Result<String, DabError> {
+    Ok(RDK_DEVICE_ID.to_string())
+}
+
+fn request_device_id() -> Result<String, DabError> {
     let json_string =
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"org.rdk.System.getDeviceInfo\",\"params\":{\"params\":[\"estb_mac\"]}}".to_string();
     let response = http_post(json_string)?;
