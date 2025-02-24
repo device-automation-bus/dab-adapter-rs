@@ -355,68 +355,101 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 }
 
+// DAB key codes are listed here:
+// https://github.com/device-automation-bus/dab-specification-2.0/blob/main/DAB.md#54-input
+
 // Key mapping is referenced from the following source:
 // https://github.com/rdkcentral/RDKShell/blob/master/linuxkeys.h
+
+// The keymap that translates DAB key code to RDK Shell key codes may be
+// supplied in the /etc/dab/keymap.json file. When this file is not present,
+// the default keymap is used. In both cases, the keymap may be updated via
+// the /opt/dab_platform_keymap.json file.
+//
+// The keymap in the files mentioned above must conform to the following format:
+/*
+    {
+        "KEY_EXIT": 27,
+        "KEY_STOP": 178,
+        "KEY_CHANNEL_UP": 104,
+        "KEY_CHANNEL_DOWN": 109,
+        "KEY_MENU": 408,
+        "KEY_INFO": 0,
+        "KEY_GUIDE": 0,
+        "KEY_CAPTIONS": 0,
+        "KEY_RECORD": 0,
+        "KEY_RED": 0,
+        "KEY_GREEN": 0,
+        "KEY_YELLOW": 0,
+        "KEY_BLUE": 0
+    }
+*/
 
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
-        keycode_map.insert(String::from("KEY_POWER"),116);
-        keycode_map.insert(String::from("KEY_HOME"),36);
-        keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
-        keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
-        keycode_map.insert(String::from("KEY_MUTE"),173);
-        // keycode_map.insert(String::from("KEY_EXIT"),27);
-        keycode_map.insert(String::from("KEY_UP"),38);
-        keycode_map.insert(String::from("KEY_PAGE_UP"),33);
-        keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
-        keycode_map.insert(String::from("KEY_RIGHT"),39);
-        keycode_map.insert(String::from("KEY_DOWN"),40);
-        keycode_map.insert(String::from("KEY_LEFT"),37);
-        keycode_map.insert(String::from("KEY_ENTER"),13);
-        keycode_map.insert(String::from("KEY_BACK"),8);
-        keycode_map.insert(String::from("KEY_PLAY"),13);
-        keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
-        keycode_map.insert(String::from("KEY_PAUSE"),19);
-        // keycode_map.insert(String::from("KEY_STOP"),178);
-        keycode_map.insert(String::from("KEY_REWIND"),224);
-        keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
-        keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
-        keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
-        keycode_map.insert(String::from("KEY_0"),48);
-        keycode_map.insert(String::from("KEY_1"),49);
-        keycode_map.insert(String::from("KEY_2"),50);
-        keycode_map.insert(String::from("KEY_3"),51);
-        keycode_map.insert(String::from("KEY_4"),52);
-        keycode_map.insert(String::from("KEY_5"),53);
-        keycode_map.insert(String::from("KEY_6"),54);
-        keycode_map.insert(String::from("KEY_7"),55);
-        keycode_map.insert(String::from("KEY_8"),56);
-        keycode_map.insert(String::from("KEY_9"),57);
+        let mut keymap_file_found = false;
+
+        if let Ok(json_file) = read_platform_config_json("/etc/dab/keymap.json") {
+            keymap_file_found = true;
+            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                Ok(new_keymap) => {
+                    for (key, value) in new_keymap {
+                        keycode_map.insert(key, value);
+                    }
+                    println!("Loaded keymap from /etc/dab/keymap.json");
+                },
+                Err(error) => {
+                    eprintln!("Error while parsing /etc/dab/keymap.json {}", error);
+                }
+            }
+        }
+
+        if keymap_file_found == false {
+            keycode_map.insert(String::from("KEY_POWER"),116);
+            keycode_map.insert(String::from("KEY_HOME"),36);
+            keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
+            keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
+            keycode_map.insert(String::from("KEY_MUTE"),173);
+            keycode_map.insert(String::from("KEY_UP"),38);
+            keycode_map.insert(String::from("KEY_PAGE_UP"),33);
+            keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
+            keycode_map.insert(String::from("KEY_RIGHT"),39);
+            keycode_map.insert(String::from("KEY_DOWN"),40);
+            keycode_map.insert(String::from("KEY_LEFT"),37);
+            keycode_map.insert(String::from("KEY_ENTER"),13);
+            keycode_map.insert(String::from("KEY_BACK"),8);
+            keycode_map.insert(String::from("KEY_PLAY"),13);
+            keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
+            keycode_map.insert(String::from("KEY_PAUSE"),19);
+            keycode_map.insert(String::from("KEY_REWIND"),224);
+            keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
+            keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
+            keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
+            keycode_map.insert(String::from("KEY_0"),48);
+            keycode_map.insert(String::from("KEY_1"),49);
+            keycode_map.insert(String::from("KEY_2"),50);
+            keycode_map.insert(String::from("KEY_3"),51);
+            keycode_map.insert(String::from("KEY_4"),52);
+            keycode_map.insert(String::from("KEY_5"),53);
+            keycode_map.insert(String::from("KEY_6"),54);
+            keycode_map.insert(String::from("KEY_7"),55);
+            keycode_map.insert(String::from("KEY_8"),56);
+            keycode_map.insert(String::from("KEY_9"),57);
+
+            println!("Default keymap assigned");
+        }
 
         if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
-            // Platform specific keymap file present in the device
-            // Json file should be in below format
-            /*
-                {
-                    "KEY_CHANNEL_UP": 104,
-                    "KEY_CHANNEL_DOWN": 109,
-                    "KEY_MENU": 408,
-                    "KEY_MENU": 0,
-                    "KEY_INFO": 0,
-                    "KEY_GUIDE": 0,
-                    "KEY_CAPTIONS": 0,
-                    "KEY_RECORD": 0,
-                    "KEY_RED": 0,
-                    "KEY_GREEN": 0,
-                    "KEY_YELLOW": 0,
-                    "KEY_BLUE": 0
-                }
-            */
-            if let Ok(new_keymap) = serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                println!("Imported platform specified keymap /opt/dab_platform_keymap.json.");
-                for (key, value) in new_keymap {
-                    keycode_map.insert(key, value);
+            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                Ok(new_keymap) => {
+                    for (key, value) in new_keymap {
+                        keycode_map.insert(key, value);
+                    }
+                    println!("Added keymap from /opt/dab_platform_keymap.json");
+                },
+                Err(error) => {
+                    eprintln!("Error while parsing /opt/dab_platform_keymap.json {}", error);
                 }
             }
         }
