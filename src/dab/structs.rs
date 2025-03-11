@@ -271,7 +271,7 @@ pub enum MatchContentFrameRate {
 }
 
 #[allow(dead_code)]
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub enum HdrOutputMode {
     AlwaysHdr,
     HdrOnPlayback,

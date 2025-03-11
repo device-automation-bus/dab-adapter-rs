@@ -8,6 +8,8 @@ use crate::device::rdk::interface::rdk_request_with_params;
 use crate::device::rdk::interface::RdkResponseSimple;
 
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
+use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;
+use crate::device::rdk::system::settings::list::get_rdk_hdr_settings;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 
@@ -147,6 +149,29 @@ fn set_rdk_audio_output_source(source: AudioOutputSource) -> Result<(), DabError
 }
 
 fn set_rdk_hdr_mode(mode: HdrOutputMode) -> Result<(), DabError> {
+    match get_rdk_hdr_settings() {
+        Ok(supported_modes) => {
+            if !supported_modes.contains(&mode) {
+                return Err(DabError::Err400(format!(
+                    "Setting hdr mode '{:?}' is not supported", mode)));
+            }
+        },
+        Err(err) => {
+            return Err(err);
+        }
+    }
+
+    match get_rdk_hdr_current_setting() {
+        Ok(current_mode) => {
+            if mode == current_mode {
+                return Ok(());
+            }
+        },
+        Err(err) => {
+            return Err(err);
+        }
+    }
+
     #[allow(non_snake_case)]
     #[derive(Serialize, Default)]
     struct Param {
