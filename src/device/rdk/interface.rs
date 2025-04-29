@@ -385,29 +385,33 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 */
 
+// TODO: Extend this struct, so it contains more settings value,
+// instead of having them in different files and in /opt
+#[derive(Deserialize, Debug)]
+struct Settings {
+    supported_languages: Vec<String>,
+}
 
 lazy_static! {
-    static ref SUPPORTED_LANGUAGES: Vec<String> = {
+    static ref SETTINGS: Settings = {
+        let config_path = "/etc/dab/settings.json";
 
-        #[derive(Deserialize, Debug)]
-        struct Settings {
-            supported_languages: Vec<String>,
-        }
-
-        if let Ok(json_file) = read_platform_config_json("/etc/dab/settings.json") {
+        if let Ok(json_file) = read_platform_config_json(config_path) {
             match serde_json::from_str::<Settings>(&json_file) {
                 Ok(json_object) => {
-                    println!("Loaded supported languages from /etc/dab/settings.json");
-                    return json_object.supported_languages;
+                    println!("Loaded settings from: {}", config_path);
+                    return json_object
                 }
                 Err(error) => {
-                    eprintln!("Error while parsing /etc/dab/settings.json: {}", error);
+                    eprintln!("Error while parsing {}: {}", config_path, error);
                 }
             }
         }
+        println!("Using default settings, with supported languages: [en-US]");
+        Settings {
+            supported_languages: vec![String::from("en-US")],
+        }
 
-        println!("Falling back to default supported language: en-US");
-        vec![String::from("en-US")]
     };
 }
 
@@ -718,5 +722,5 @@ pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> 
 }
 
 pub fn get_supported_languages() -> Vec<String> {
-    SUPPORTED_LANGUAGES.clone()
+    SETTINGS.supported_languages.clone()
 }
