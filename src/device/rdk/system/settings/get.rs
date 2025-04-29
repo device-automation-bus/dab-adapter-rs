@@ -17,7 +17,7 @@ use crate::hw_specific::interface::get_service_state;
 use crate::hw_specific::interface::service_activate;
 use serde::{Deserialize, Serialize};
 
-fn get_rdk_language() -> Result<String, DabError> {
+pub fn get_rdk_language() -> Result<String, DabError> {
     #[allow(dead_code)]
     #[derive(Deserialize)]
     struct GetUILanguage {
