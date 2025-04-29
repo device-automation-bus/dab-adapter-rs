@@ -385,6 +385,32 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 */
 
+
+lazy_static! {
+    static ref SUPPORTED_LANGUAGES: Vec<String> = {
+
+        #[derive(Deserialize, Debug)]
+        struct Settings {
+            supported_languages: Vec<String>,
+        }
+
+        if let Ok(json_file) = read_platform_config_json("/etc/dab/settings.json") {
+            match serde_json::from_str::<Settings>(&json_file) {
+                Ok(json_object) => {
+                    println!("Loaded supported languages from /etc/dab/settings.json");
+                    return json_object.supported_languages;
+                }
+                Err(error) => {
+                    eprintln!("Error while parsing /etc/dab/settings.json: {}", error);
+                }
+            }
+        }
+
+        println!("Falling back to default supported language: en-US");
+        vec![String::from("en-US")]
+    };
+}
+
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
@@ -689,4 +715,8 @@ pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> 
         .and_then(|timeouts| timeouts.get(timeout_type))
         .cloned()
         .or_else(|| Some(2500))
+}
+
+pub fn get_supported_languages() -> Vec<String> {
+    SUPPORTED_LANGUAGES.clone()
 }
