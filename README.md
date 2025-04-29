@@ -73,6 +73,16 @@ OPTIONS:
     -v, --version               Print the version information
 ```
 
+### Settings ###
+
+To configure dab-adapter, for example set a list of supported languages, a configuration file `/etc/dab/settings.json` can be used, with the following structure:
+
+```json
+{
+  "supported_languages": ["en-US", "es-US"]
+}
+```
+
 ## Device ID ##
 
 In this implementation for RDK, the Device ID as specified by DAB is given by the `org.rdk.System.getDeviceInfo`` method of [RDK plugin](https://rdkcentral.github.io/rdkservices/#/api/SystemPlugin).
