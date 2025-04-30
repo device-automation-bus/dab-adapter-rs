@@ -389,7 +389,7 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
 // instead of having them in different files and in /opt
 #[derive(Deserialize, Debug)]
 struct Settings {
-    supported_languages: Vec<String>,
+    supported_languages: Option<Vec<String>>,
 }
 
 lazy_static! {
@@ -399,7 +399,7 @@ lazy_static! {
         if let Ok(json_file) = read_platform_config_json(config_path) {
             match serde_json::from_str::<Settings>(&json_file) {
                 Ok(json_object) => {
-                    println!("Loaded settings from: {}", config_path);
+                    println!("Loaded settings: {:?} from: {}", json_object, config_path);
                     return json_object
                 }
                 Err(error) => {
@@ -407,9 +407,10 @@ lazy_static! {
                 }
             }
         }
-        println!("Using default settings, with supported languages: [en-US]");
+
+        println!("Using default settings.");
         Settings {
-            supported_languages: vec![String::from("en-US")],
+            supported_languages: None,
         }
 
     };
@@ -722,5 +723,8 @@ pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> 
 }
 
 pub fn get_supported_languages() -> Vec<String> {
-    SETTINGS.supported_languages.clone()
+    SETTINGS.supported_languages.clone().unwrap_or_else(|| {
+        println!("Falling back to en-US as supported language.");
+        vec![String::from("en-US")]
+    })
 }
