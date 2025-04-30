@@ -83,6 +83,8 @@ To configure dab-adapter, for example set a list of supported languages, a confi
 }
 ```
 
+If `supported_languages` field is not provided, or if the deserialization of settings fails, `supported_languagess` falls back to `en-US`.
+
 ## Device ID ##
 
 In this implementation for RDK, the Device ID as specified by DAB is given by the `org.rdk.System.getDeviceInfo`` method of [RDK plugin](https://rdkcentral.github.io/rdkservices/#/api/SystemPlugin).
