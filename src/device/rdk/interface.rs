@@ -723,8 +723,8 @@ pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> 
 }
 
 pub fn get_supported_languages() -> Vec<String> {
-    SETTINGS.supported_languages.clone().unwrap_or_else(|| {
-        println!("Falling back to en-US as supported language.");
-        vec![String::from("en-US")]
-    })
+    SETTINGS
+        .supported_languages
+        .clone()
+        .unwrap_or_else(|| vec![String::from("en-US")])
 }
