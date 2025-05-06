@@ -83,7 +83,7 @@ To configure dab-adapter, for example set a list of supported languages, a confi
 }
 ```
 
-If `supported_languages` field is not provided, or if the deserialization of settings fails, `supported_languagess` falls back to `en-US`.
+It must be in a form of an array of RFC 5646 language tags. If `supported_languages` field is not provided, or if the deserialization of settings fails, `supported_languagess` falls back to `en-US`.
 
 ## Device ID ##
 
