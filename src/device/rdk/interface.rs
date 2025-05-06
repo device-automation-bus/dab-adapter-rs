@@ -385,6 +385,37 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 */
 
+// TODO: Extend this struct, so it contains more settings value,
+// instead of having them in different files and in /opt
+#[derive(Deserialize, Debug)]
+struct Settings {
+    supported_languages: Option<Vec<String>>,
+}
+
+lazy_static! {
+    static ref SETTINGS: Settings = {
+        let config_path = "/etc/dab/settings.json";
+
+        if let Ok(json_file) = read_platform_config_json(config_path) {
+            match serde_json::from_str::<Settings>(&json_file) {
+                Ok(json_object) => {
+                    println!("Loaded settings: {:?} from: {}", json_object, config_path);
+                    return json_object
+                }
+                Err(error) => {
+                    eprintln!("Error while parsing {}: {}", config_path, error);
+                }
+            }
+        }
+
+        println!("Using default settings.");
+        Settings {
+            supported_languages: None,
+        }
+
+    };
+}
+
 lazy_static! {
     static ref RDK_KEYMAP: HashMap<String, u16> = {
         let mut keycode_map = HashMap::new();
@@ -689,4 +720,11 @@ pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> 
         .and_then(|timeouts| timeouts.get(timeout_type))
         .cloned()
         .or_else(|| Some(2500))
+}
+
+pub fn get_supported_languages() -> Vec<String> {
+    SETTINGS
+        .supported_languages
+        .clone()
+        .unwrap_or_else(|| vec![String::from("en-US")])
 }
