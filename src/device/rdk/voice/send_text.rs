@@ -14,7 +14,7 @@ use urlencoding::encode;
 #[allow(unused_mut)]
 pub fn process(_dab_request: SendTextRequest) -> Result<String, DabError> {
     // TODO: Add other RDK specific voice protocol support confirmation.
-    if _dab_request.voiceSystem.to_string() != "AmazonAlexa" {
+    if _dab_request.voiceSystem.to_string() != "AmazonAlexa" || _dab_request.voiceSystem.to_string().is_empty() {
         return Err(DabError::Err400("Unsupported 'voiceSystem'.".to_string()));
     }
 

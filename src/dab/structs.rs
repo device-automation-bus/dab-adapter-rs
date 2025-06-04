@@ -243,6 +243,7 @@ pub struct VoiceSystem {
 #[derive(Default, Serialize, Deserialize)]
 pub struct SendAudioRequest {
     pub fileLocation: String,
+    pub voiceSystem: String,
 }
 
 #[allow(non_snake_case)]
