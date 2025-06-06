@@ -7,7 +7,7 @@ use crate::device::rdk::interface::http_download;
 #[allow(dead_code)]
 #[allow(unused_mut)]
 pub fn process(_dab_request: SendAudioRequest) -> Result<String, DabError> {
-    if _dab_request.voiceSystem.to_string() != "AmazonAlexa" || _dab_request.voiceSystem.to_string().is_empty() {
+    if _dab_request.voiceSystem.to_string() != "AmazonAlexa" {
         return Err(DabError::Err400("Unsupported 'voiceSystem'.".to_string()));
     }
 
