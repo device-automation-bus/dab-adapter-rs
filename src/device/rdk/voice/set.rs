@@ -10,7 +10,7 @@ pub fn process(_dab_request: SetVoiceSystemRequest) -> Result<String, DabError> 
     let mut ResponseOperator = SetVoiceSystemResponse::default();
 
     // TODO: Add other RDK specific voice protocol support confirmation.
-    if _dab_request.voiceSystem.name != "AmazonAlexa" || _dab_request.voiceSystem.name.is_empty() {
+    if _dab_request.voiceSystem.name != "AmazonAlexa" {
         // Unsupported VoiceSystem.
         return Err(DabError::Err400(
             "Setting voiceSystem failed. Unsupported voiceSystem.".to_string(),

@@ -240,7 +240,9 @@ pub fn process(_dab_request: DeviceInfoRequest) -> Result<String, DabError> {
     ResponseOperator.screenHeightPixels = ScreenResolution.result.h;
     ResponseOperator.deviceId = get_device_id()?;
 
-    if ConnectedVideoDisplays.result.connectedVideoDisplays[0].contains("HDMI") {
+    if ConnectedVideoDisplays.result.connectedVideoDisplays.len() > 0
+        && ConnectedVideoDisplays.result.connectedVideoDisplays[0].contains("HDMI")
+    {
         ResponseOperator.displayType = DisplayType::External;
     } else {
         ResponseOperator.displayType = DisplayType::Native;

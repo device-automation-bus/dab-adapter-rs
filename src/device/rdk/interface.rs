@@ -517,12 +517,18 @@ lazy_static! {
                 }
             },
         };
-        match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
-            Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
+        match get_thunder_property("DeviceInfo.socname", "socname") {
+            Ok(socname) => { rdk_device_info.insert(String::from("chipset"), String::from(socname)); },
             Err(_err) => {
-                if cfg!(debug_assertions) {
-                    rdk_device_info.insert(String::from("chipset"), String::from("Unknown-chipset"));
-                }
+                eprintln!("Unable to retrieve chipset from DeviceInfo, trying legacy DeviceIdentification.");
+                match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
+                    Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
+                    Err(_err) => {
+                        if cfg!(debug_assertions) {
+                            rdk_device_info.insert(String::from("chipset"), String::from("Unknown-chipset"));
+                        }
+                    },
+                };
             },
         };
         match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
