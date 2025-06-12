@@ -1,6 +1,8 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::ExitApplicationRequest;
 use crate::dab::structs::ExitApplicationResponse;
+use crate::device::rdk::applications::get_state::AppState;
+use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::applications::launch::{rdkshell_suspend, rdkshell_destroy};
 use crate::device::rdk::interface::get_lifecycle_timeout;
@@ -21,22 +23,23 @@ pub fn process(_dab_request: ExitApplicationRequest) -> Result<String, DabError>
     let to_background = _dab_request.background.unwrap_or(false);
 
     let mut was_stopped = false;
-    let app_state = get_dab_app_state(_dab_request.appId.clone())?;
-    match app_state.as_str() {
-        "BACKGROUND" | "FOREGROUND" => {
+    let app_state = get_app_state(&_dab_request.appId)?;
+    match app_state {
+        AppState::Visible | AppState::Invisible | AppState::Suspended => {
             if to_background {
                 rdkshell_suspend(_dab_request.appId.clone())?;
             } else {
                 rdkshell_destroy(_dab_request.appId.clone())?;
             }
         },
-        "STOPPED" => {
+        AppState::Hibernated => {
+            if to_background == false {
+                rdkshell_destroy(_dab_request.appId.clone())?;
+            }
+        },
+        AppState::Stopped => {
             was_stopped = true;
         },
-        _ => {
-            println!("Should not reach here in any condition. Invalid {} App state: {}",
-                _dab_request.appId, app_state.as_str());
-        }
     }
 
     // *******************************************************************

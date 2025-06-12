@@ -19,6 +19,15 @@ pub enum DABAppState {
     Foreground,
 }
 
+#[derive(Debug)]
+pub enum AppState {
+    Stopped,
+    Hibernated,
+    Suspended,
+    Invisible,
+    Visible,
+}
+
 impl DABAppState {
     pub fn as_str(&self) -> &'static str {
         match *self {
@@ -35,6 +44,25 @@ impl DABAppState {
  * @return String: DAB application state
 */
 pub fn get_dab_app_state(callsign: String) -> Result<String, DabError> {
+    match get_app_state(&callsign) {
+        Ok(app_state) => {
+            match app_state {
+                AppState::Stopped => {
+                    return Ok(DABAppState::Stopped.as_str().to_owned());
+                }
+                AppState::Hibernated | AppState::Suspended | AppState::Invisible => {
+                    return Ok(DABAppState::Background.as_str().to_owned());
+                }
+                AppState::Visible => {
+                    return Ok(DABAppState::Foreground.as_str().to_owned());
+                }
+            }
+        }
+        Err(err) => return Err(err),
+    }
+}
+
+pub fn get_app_state(callsign: &str) -> Result<AppState, DabError> {
     #[derive(Deserialize)]
     #[allow(dead_code)]
     struct State {
@@ -55,16 +83,17 @@ pub fn get_dab_app_state(callsign: String) -> Result<String, DabError> {
     for item in rdkresponse.result.state {
         if item.callsign == callsign {
             match item.state.as_str() {
-                "suspended" => return Ok(DABAppState::Background.as_str().to_string()),
+                "suspended" => return Ok(AppState::Suspended),
+                "hibernated" => return Ok(AppState::Hibernated),
                 "activated" | "resumed" => {
                     // Launch request mandates that application should be focused and visible.
-                    let visibility = get_visibility(callsign)?;
+                    let visibility = get_visibility(callsign.to_owned())?;
                     let app_state = if visibility {
-                        DABAppState::Foreground
+                        AppState::Visible
                     } else {
-                        DABAppState::Background
+                        AppState::Invisible
                     };
-                    return Ok(app_state.as_str().to_string());
+                    return Ok(app_state);
                 },
                 _ => {
                     println!("Implement verification of: {} App state: {}",
@@ -78,7 +107,7 @@ pub fn get_dab_app_state(callsign: String) -> Result<String, DabError> {
         }
     }
 
-    Ok(DABAppState::Stopped.as_str().to_string())
+    Ok(AppState::Stopped)
 }
 
 #[allow(non_snake_case)]
