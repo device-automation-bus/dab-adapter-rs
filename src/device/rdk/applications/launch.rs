@@ -1,5 +1,7 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LaunchApplicationRequest;
+use crate::device::rdk::applications::get_state::AppState;
+use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::interface::http_post;
 use crate::device::rdk::interface::get_lifecycle_timeout;
@@ -57,9 +59,26 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
     }
 
     let mut app_created = true;
-    let app_state = get_dab_app_state(_dab_request.appId.clone())?;
-    match app_state.as_str() {
-        "STOPPED" => {
+    let mut app_state = get_app_state(&_dab_request.appId)?;
+
+    if let AppState::Hibernated = app_state {
+        println!("Restoring {} from hibernation", _dab_request.appId);
+
+        // App is hibernated; restore app.
+        let request = RdkRequest {
+            jsonrpc: "2.0".into(),
+            id: 2,
+            method: "org.rdk.RDKShell.restore".into(),
+            params: &launch_req_params,
+        };
+
+        let json_string = serde_json::to_string(&request).unwrap();
+        http_post(json_string)?;
+        app_state = get_app_state(&_dab_request.appId)?;
+    }
+
+    match app_state {
+        AppState::Stopped => {
             // Cold launch of app.
             let req_params = if is_cobalt {
                 let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
@@ -87,7 +106,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             };
             send_rdkshell_launch_request(req_params)?;
         },
-        "BACKGROUND" | "FOREGROUND" => {
+        AppState::Suspended | AppState::Invisible | AppState::Visible => {
             app_created = false;
             //// FIXME: If parameters(?) are App startup specific, it may not take effect when resuming "plugin" runtime.
             // Deeplink is required only if you need to pass parameters to the app runtime.
@@ -124,8 +143,8 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             http_post(json_string)?;
         },
         _ => {
-            println!("Should not reach here in any condition. Invalid {} App state: {}",
-                _dab_request.appId.clone(), app_state.as_str());
+            println!("Should not reach here in any condition. Invalid {} App state: {:?}",
+                _dab_request.appId.clone(), app_state);
         }
     }
 
