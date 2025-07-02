@@ -199,7 +199,20 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
 
     ResponseOperator.textToSpeech = get_rdk_tts()?;
 
-    ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
+    // if either TV or STB does not support HDR, do not report this field as being available for setting
+    ResponseOperator.hdrOutputMode = match get_rdk_hdr_settings() {
+        Ok(settings) => {
+            if matches!(settings.as_slice(), [HdrOutputMode::DisableHdr]) {
+                vec![]
+            }
+            else {
+                settings
+            }
+        }
+        Err(_) => {
+            vec![]
+        }
+    };
 
     ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
 
