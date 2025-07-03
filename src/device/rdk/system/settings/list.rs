@@ -15,7 +15,6 @@ use crate::device::rdk::interface::service_is_available;
 use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::hw_specific::interface::get_supported_languages;
-use crate::hw_specific::system::settings::set;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
