@@ -11,6 +11,7 @@ use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;
 use crate::device::rdk::system::settings::list::get_rdk_hdr_settings;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
+use crate::hw_specific::interface::get_audio_volume_range;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 
 use serde::{Deserialize, Serialize};
@@ -75,6 +76,12 @@ fn set_rdk_resolution(resolution: &OutputResolution) -> Result<(), DabError> {
 }
 
 fn set_rdk_audio_volume(volume: u32) -> Result<(), DabError> {
+
+    let range = get_audio_volume_range();
+    if !(range.min..=range.max).contains(&volume) {
+        return Err(DabError::Err400("Unsupported audio volume value".to_string()))
+    }
+
     #[allow(non_snake_case)]
     #[derive(Serialize)]
     struct Param {

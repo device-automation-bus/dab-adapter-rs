@@ -333,7 +333,7 @@ pub enum VideoInputSource {
 }
 
 #[allow(non_snake_case)]
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AudioVolume {
     pub min: u32,
     pub max: u32,
