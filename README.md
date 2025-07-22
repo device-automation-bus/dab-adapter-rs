@@ -75,15 +75,26 @@ OPTIONS:
 
 ### Settings ###
 
-To configure dab-adapter, for example set a list of supported languages, a configuration file `/etc/dab/settings.json` can be used, with the following structure:
+To configure dab-adapter a configuration file `/etc/dab/settings.json` can be used, with the following structure:
 
 ```json
 {
-  "supported_languages": ["en-US", "es-US"]
+    "supported_languages": ["en-US", "es-US"],
+    "audio_volume_range": {
+     "max": 110,
+     "min": 50
+    }
 }
 ```
 
-It must be in a form of an array of RFC 5646 language tags. If `supported_languages` field is not provided, or if the deserialization of settings fails, `supported_languagess` falls back to `en-US`.
+#### Available settings ####
+
+1. `supported_languages`
+It must be in a form of an array of RFC 5646 language tags. If this field is not provided, or if the deserialization of settings fails, `supported_languagess` falls back to `en-US`.
+
+2. `audio_volume_range`
+It is a object with `min` and `max` fields. This is used to indicate possible audio volume range. If this field is not provided, or if the deserialization of settings fails, `audio_volume_range` falls back to `{min: 0, max: 100}`.
+
 
 ## Device ID ##
 
