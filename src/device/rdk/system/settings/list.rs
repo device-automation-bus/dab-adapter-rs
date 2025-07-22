@@ -14,6 +14,7 @@ use crate::device::rdk::interface::rdk_sound_mode_to_dab;
 use crate::device::rdk::interface::service_is_available;
 use crate::device::rdk::interface::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
+use crate::hw_specific::interface::get_audio_volume_range;
 use crate::hw_specific::interface::get_supported_languages;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -200,7 +201,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
 
     ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 
-    ResponseOperator.audioVolume = AudioVolume { min: 0, max: 100 };
+    ResponseOperator.audioVolume = get_audio_volume_range();
 
     ResponseOperator.matchContentFrameRate = vec![
         MatchContentFrameRate::EnabledAlways,
