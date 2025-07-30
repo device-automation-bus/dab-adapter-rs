@@ -97,10 +97,10 @@ pub fn get_app_state(callsign: &str) -> Result<AppState, DabError> {
                 },
                 _ => {
                     println!("Implement verification of: {} App state: {}",
-                        callsign.clone(), item.state.as_str());
+                        callsign, item.state.as_str());
                     return Err(DabError::Err500(
                         format!("RDKShell.getState; {} is in invalid state {}.",
-                            callsign.clone(), item.state.as_str()).to_string(),
+                            callsign, item.state.as_str()).to_string(),
                     ));
                 }
             }
