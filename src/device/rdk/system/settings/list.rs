@@ -1,6 +1,5 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
-use crate::dab::structs::AudioVolume;
 use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettingsRequest;

@@ -4,7 +4,6 @@ use crate::dab::structs::DabError;
 use futures::executor::block_on;
 use futures_util::stream::StreamExt;
 use futures_util::SinkExt;
-use lazy_static::lazy_static;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::json;
@@ -12,6 +11,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
+use std::sync::LazyLock;
+use std::sync::OnceLock;
 use std::{thread, time};
 use surf::Client;
 use tokio::net::TcpStream;
@@ -21,30 +22,318 @@ use tokio_tungstenite::{
 };
 use url::Url;
 
-static mut DEVICE_ADDRESS: String = String::new();
-static mut DEBUG: bool = false;
+#[derive(Debug, Clone, Default, Deserialize)]
+struct AppTimeouts {
+    cold_launch_timeout_ms: u64,
+    resume_launch_timeout_ms: u64,
+    exit_to_destroy_timeout_ms: u64,
+    exit_to_background_timeout_ms: u64
+}
+type AppTimeoutMap = HashMap<String, AppTimeouts>;
 
-pub fn init(device_ip: &str, debug: bool) {
-    unsafe {
-        DEVICE_ADDRESS.push_str(&device_ip);
-        DEBUG = debug;
+#[derive(Deserialize, Debug)]
+struct ConfigurationFileSettings {
+    supported_languages: Option<Vec<String>>,
+    audio_volume_range: Option<AudioVolume>
+}
+
+struct DeviceSettings {
+    device_address: String,
+    debug: bool,
+    rdk_device_id: LazyLock<String>,
+    keymap: LazyLock<HashMap<String, u16>>,
+    rdk_device_info: LazyLock<HashMap<String, String>>,
+    app_lifecycle_timeouts: LazyLock<AppTimeoutMap>,
+    configuration_file_settings: LazyLock<ConfigurationFileSettings>
+}
+impl DeviceSettings {
+    fn new(device_ip: &str, debug: bool) -> Self {
+        DeviceSettings {
+            device_address: device_ip.to_string(),
+            debug: debug,
+            rdk_device_id: LazyLock::new(||{
+                request_device_id().unwrap()
+            }),
+            keymap: LazyLock::new(||{
+                read_keymap()
+            }),
+            rdk_device_info: LazyLock::new(||{
+                request_device_info()
+            }),
+            app_lifecycle_timeouts: LazyLock::new(||{
+                load_app_timeouts()
+            }),
+            configuration_file_settings: LazyLock::new(||{
+                load_configuration_file_settings()
+            }),
+        }
     }
+}
+static DEVICE_SETTINGS: OnceLock<DeviceSettings> = OnceLock::new();
 
-    if unsafe { DEBUG } {
-        for app in APP_LIFECYCLE_TIMEOUTS.keys() {
-            for (key, value) in APP_LIFECYCLE_TIMEOUTS.get(app).unwrap() {
-                println!("{:<15} - {:<30} = {:>5}ms.", app, key, value);
-            }
+fn get_device_settings() -> &'static DeviceSettings {
+    DEVICE_SETTINGS.get().expect("Device Settings accessed but not initialized")
+}
+
+pub fn get_device_id() -> Result<String, DabError> {
+    Ok(get_device_settings().rdk_device_id.clone())
+}
+
+pub fn get_ip_address() -> String {
+    get_device_settings().rdk_device_id.clone()
+}
+
+pub fn get_rdk_keys() -> Vec<String> {
+    get_device_settings()
+        .keymap
+        .keys()
+        .map(|k| k.to_owned().to_string())
+        .collect()
+}
+
+pub fn get_keycode(keyname: String) -> Option<&'static u16> {
+    get_device_settings().keymap.get(&keyname)
+}
+
+// Parameter: propertyname: The property to get the value of.
+// Returns the value of the property on success else DabError.
+pub fn get_rdk_device_info(propertyname: &str) -> Result<String, DabError> {
+    match get_device_settings().rdk_device_info.get(propertyname) {
+        Some(val) => Ok(val.clone()),
+        None => {
+            let error_message = DabError::Err500(format!("No match for property {propertyname}."));
+            return Err(error_message);
         }
     }
 }
 
-lazy_static! {
-    static ref RDK_DEVICE_ID: String = request_device_id().unwrap();
+// Function to get lifecycle timeout for an app. After plugin state change how long App implementation/SDK takes to complete the action.
+// Parameters: app_name: The app name (lowercase) to get the timeout for, timeout_type: The type of timeout to get.
+// Returns the timeout in milliseconds on success else default 2500.
+pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> {
+    let timeouts_map = &get_device_settings().app_lifecycle_timeouts;
+
+    timeouts_map.get(app_name).and_then(|timeouts| {
+        match timeout_type {
+            "cold_launch_timeout_ms" => Some(timeouts.cold_launch_timeout_ms),
+            "resume_launch_timeout_ms" => Some(timeouts.resume_launch_timeout_ms),
+            "exit_to_destroy_timeout_ms" => Some(timeouts.exit_to_destroy_timeout_ms),
+            "exit_to_background_timeout_ms" => Some(timeouts.exit_to_background_timeout_ms),
+            _ => None
+        }
+    }).or(Some(2500))
+
 }
 
-pub fn get_device_id() -> Result<String, DabError> {
-    Ok(RDK_DEVICE_ID.to_string())
+pub fn get_supported_languages() -> Vec<String> {
+    get_device_settings()
+        .configuration_file_settings
+        .supported_languages
+        .clone()
+        .unwrap_or_else(|| vec![String::from("en-US")])
+}
+
+pub fn get_audio_volume_range() -> AudioVolume {
+    get_device_settings()
+        .configuration_file_settings
+        .audio_volume_range
+        .clone()
+        .unwrap_or_else(|| AudioVolume { min: 0, max: 100 })
+}
+
+pub fn init(device_ip: &str, debug: bool) {
+    let settings = DeviceSettings::new(device_ip, debug);
+
+    if DEVICE_SETTINGS.set(settings).is_err() {
+        panic!("Settings already initialized!");
+    }
+
+    if debug {
+        for (app, timeouts) in get_device_settings().app_lifecycle_timeouts.iter() {
+            println!("{:<15} - {:<30} = {:>5}ms.", app, "cold_launch_timeout_ms", timeouts.cold_launch_timeout_ms);
+            println!("{:<15} - {:<30} = {:>5}ms.", app, "resume_launch_timeout_ms", timeouts.resume_launch_timeout_ms);
+            println!("{:<15} - {:<30} = {:>5}ms.", app, "exit_to_destroy_timeout_ms", timeouts.exit_to_destroy_timeout_ms);
+            println!("{:<15} - {:<30} = {:>5}ms.", app, "exit_to_background_timeout_ms", timeouts.exit_to_background_timeout_ms);
+        }
+    }
+}
+
+fn load_configuration_file_settings() -> ConfigurationFileSettings {
+    let config_path = "/etc/dab/settings.json";
+
+        if let Ok(json_file) = read_platform_config_json(config_path) {
+            match serde_json::from_str::<ConfigurationFileSettings>(&json_file) {
+                Ok(json_object) => {
+                    println!("Loaded settings: {:?} from: {}", json_object, config_path);
+                    return json_object
+                }
+                Err(error) => {
+                    eprintln!("Error while parsing {}: {}", config_path, error);
+                }
+            }
+        }
+
+        println!("Using default settings.");
+    ConfigurationFileSettings {
+        supported_languages: None,
+        audio_volume_range: None
+    }
+}
+
+fn load_app_timeouts() -> AppTimeoutMap {
+    let mut map = AppTimeoutMap::new();
+
+    map.insert("youtube".to_string(), AppTimeouts {
+        cold_launch_timeout_ms: 6000,
+        resume_launch_timeout_ms: 3000,
+        exit_to_destroy_timeout_ms: 2500,
+        exit_to_background_timeout_ms: 2000,
+    });
+
+    match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
+        Ok(json_file) => {
+            match serde_json::from_str::<HashMap<String, AppTimeouts>>(&json_file) {
+                Ok(parsed) => {
+                    for (app, timeouts) in parsed {
+                        if matches!(app.as_str(), "youtube" | "netflix" | "primevideo" | "uk.co.bbc.iplayer") {
+                            map.insert(app, timeouts);
+                        }
+                    }
+                    println!("Imported platform specified app lifetime configuration file also.");
+                }
+                Err(e) => {
+                    println!("Failed to parse JSON: {} from 'dab_platform_app_lifecycle.json'.", e);
+                }
+            }
+        }
+        Err(_) => {
+            println!("Using default values for app lifecycle timeouts.");
+        }
+    }
+    map
+}
+
+fn read_keymap() -> HashMap<String, u16> {
+        let mut keycode_map = HashMap::new();
+        let mut keymap_file_found = false;
+
+        if let Ok(json_file) = read_platform_config_json("/etc/dab/keymap.json") {
+            keymap_file_found = true;
+            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                Ok(new_keymap) => {
+                    for (key, value) in new_keymap {
+                        keycode_map.insert(key, value);
+                    }
+                    println!("Loaded keymap from /etc/dab/keymap.json");
+                },
+                Err(error) => {
+                    eprintln!("Error while parsing /etc/dab/keymap.json {}", error);
+                }
+            }
+        }
+
+        if keymap_file_found == false {
+            keycode_map.insert(String::from("KEY_POWER"),116);
+            keycode_map.insert(String::from("KEY_HOME"),36);
+            keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
+            keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
+            keycode_map.insert(String::from("KEY_MUTE"),173);
+            keycode_map.insert(String::from("KEY_UP"),38);
+            keycode_map.insert(String::from("KEY_PAGE_UP"),33);
+            keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
+            keycode_map.insert(String::from("KEY_RIGHT"),39);
+            keycode_map.insert(String::from("KEY_DOWN"),40);
+            keycode_map.insert(String::from("KEY_LEFT"),37);
+            keycode_map.insert(String::from("KEY_ENTER"),13);
+            keycode_map.insert(String::from("KEY_BACK"),8);
+            keycode_map.insert(String::from("KEY_PLAY"),13);
+            keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
+            keycode_map.insert(String::from("KEY_PAUSE"),19);
+            keycode_map.insert(String::from("KEY_REWIND"),224);
+            keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
+            keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
+            keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
+            keycode_map.insert(String::from("KEY_0"),48);
+            keycode_map.insert(String::from("KEY_1"),49);
+            keycode_map.insert(String::from("KEY_2"),50);
+            keycode_map.insert(String::from("KEY_3"),51);
+            keycode_map.insert(String::from("KEY_4"),52);
+            keycode_map.insert(String::from("KEY_5"),53);
+            keycode_map.insert(String::from("KEY_6"),54);
+            keycode_map.insert(String::from("KEY_7"),55);
+            keycode_map.insert(String::from("KEY_8"),56);
+            keycode_map.insert(String::from("KEY_9"),57);
+
+            println!("Default keymap assigned");
+        }
+
+        if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
+            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+                Ok(new_keymap) => {
+                    for (key, value) in new_keymap {
+                        keycode_map.insert(key, value);
+                    }
+                    println!("Added keymap from /opt/dab_platform_keymap.json");
+                },
+                Err(error) => {
+                    eprintln!("Error while parsing /opt/dab_platform_keymap.json {}", error);
+                }
+            }
+        }
+        keycode_map
+}
+
+// Static device info; no need to panic or break runtime. Implementation is based on the assumption
+// that platform response will be constant for a specific build.
+fn request_device_info() -> HashMap<String, String> {
+        let mut rdk_device_info = HashMap::new();
+        match get_thunder_property("DeviceInfo.make", "make") {
+            Ok(make) => { rdk_device_info.insert(String::from("manufacturer"), String::from(make)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("manufacturer"), String::from("Unknown-manufacturer"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.modelid", "sku") {
+            Ok(model) => { rdk_device_info.insert(String::from("model"), String::from(model)); },
+            Err(_err) => { 
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("model"), String::from("Unknown-model"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
+            Ok(serialnumber) => { rdk_device_info.insert(String::from("serialnumber"), String::from(serialnumber)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("serialnumber"), String::from("Unknown-serialnumber"));
+                }
+            },
+        };
+        match get_thunder_property("DeviceInfo.socname", "socname") {
+            Ok(socname) => { rdk_device_info.insert(String::from("chipset"), String::from(socname)); },
+            Err(_err) => {
+                eprintln!("Unable to retrieve chipset from DeviceInfo, trying legacy DeviceIdentification.");
+                match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
+                    Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
+                    Err(_err) => {
+                        if cfg!(debug_assertions) {
+                            rdk_device_info.insert(String::from("chipset"), String::from("Unknown-chipset"));
+                        }
+                    },
+                };
+            },
+        };
+        match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
+            Ok(firmwareversion) => { rdk_device_info.insert(String::from("firmwareversion"), String::from(firmwareversion)); },
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    rdk_device_info.insert(String::from("firmwareversion"), String::from("Unknown-FWVersion"));
+                }
+            },
+        };
+        rdk_device_info
 }
 
 fn request_device_id() -> Result<String, DabError> {
@@ -78,12 +367,10 @@ pub fn http_download(url: String) -> Result<(), DabError> {
 
 pub fn http_post(json_string: String) -> Result<String, DabError> {
     let client = Client::new();
-    let rdk_address = format!("http://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
+    let rdk_address = format!("http://{}:9998/jsonrpc", get_device_settings().device_address);
 
-    unsafe {
-        if DEBUG {
-            println!("RDK request: {}", json_string);
-        }
+    if get_device_settings().debug {
+        println!("RDK request: {}", json_string);
     }
 
     let response = block_on(async {
@@ -107,10 +394,8 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
         Ok(r) => {
             let str = r.to_string();
 
-            unsafe {
-                if DEBUG {
-                    println!("RDK response: {}", str);
-                }
+            if get_device_settings().debug {
+                println!("RDK response: {}", str);
             }
 
             return Ok(str);
@@ -118,10 +403,9 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
         Err(err) => {
             let str = err.to_string();
 
-            unsafe {
-                if DEBUG {
-                    println!("RDK error: {}", str);
-                }
+
+            if get_device_settings().debug {
+                println!("RDK error: {}", str);
             }
 
             return Err(DabError::Err500(str));
@@ -130,7 +414,7 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
 }
 
 pub async fn ws_open() -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, DabError> {
-    let rdk_address = format!("ws://{}:9998/jsonrpc", unsafe { &DEVICE_ADDRESS });
+    let rdk_address = format!("ws://{}:9998/jsonrpc", get_device_settings().device_address);
     let url = Url::parse(&rdk_address).expect("Invalid WebSocket URL");
 
     connect_async(url)
@@ -386,192 +670,6 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
     }
 */
 
-// TODO: Extend this struct, so it contains more settings value,
-// instead of having them in different files and in /opt
-#[derive(Deserialize, Debug)]
-struct Settings {
-    supported_languages: Option<Vec<String>>,
-    audio_volume_range: Option<AudioVolume>
-}
-
-lazy_static! {
-    static ref SETTINGS: Settings = {
-        let config_path = "/etc/dab/settings.json";
-
-        if let Ok(json_file) = read_platform_config_json(config_path) {
-            match serde_json::from_str::<Settings>(&json_file) {
-                Ok(json_object) => {
-                    println!("Loaded settings: {:?} from: {}", json_object, config_path);
-                    return json_object
-                }
-                Err(error) => {
-                    eprintln!("Error while parsing {}: {}", config_path, error);
-                }
-            }
-        }
-
-        println!("Using default settings.");
-        Settings {
-            supported_languages: None,
-            audio_volume_range: None
-        }
-
-    };
-}
-
-lazy_static! {
-    static ref RDK_KEYMAP: HashMap<String, u16> = {
-        let mut keycode_map = HashMap::new();
-        let mut keymap_file_found = false;
-
-        if let Ok(json_file) = read_platform_config_json("/etc/dab/keymap.json") {
-            keymap_file_found = true;
-            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                Ok(new_keymap) => {
-                    for (key, value) in new_keymap {
-                        keycode_map.insert(key, value);
-                    }
-                    println!("Loaded keymap from /etc/dab/keymap.json");
-                },
-                Err(error) => {
-                    eprintln!("Error while parsing /etc/dab/keymap.json {}", error);
-                }
-            }
-        }
-
-        if keymap_file_found == false {
-            keycode_map.insert(String::from("KEY_POWER"),116);
-            keycode_map.insert(String::from("KEY_HOME"),36);
-            keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
-            keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
-            keycode_map.insert(String::from("KEY_MUTE"),173);
-            keycode_map.insert(String::from("KEY_UP"),38);
-            keycode_map.insert(String::from("KEY_PAGE_UP"),33);
-            keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
-            keycode_map.insert(String::from("KEY_RIGHT"),39);
-            keycode_map.insert(String::from("KEY_DOWN"),40);
-            keycode_map.insert(String::from("KEY_LEFT"),37);
-            keycode_map.insert(String::from("KEY_ENTER"),13);
-            keycode_map.insert(String::from("KEY_BACK"),8);
-            keycode_map.insert(String::from("KEY_PLAY"),13);
-            keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
-            keycode_map.insert(String::from("KEY_PAUSE"),19);
-            keycode_map.insert(String::from("KEY_REWIND"),224);
-            keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
-            keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
-            keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
-            keycode_map.insert(String::from("KEY_0"),48);
-            keycode_map.insert(String::from("KEY_1"),49);
-            keycode_map.insert(String::from("KEY_2"),50);
-            keycode_map.insert(String::from("KEY_3"),51);
-            keycode_map.insert(String::from("KEY_4"),52);
-            keycode_map.insert(String::from("KEY_5"),53);
-            keycode_map.insert(String::from("KEY_6"),54);
-            keycode_map.insert(String::from("KEY_7"),55);
-            keycode_map.insert(String::from("KEY_8"),56);
-            keycode_map.insert(String::from("KEY_9"),57);
-
-            println!("Default keymap assigned");
-        }
-
-        if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
-            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                Ok(new_keymap) => {
-                    for (key, value) in new_keymap {
-                        keycode_map.insert(key, value);
-                    }
-                    println!("Added keymap from /opt/dab_platform_keymap.json");
-                },
-                Err(error) => {
-                    eprintln!("Error while parsing /opt/dab_platform_keymap.json {}", error);
-                }
-            }
-        }
-        keycode_map
-    };
-}
-
-// Static device info; no need to panic or break runtime. Implementation is based on the assumption
-// that platform response will be constant for a specific build.
-lazy_static! {
-    static ref RDK_DEVICE_INFO: HashMap<String, String> = {
-        let mut rdk_device_info = HashMap::new();
-        match get_thunder_property("DeviceInfo.make", "make") {
-            Ok(make) => { rdk_device_info.insert(String::from("manufacturer"), String::from(make)); },
-            Err(_err) => {
-                if cfg!(debug_assertions) {
-                    rdk_device_info.insert(String::from("manufacturer"), String::from("Unknown-manufacturer"));
-                }
-            },
-        };
-        match get_thunder_property("DeviceInfo.modelid", "sku") {
-            Ok(model) => { rdk_device_info.insert(String::from("model"), String::from(model)); },
-            Err(_err) => { 
-                if cfg!(debug_assertions) {
-                    rdk_device_info.insert(String::from("model"), String::from("Unknown-model"));
-                }
-            },
-        };
-        match get_thunder_property("DeviceInfo.serialnumber", "serialnumber") {
-            Ok(serialnumber) => { rdk_device_info.insert(String::from("serialnumber"), String::from(serialnumber)); },
-            Err(_err) => {
-                if cfg!(debug_assertions) {
-                    rdk_device_info.insert(String::from("serialnumber"), String::from("Unknown-serialnumber"));
-                }
-            },
-        };
-        match get_thunder_property("DeviceInfo.socname", "socname") {
-            Ok(socname) => { rdk_device_info.insert(String::from("chipset"), String::from(socname)); },
-            Err(_err) => {
-                eprintln!("Unable to retrieve chipset from DeviceInfo, trying legacy DeviceIdentification.");
-                match get_thunder_property("DeviceIdentification.deviceidentification", "chipset") {
-                    Ok(chipset) => { rdk_device_info.insert(String::from("chipset"), String::from(chipset)); },
-                    Err(_err) => {
-                        if cfg!(debug_assertions) {
-                            rdk_device_info.insert(String::from("chipset"), String::from("Unknown-chipset"));
-                        }
-                    },
-                };
-            },
-        };
-        match get_thunder_property("DeviceInfo.firmwareversion", "imagename") {
-            Ok(firmwareversion) => { rdk_device_info.insert(String::from("firmwareversion"), String::from(firmwareversion)); },
-            Err(_err) => {
-                if cfg!(debug_assertions) {
-                    rdk_device_info.insert(String::from("firmwareversion"), String::from("Unknown-FWVersion"));
-                }
-            },
-        };
-        rdk_device_info
-    };
-}
-
-// Parameter: propertyname: The property to get the value of.
-// Returns the value of the property on success else DabError.
-pub fn get_rdk_device_info(propertyname: &str) -> Result<String, DabError> {
-    match RDK_DEVICE_INFO.get(propertyname) {
-        Some(val) => Ok(val.clone()),
-        None => {
-            let error_message = DabError::Err500(format!("No match for property {propertyname}."));
-            return Err(error_message);
-        }
-    }
-}
-
-pub fn get_ip_address() -> String {
-    unsafe { DEVICE_ADDRESS.clone() }
-}
-
-pub fn get_rdk_keys() -> Vec<String> {
-    RDK_KEYMAP
-        .keys()
-        .map(|k| k.to_owned().to_string())
-        .collect()
-}
-
-pub fn get_keycode(keyname: String) -> Option<&'static u16> {
-    RDK_KEYMAP.get(&keyname)
-}
 
 pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
     match mode.as_str() {
@@ -589,7 +687,6 @@ pub fn rdk_sound_mode_to_dab(mode: &String) -> Option<AudioOutputMode> {
 }
 
 // Telemetry operations
-
 pub fn get_device_memory() -> Result<u32, DabError> {
     // Both properties are in bytes; convert to KB for DAB.
     let free_ram_bytes = get_thunder_property("DeviceInfo.systeminfo", "freeram")?;
@@ -659,88 +756,4 @@ pub fn get_thunder_property(method_name: &str, key_name: &str) -> Result<String,
         },
         _ => Err(DabError::Err500(format!("Unsupported type for key '{}' in response.", key_name))),
     }
-}
-
-// ############################### APP Lifecycle Time Configs ###############################
-
-type TimeoutMap = HashMap<String, u64>;
-type LifecycleTimeouts = HashMap<String, TimeoutMap>;
-
-lazy_static! {
-    static ref APP_LIFECYCLE_TIMEOUTS: LifecycleTimeouts = {
-        let mut app_lifecycle_timeouts = LifecycleTimeouts::new();
-
-        app_lifecycle_timeouts.insert("youtube".to_string(), {
-            let mut timeouts = TimeoutMap::new();
-            timeouts.insert("cold_launch_timeout_ms".to_string(), 6000);
-            timeouts.insert("resume_launch_timeout_ms".to_string(), 3000);
-            timeouts.insert("exit_to_destroy_timeout_ms".to_string(), 2500);
-            timeouts.insert("exit_to_background_timeout_ms".to_string(), 2000);
-            timeouts
-        });
-
-        match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
-            /* File Format Reference:
-                {
-                    "youtube": {
-                        "cold_launch_timeout_ms": 6000,
-                        "resume_launch_timeout_ms": 3000,
-                        "exit_to_destroy_timeout_ms": 2500,
-                        "exit_to_background_timeout_ms": 2000
-                    },
-                    "netflix": {
-                        "cold_launch_timeout_ms": 6000,
-                        "resume_launch_timeout_ms": 3000,
-                        "exit_to_destroy_timeout_ms": 2500,
-                        "exit_to_background_timeout_ms": 2000
-                    }
-                }
-            */
-            Ok(json_file) => {
-                match serde_json::from_str::<HashMap<String, HashMap<String, u64>>>(&json_file) {
-                    Ok(app_lifecycle_config) => {
-                        for (app_id, timeout_map) in app_lifecycle_config {
-                            if app_id == "youtube" || app_id == "uk.co.bbc.iplayer" || app_id == "netflix" || app_id == "primevideo" {
-                                app_lifecycle_timeouts.insert(app_id, timeout_map);
-                            }
-                        }
-                        println!("Imported platform specified app lifetime configuration file also.");
-                    }
-                    Err(e) => {
-                        println!("Failed to parse JSON: {} from 'dab_platform_app_lifecycle.json'.", e);
-                    }
-                }
-            }
-            Err(_) => {
-                println!("Using default values for app lifecycle timeouts.");
-            }
-        }
-
-        app_lifecycle_timeouts
-    };
-}
-
-// Function to get lifecycle timeout for an app. After plugin state change how long App implementation/SDK takes to complete the action.
-// Parameters: app_name: The app name (lowercase) to get the timeout for, timeout_type: The type of timeout to get.
-// Returns the timeout in milliseconds on success else default 2500.
-pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> {
-    APP_LIFECYCLE_TIMEOUTS
-        .get(app_name)
-        .and_then(|timeouts| timeouts.get(timeout_type))
-        .cloned()
-        .or_else(|| Some(2500))
-}
-
-pub fn get_supported_languages() -> Vec<String> {
-    SETTINGS
-        .supported_languages
-        .clone()
-        .unwrap_or_else(|| vec![String::from("en-US")])
-}
-
-pub fn get_audio_volume_range() -> AudioVolume {
-    SETTINGS
-        .audio_volume_range
-        .clone()
-        .unwrap_or_else(|| AudioVolume { min: 0, max: 100 })
 }
