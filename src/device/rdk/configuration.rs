@@ -23,7 +23,7 @@ struct ConfigurationFileSettings {
     audio_volume_range: Option<AudioVolume>
 }
 
-struct DeviceSettings {
+struct Configuration {
     device_address: String,
     debug: bool,
     rdk_device_id: LazyLock<String>,
@@ -32,9 +32,9 @@ struct DeviceSettings {
     app_lifecycle_timeouts: LazyLock<AppTimeoutMap>,
     configuration_file_settings: LazyLock<ConfigurationFileSettings>
 }
-impl DeviceSettings {
+impl Configuration {
     fn new(device_ip: &str, debug: bool) -> Self {
-        DeviceSettings {
+        Configuration {
             device_address: device_ip.to_string(),
             debug: debug,
             rdk_device_id: LazyLock::new(||{
@@ -55,9 +55,9 @@ impl DeviceSettings {
         }
     }
 }
-static DEVICE_SETTINGS: OnceLock<DeviceSettings> = OnceLock::new();
+static DEVICE_SETTINGS: OnceLock<Configuration> = OnceLock::new();
 
-fn get_device_settings() -> &'static DeviceSettings {
+fn get_device_settings() -> &'static Configuration {
     DEVICE_SETTINGS.get().expect("Device Settings accessed but not initialized")
 }
 
@@ -132,7 +132,7 @@ pub fn get_audio_volume_range() -> AudioVolume {
 }
 
 pub fn init(device_ip: &str, debug: bool) {
-    let settings = DeviceSettings::new(device_ip, debug);
+    let settings = Configuration::new(device_ip, debug);
 
     if DEVICE_SETTINGS.set(settings).is_err() {
         panic!("Settings already initialized!");
