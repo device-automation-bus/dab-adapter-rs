@@ -1,7 +1,7 @@
 use super::voice_functions::sendVoiceCommand;
 use crate::dab::structs::DabError;
 use crate::dab::structs::SendAudioRequest;
-use crate::device::rdk::interface::http_download;
+use crate::device::rdk::connectivity::http::http_download;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]

@@ -2,7 +2,7 @@ use crate::dab::structs::Application;
 use crate::dab::structs::ApplicationListRequest;
 use crate::dab::structs::DabError;
 use crate::dab::structs::ListApplicationsResponse;
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::connectivity::http::http_post;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]

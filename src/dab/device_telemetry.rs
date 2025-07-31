@@ -4,8 +4,8 @@ use crate::dab::structs::StartDeviceTelemetryResponse;
 use crate::dab::structs::StopDeviceTelemetryRequest;
 use crate::dab::structs::StopDeviceTelemetryResponse;
 use crate::dab::{mqtt_client::MqttMessage, MqttClient, TelemetryMessage};
-use crate::hw_specific::interface::get_device_memory;
-use crate::hw_specific::interface::get_device_cpu;
+use crate::hw_specific::connectivity::rdk::get_device_memory;
+use crate::hw_specific::connectivity::rdk::get_device_cpu;
 
 use std::{
     sync::{Arc, Mutex, Condvar},

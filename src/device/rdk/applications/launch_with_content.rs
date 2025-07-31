@@ -5,7 +5,7 @@ use crate::device::rdk::applications::launch::RdkRequest;
 use crate::device::rdk::applications::launch::send_rdkshell_launch_request;
 use crate::device::rdk::applications::get_state::AppState;
 use crate::device::rdk::applications::get_state::get_app_state;
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::connectivity::http::http_post;
 use crate::hw_specific::applications::launch::wait_till_app_starts;
 use serde_json::json;
 use urlencoding::decode;

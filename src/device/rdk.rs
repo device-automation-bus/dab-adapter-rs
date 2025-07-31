@@ -8,3 +8,4 @@ pub mod output;
 pub mod system;
 pub mod version;
 pub mod voice;
+pub mod connectivity;
