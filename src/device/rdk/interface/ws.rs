@@ -1,5 +1,5 @@
 use crate::dab::structs::DabError;
-use crate::hw_specific::interface::get_ip_address;
+use crate::hw_specific::configuration::get_ip_address;
 use futures_util::stream::StreamExt;
 use futures_util::SinkExt;
 use serde_json::Value;

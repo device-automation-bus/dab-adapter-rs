@@ -1,8 +1,8 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
-use crate::device::rdk::connectivity::rdk::rdk_request;
-use crate::device::rdk::connectivity::rdk::RdkResponse;
+use crate::device::rdk::interface::rdk::rdk_request;
+use crate::device::rdk::interface::rdk::RdkResponse;
 use crate::hw_specific::applications::launch::get_visibility;
 use serde::Deserialize;
 

@@ -1,5 +1,5 @@
 use crate::dab::structs::{AudioOutputMode, DabError};
-use crate::hw_specific::connectivity::http::http_post;
+use crate::hw_specific::interface::http::http_post;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;

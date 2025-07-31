@@ -8,13 +8,13 @@ use crate::dab::structs::GetSystemSettingsRequest;
 use crate::dab::structs::GetSystemSettingsResponse;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
-use crate::device::rdk::connectivity::rdk::get_thunder_property;
-use crate::device::rdk::connectivity::rdk::rdk_request;
-use crate::device::rdk::connectivity::rdk::rdk_request_with_params;
-use crate::device::rdk::connectivity::rdk::rdk_sound_mode_to_dab;
-use crate::device::rdk::connectivity::rdk::RdkResponse;
-use crate::hw_specific::connectivity::rdk::get_service_state;
-use crate::hw_specific::connectivity::rdk::service_activate;
+use crate::device::rdk::interface::rdk::get_thunder_property;
+use crate::device::rdk::interface::rdk::rdk_request;
+use crate::device::rdk::interface::rdk::rdk_request_with_params;
+use crate::device::rdk::interface::rdk::rdk_sound_mode_to_dab;
+use crate::device::rdk::interface::rdk::RdkResponse;
+use crate::hw_specific::interface::rdk::get_service_state;
+use crate::hw_specific::interface::rdk::service_activate;
 use serde::{Deserialize, Serialize};
 
 pub fn get_rdk_language() -> Result<String, DabError> {
