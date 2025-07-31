@@ -1,8 +1,8 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::LongKeyPressRequest;
 use crate::dab::structs::LongKeyPressResponse;
-use crate::device::rdk::interface::get_keycode;
-use crate::device::rdk::connectivity::http::http_post;
+use crate::device::rdk::configuration::get_keycode;
+use crate::device::rdk::interface::http::http_post;
 use serde::{Deserialize, Serialize};
 use serde_json::{self, Value};
 use std::thread;

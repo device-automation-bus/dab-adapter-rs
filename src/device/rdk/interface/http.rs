@@ -1,7 +1,7 @@
 use std::{fs::File, io::Write};
 
 use surf::Client;
-use crate::{dab::structs::DabError, hw_specific::interface::{get_ip_address, get_is_debug}};
+use crate::{dab::structs::DabError, hw_specific::configuration::{get_ip_address, get_is_debug}};
 use futures::executor::block_on;
 
 pub fn http_download(url: String) -> Result<(), DabError> {

@@ -124,7 +124,7 @@ fn call_function(json_str: String, request_type: RequestTypes) -> Result<String,
 
 pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     // Get the device ID
-    let device_id = match hw_specific::interface::get_device_id() {
+    let device_id = match hw_specific::configuration::get_device_id() {
         Ok(id) => id,
         Err(_) => {
             println!("RDK: Error getting device ID");
@@ -147,7 +147,7 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     let now = SystemTime::now();
     let unix_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
-    let ip_address = hw_specific::interface::get_ip_address();
+    let ip_address = hw_specific::configuration::get_ip_address();
 
     let payload = serde_json::to_string(&Messages {
         timestamp: unix_time,

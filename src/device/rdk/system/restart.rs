@@ -1,7 +1,7 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::RestartRequest;
 use crate::dab::structs::RestartResponse;
-use crate::device::rdk::connectivity::http::http_post;
+use crate::device::rdk::interface::http::http_post;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]

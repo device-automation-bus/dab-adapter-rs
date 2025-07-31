@@ -1,8 +1,8 @@
 use crate::dab::structs::DabError;
-use crate::device::rdk::connectivity::http::http_post;
-use crate::device::rdk::connectivity::rdk::RdkResponseSimple;
-use crate::device::rdk::connectivity::ws::{ws_close, ws_open, ws_receive, ws_send};
-use crate::hw_specific::connectivity::rdk::rdk_request_with_params;
+use crate::device::rdk::interface::http::http_post;
+use crate::device::rdk::interface::rdk::RdkResponseSimple;
+use crate::device::rdk::interface::ws::{ws_close, ws_open, ws_receive, ws_send};
+use crate::hw_specific::interface::rdk::rdk_request_with_params;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{thread, time};
