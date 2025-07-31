@@ -4,8 +4,8 @@ use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::SetSystemSettingsRequest;
-use crate::device::rdk::interface::rdk_request_with_params;
-use crate::device::rdk::interface::RdkResponseSimple;
+use crate::device::rdk::connectivity::rdk::rdk_request_with_params;
+use crate::device::rdk::connectivity::rdk::RdkResponseSimple;
 
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;

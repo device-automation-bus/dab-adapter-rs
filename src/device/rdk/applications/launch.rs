@@ -3,7 +3,7 @@ use crate::dab::structs::LaunchApplicationRequest;
 use crate::device::rdk::applications::get_state::AppState;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::connectivity::http::http_post;
 use crate::device::rdk::interface::get_lifecycle_timeout;
 use crate::device::rdk::system::settings::get::get_rdk_language;
 use serde::{Deserialize, Serialize};
