@@ -1,26 +1,26 @@
 use crate::dab::structs::AudioVolume;
 use crate::dab::structs::DabError;
+use crate::hw_specific::interface::rdk::{get_device_info, get_rdk_device_id};
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::Read;
 use std::sync::LazyLock;
 use std::sync::OnceLock;
-use std::fs::File;
-use crate::hw_specific::interface::rdk::{get_rdk_device_id, get_device_info};
 
 #[derive(Debug, Clone, Default, Deserialize)]
 struct AppTimeouts {
     cold_launch_timeout_ms: u64,
     resume_launch_timeout_ms: u64,
     exit_to_destroy_timeout_ms: u64,
-    exit_to_background_timeout_ms: u64
+    exit_to_background_timeout_ms: u64,
 }
 type AppTimeoutMap = HashMap<String, AppTimeouts>;
 
 #[derive(Deserialize, Debug)]
 struct ConfigurationFileSettings {
     supported_languages: Option<Vec<String>>,
-    audio_volume_range: Option<AudioVolume>
+    audio_volume_range: Option<AudioVolume>,
 }
 
 struct Configuration {
@@ -30,35 +30,27 @@ struct Configuration {
     keymap: LazyLock<HashMap<String, u16>>,
     rdk_device_info: LazyLock<HashMap<String, String>>,
     app_lifecycle_timeouts: LazyLock<AppTimeoutMap>,
-    configuration_file_settings: LazyLock<ConfigurationFileSettings>
+    configuration_file_settings: LazyLock<ConfigurationFileSettings>,
 }
 impl Configuration {
     fn new(device_ip: &str, debug: bool) -> Self {
         Configuration {
             device_address: device_ip.to_string(),
             debug: debug,
-            rdk_device_id: LazyLock::new(||{
-                get_rdk_device_id().unwrap()
-            }),
-            keymap: LazyLock::new(||{
-                get_keymap()
-            }),
-            rdk_device_info: LazyLock::new(||{
-                get_device_info()
-            }),
-            app_lifecycle_timeouts: LazyLock::new(||{
-                get_app_timeouts()
-            }),
-            configuration_file_settings: LazyLock::new(||{
-                get_configuration_file_settings()
-            }),
+            rdk_device_id: LazyLock::new(|| get_rdk_device_id().unwrap()),
+            keymap: LazyLock::new(|| get_keymap()),
+            rdk_device_info: LazyLock::new(|| get_device_info()),
+            app_lifecycle_timeouts: LazyLock::new(|| get_app_timeouts()),
+            configuration_file_settings: LazyLock::new(|| get_configuration_file_settings()),
         }
     }
 }
 static DEVICE_SETTINGS: OnceLock<Configuration> = OnceLock::new();
 
 fn get_device_settings() -> &'static Configuration {
-    DEVICE_SETTINGS.get().expect("Device Settings accessed but not initialized")
+    DEVICE_SETTINGS
+        .get()
+        .expect("Device Settings accessed but not initialized")
 }
 
 pub fn get_device_id() -> Result<String, DabError> {
@@ -103,16 +95,16 @@ pub fn get_rdk_device_info(propertyname: &str) -> Result<String, DabError> {
 pub fn get_lifecycle_timeout(app_name: &str, timeout_type: &str) -> Option<u64> {
     let timeouts_map = &get_device_settings().app_lifecycle_timeouts;
 
-    timeouts_map.get(app_name).and_then(|timeouts| {
-        match timeout_type {
+    timeouts_map
+        .get(app_name)
+        .and_then(|timeouts| match timeout_type {
             "cold_launch_timeout_ms" => Some(timeouts.cold_launch_timeout_ms),
             "resume_launch_timeout_ms" => Some(timeouts.resume_launch_timeout_ms),
             "exit_to_destroy_timeout_ms" => Some(timeouts.exit_to_destroy_timeout_ms),
             "exit_to_background_timeout_ms" => Some(timeouts.exit_to_background_timeout_ms),
-            _ => None
-        }
-    }).or(Some(2500))
-
+            _ => None,
+        })
+        .or(Some(2500))
 }
 
 pub fn get_supported_languages() -> Vec<String> {
@@ -140,10 +132,22 @@ pub fn init(device_ip: &str, debug: bool) {
 
     if debug {
         for (app, timeouts) in get_device_settings().app_lifecycle_timeouts.iter() {
-            println!("{:<15} - {:<30} = {:>5}ms.", app, "cold_launch_timeout_ms", timeouts.cold_launch_timeout_ms);
-            println!("{:<15} - {:<30} = {:>5}ms.", app, "resume_launch_timeout_ms", timeouts.resume_launch_timeout_ms);
-            println!("{:<15} - {:<30} = {:>5}ms.", app, "exit_to_destroy_timeout_ms", timeouts.exit_to_destroy_timeout_ms);
-            println!("{:<15} - {:<30} = {:>5}ms.", app, "exit_to_background_timeout_ms", timeouts.exit_to_background_timeout_ms);
+            println!(
+                "{:<15} - {:<30} = {:>5}ms.",
+                app, "cold_launch_timeout_ms", timeouts.cold_launch_timeout_ms
+            );
+            println!(
+                "{:<15} - {:<30} = {:>5}ms.",
+                app, "resume_launch_timeout_ms", timeouts.resume_launch_timeout_ms
+            );
+            println!(
+                "{:<15} - {:<30} = {:>5}ms.",
+                app, "exit_to_destroy_timeout_ms", timeouts.exit_to_destroy_timeout_ms
+            );
+            println!(
+                "{:<15} - {:<30} = {:>5}ms.",
+                app, "exit_to_background_timeout_ms", timeouts.exit_to_background_timeout_ms
+            );
         }
     }
 }
@@ -151,51 +155,58 @@ pub fn init(device_ip: &str, debug: bool) {
 fn get_configuration_file_settings() -> ConfigurationFileSettings {
     let config_path = "/etc/dab/settings.json";
 
-        if let Ok(json_file) = read_platform_config_json(config_path) {
-            match serde_json::from_str::<ConfigurationFileSettings>(&json_file) {
-                Ok(json_object) => {
-                    println!("Loaded settings: {:?} from: {}", json_object, config_path);
-                    return json_object
-                }
-                Err(error) => {
-                    eprintln!("Error while parsing {}: {}", config_path, error);
-                }
+    if let Ok(json_file) = read_platform_config_json(config_path) {
+        match serde_json::from_str::<ConfigurationFileSettings>(&json_file) {
+            Ok(json_object) => {
+                println!("Loaded settings: {:?} from: {}", json_object, config_path);
+                return json_object;
+            }
+            Err(error) => {
+                eprintln!("Error while parsing {}: {}", config_path, error);
             }
         }
+    }
 
-        println!("Using default settings.");
+    println!("Using default settings.");
     ConfigurationFileSettings {
         supported_languages: None,
-        audio_volume_range: None
+        audio_volume_range: None,
     }
 }
 
 fn get_app_timeouts() -> AppTimeoutMap {
     let mut map = AppTimeoutMap::new();
 
-    map.insert("youtube".to_string(), AppTimeouts {
-        cold_launch_timeout_ms: 6000,
-        resume_launch_timeout_ms: 3000,
-        exit_to_destroy_timeout_ms: 2500,
-        exit_to_background_timeout_ms: 2000,
-    });
+    map.insert(
+        "youtube".to_string(),
+        AppTimeouts {
+            cold_launch_timeout_ms: 6000,
+            resume_launch_timeout_ms: 3000,
+            exit_to_destroy_timeout_ms: 2500,
+            exit_to_background_timeout_ms: 2000,
+        },
+    );
 
     match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
-        Ok(json_file) => {
-            match serde_json::from_str::<HashMap<String, AppTimeouts>>(&json_file) {
-                Ok(parsed) => {
-                    for (app, timeouts) in parsed {
-                        if matches!(app.as_str(), "youtube" | "netflix" | "primevideo" | "uk.co.bbc.iplayer") {
-                            map.insert(app, timeouts);
-                        }
+        Ok(json_file) => match serde_json::from_str::<HashMap<String, AppTimeouts>>(&json_file) {
+            Ok(parsed) => {
+                for (app, timeouts) in parsed {
+                    if matches!(
+                        app.as_str(),
+                        "youtube" | "netflix" | "primevideo" | "uk.co.bbc.iplayer"
+                    ) {
+                        map.insert(app, timeouts);
                     }
-                    println!("Imported platform specified app lifetime configuration file also.");
                 }
-                Err(e) => {
-                    println!("Failed to parse JSON: {} from 'dab_platform_app_lifecycle.json'.", e);
-                }
+                println!("Imported platform specified app lifetime configuration file also.");
             }
-        }
+            Err(e) => {
+                println!(
+                    "Failed to parse JSON: {} from 'dab_platform_app_lifecycle.json'.",
+                    e
+                );
+            }
+        },
         Err(_) => {
             println!("Using default values for app lifecycle timeouts.");
         }
@@ -233,73 +244,76 @@ fn get_app_timeouts() -> AppTimeoutMap {
     }
 */
 fn get_keymap() -> HashMap<String, u16> {
-        let mut keycode_map = HashMap::new();
-        let mut keymap_file_found = false;
+    let mut keycode_map = HashMap::new();
+    let mut keymap_file_found = false;
 
-        if let Ok(json_file) = read_platform_config_json("/etc/dab/keymap.json") {
-            keymap_file_found = true;
-            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                Ok(new_keymap) => {
-                    for (key, value) in new_keymap {
-                        keycode_map.insert(key, value);
-                    }
-                    println!("Loaded keymap from /etc/dab/keymap.json");
-                },
-                Err(error) => {
-                    eprintln!("Error while parsing /etc/dab/keymap.json {}", error);
+    if let Ok(json_file) = read_platform_config_json("/etc/dab/keymap.json") {
+        keymap_file_found = true;
+        match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+            Ok(new_keymap) => {
+                for (key, value) in new_keymap {
+                    keycode_map.insert(key, value);
                 }
+                println!("Loaded keymap from /etc/dab/keymap.json");
+            }
+            Err(error) => {
+                eprintln!("Error while parsing /etc/dab/keymap.json {}", error);
             }
         }
+    }
 
-        if keymap_file_found == false {
-            keycode_map.insert(String::from("KEY_POWER"),116);
-            keycode_map.insert(String::from("KEY_HOME"),36);
-            keycode_map.insert(String::from("KEY_VOLUME_UP"),175);
-            keycode_map.insert(String::from("KEY_VOLUME_DOWN"),174);
-            keycode_map.insert(String::from("KEY_MUTE"),173);
-            keycode_map.insert(String::from("KEY_UP"),38);
-            keycode_map.insert(String::from("KEY_PAGE_UP"),33);
-            keycode_map.insert(String::from("KEY_PAGE_DOWN"),34);
-            keycode_map.insert(String::from("KEY_RIGHT"),39);
-            keycode_map.insert(String::from("KEY_DOWN"),40);
-            keycode_map.insert(String::from("KEY_LEFT"),37);
-            keycode_map.insert(String::from("KEY_ENTER"),13);
-            keycode_map.insert(String::from("KEY_BACK"),8);
-            keycode_map.insert(String::from("KEY_PLAY"),13);
-            keycode_map.insert(String::from("KEY_PLAY_PAUSE"),227);
-            keycode_map.insert(String::from("KEY_PAUSE"),19);
-            keycode_map.insert(String::from("KEY_REWIND"),224);
-            keycode_map.insert(String::from("KEY_FAST_FORWARD"),223);
-            keycode_map.insert(String::from("KEY_SKIP_REWIND"),34);
-            keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"),33);
-            keycode_map.insert(String::from("KEY_0"),48);
-            keycode_map.insert(String::from("KEY_1"),49);
-            keycode_map.insert(String::from("KEY_2"),50);
-            keycode_map.insert(String::from("KEY_3"),51);
-            keycode_map.insert(String::from("KEY_4"),52);
-            keycode_map.insert(String::from("KEY_5"),53);
-            keycode_map.insert(String::from("KEY_6"),54);
-            keycode_map.insert(String::from("KEY_7"),55);
-            keycode_map.insert(String::from("KEY_8"),56);
-            keycode_map.insert(String::from("KEY_9"),57);
+    if keymap_file_found == false {
+        keycode_map.insert(String::from("KEY_POWER"), 116);
+        keycode_map.insert(String::from("KEY_HOME"), 36);
+        keycode_map.insert(String::from("KEY_VOLUME_UP"), 175);
+        keycode_map.insert(String::from("KEY_VOLUME_DOWN"), 174);
+        keycode_map.insert(String::from("KEY_MUTE"), 173);
+        keycode_map.insert(String::from("KEY_UP"), 38);
+        keycode_map.insert(String::from("KEY_PAGE_UP"), 33);
+        keycode_map.insert(String::from("KEY_PAGE_DOWN"), 34);
+        keycode_map.insert(String::from("KEY_RIGHT"), 39);
+        keycode_map.insert(String::from("KEY_DOWN"), 40);
+        keycode_map.insert(String::from("KEY_LEFT"), 37);
+        keycode_map.insert(String::from("KEY_ENTER"), 13);
+        keycode_map.insert(String::from("KEY_BACK"), 8);
+        keycode_map.insert(String::from("KEY_PLAY"), 13);
+        keycode_map.insert(String::from("KEY_PLAY_PAUSE"), 227);
+        keycode_map.insert(String::from("KEY_PAUSE"), 19);
+        keycode_map.insert(String::from("KEY_REWIND"), 224);
+        keycode_map.insert(String::from("KEY_FAST_FORWARD"), 223);
+        keycode_map.insert(String::from("KEY_SKIP_REWIND"), 34);
+        keycode_map.insert(String::from("KEY_SKIP_FAST_FORWARD"), 33);
+        keycode_map.insert(String::from("KEY_0"), 48);
+        keycode_map.insert(String::from("KEY_1"), 49);
+        keycode_map.insert(String::from("KEY_2"), 50);
+        keycode_map.insert(String::from("KEY_3"), 51);
+        keycode_map.insert(String::from("KEY_4"), 52);
+        keycode_map.insert(String::from("KEY_5"), 53);
+        keycode_map.insert(String::from("KEY_6"), 54);
+        keycode_map.insert(String::from("KEY_7"), 55);
+        keycode_map.insert(String::from("KEY_8"), 56);
+        keycode_map.insert(String::from("KEY_9"), 57);
 
-            println!("Default keymap assigned");
-        }
+        println!("Default keymap assigned");
+    }
 
-        if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
-            match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
-                Ok(new_keymap) => {
-                    for (key, value) in new_keymap {
-                        keycode_map.insert(key, value);
-                    }
-                    println!("Added keymap from /opt/dab_platform_keymap.json");
-                },
-                Err(error) => {
-                    eprintln!("Error while parsing /opt/dab_platform_keymap.json {}", error);
+    if let Ok(json_file) = read_platform_config_json("/opt/dab_platform_keymap.json") {
+        match serde_json::from_str::<HashMap<String, u16>>(&json_file) {
+            Ok(new_keymap) => {
+                for (key, value) in new_keymap {
+                    keycode_map.insert(key, value);
                 }
+                println!("Added keymap from /opt/dab_platform_keymap.json");
+            }
+            Err(error) => {
+                eprintln!(
+                    "Error while parsing /opt/dab_platform_keymap.json {}",
+                    error
+                );
             }
         }
-        keycode_map
+    }
+    keycode_map
 }
 
 // Read platform override JSON configs from file
