@@ -1,8 +1,11 @@
 use std::{fs::File, io::Write};
 
-use surf::Client;
-use crate::{dab::structs::DabError, hw_specific::configuration::{get_ip_address, get_is_debug}};
+use crate::{
+    dab::structs::DabError,
+    hw_specific::configuration::{get_ip_address, get_is_debug},
+};
 use futures::executor::block_on;
+use surf::Client;
 
 pub fn http_download(url: String) -> Result<(), DabError> {
     let client = Client::new();
@@ -35,13 +38,11 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
             .header("Content-Type", "application/json")
             .await
         {
-            Ok(mut response) => {
-                match response.body_string().await {
-                    Ok(body) => Ok(body),
-                    Err(e) => Err(format!("Error while getting the body: {}",e)),
-                }
-            }
-            Err(e) => Err(format!("Error while sending the request: {}",e)),
+            Ok(mut response) => match response.body_string().await {
+                Ok(body) => Ok(body),
+                Err(e) => Err(format!("Error while getting the body: {}", e)),
+            },
+            Err(e) => Err(format!("Error while sending the request: {}", e)),
         }
     });
 
@@ -57,7 +58,6 @@ pub fn http_post(json_string: String) -> Result<String, DabError> {
         }
         Err(err) => {
             let str = err.to_string();
-
 
             if get_is_debug() {
                 println!("RDK error: {}", str);
