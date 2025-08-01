@@ -3,7 +3,15 @@ use crate::hw_specific::interface::http::http_post;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::{thread, time};
+
+
+static JSONRPC_ID: AtomicI32 = AtomicI32::new(1);
+
+fn next_id() -> i32 {
+    JSONRPC_ID.fetch_add(1, Ordering::Relaxed)
+}
 
 #[allow(dead_code)]
 #[derive(Deserialize)]
@@ -48,14 +56,7 @@ fn rdk_request_impl<P: Serialize, R: DeserializeOwned>(
         params: Option<P>,
     }
 
-    static mut JSONRPC_ID: i32 = 1;
-
-    let id;
-
-    unsafe {
-        id = JSONRPC_ID;
-        JSONRPC_ID += 1;
-    }
+    let id = next_id();
 
     let request = RdkRequest {
         jsonrpc: "2.0".into(),
