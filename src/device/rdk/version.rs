@@ -10,6 +10,8 @@ pub fn process(_dab_request: VersionRequest) -> Result<String, DabError> {
     // *** Fill in the fields of the struct Version here ***
 
     ResponseOperator.versions.push("2.0".to_string());
+    #[cfg(feature = "2_1")]
+    ResponseOperator.versions.push("2.1".to_string());
 
     // *******************************************************************
     Ok(serde_json::to_string(&ResponseOperator).unwrap())

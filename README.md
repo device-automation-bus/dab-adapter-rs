@@ -31,6 +31,15 @@ $ scp -O -v -oHostKeyAlgorithms=+ssh-rsa target/armv7-unknown-linux-gnueabihf/re
 
 Reboot the RDK device. If the RDK image was previously built with `dab-adapter`, the systemd service will auto-start the application after boot.
 
+**Development on macOS with M-series SOC**:
+Disable SSL for `paho` dependency by changing features from `vendored-ssl` to `bundled`.
+
+```toml
+paho-mqtt = { version = "0.12", default-features = false, features = ["bundled"] }
+```
+
+Also make sure `docker-desktop` is running.
+
 ## For Development/Testing - Option 2: Build on a PC and Running on a PC ##
 
 Since this software uses Cargo package manager, the building process is straightforward:
@@ -95,6 +104,10 @@ It must be in a form of an array of RFC 5646 language tags. If this field is not
 2. `audio_volume_range`
 It is a object with `min` and `max` fields. This is used to indicate possible audio volume range. If this field is not provided, or if the deserialization of settings fails, `audio_volume_range` falls back to `{min: 0, max: 100}`.
 
+
+#### Features ####
+
+Since DAB2.1 specification and implementation is not yet ready, a feature flag has been introduced to enable development and testing. Pass `--features 2_1` to a `cross` command to enable DAB2.1 experimental features.
 
 ## Device ID ##
 

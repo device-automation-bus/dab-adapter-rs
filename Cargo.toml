@@ -41,3 +41,6 @@ futures-util = "0.3"
 [build-dependencies]
 rustfmt = "0.10.0"
 vergen = { version = "=6.0.2", default-features = false, features = ["build", "git"] }
+
+[features]
+2_1 = []
