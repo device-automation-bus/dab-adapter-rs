@@ -46,9 +46,9 @@ pub fn process(_dab_request: OperationsListRequest) -> Result<String, DabError> 
     ResponseOperator
         .operations
         .push("input/key-press".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("input/long-key-press".to_string());
+    ResponseOperator
+        .operations
+        .push("input/long-key-press".to_string());
     ResponseOperator.operations.push("output/image".to_string());
     // ResponseOperator
     //     .operations
