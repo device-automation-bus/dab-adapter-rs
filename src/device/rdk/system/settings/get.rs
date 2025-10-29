@@ -18,17 +18,10 @@ use crate::hw_specific::interface::service_activate;
 use serde::{Deserialize, Serialize};
 
 pub fn get_rdk_language() -> Result<String, DabError> {
-    #[allow(dead_code)]
-    #[derive(Deserialize)]
-    struct GetUILanguage {
-        ui_language: String,
-        success: bool,
-    }
+    let rdkresponse: RdkResponse<String> =
+        rdk_request("org.rdk.UserSettings.getPresentationLanguage")?;
 
-    let rdkresponse: RdkResponse<GetUILanguage> =
-        rdk_request("org.rdk.UserPreferences.1.getUILanguage")?;
-
-    Ok(rdkresponse.result.ui_language)
+    Ok(rdkresponse.result)
 }
 
 fn get_frequency_from_displayinfo_framerate(
