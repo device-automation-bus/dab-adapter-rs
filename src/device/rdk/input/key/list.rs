@@ -1,7 +1,7 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::KeyList;
 use crate::dab::structs::KeyListRequest;
-use crate::device::rdk::interface::get_rdk_keys;
+use crate::device::rdk::configuration::get_rdk_keys;
 
 #[allow(non_snake_case)]
 #[allow(dead_code)]

@@ -1,6 +1,5 @@
 use crate::dab::structs::AudioOutputMode;
 use crate::dab::structs::AudioOutputSource;
-use crate::dab::structs::AudioVolume;
 use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::ListSystemSettingsRequest;
@@ -8,14 +7,14 @@ use crate::dab::structs::ListSystemSettingsResponse;
 use crate::dab::structs::MatchContentFrameRate;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::VideoInputSource;
-use crate::device::rdk::interface::rdk_request;
-use crate::device::rdk::interface::rdk_request_with_params;
-use crate::device::rdk::interface::rdk_sound_mode_to_dab;
-use crate::device::rdk::interface::service_is_available;
-use crate::device::rdk::interface::RdkResponse;
+use crate::device::rdk::interface::rdk::rdk_request;
+use crate::device::rdk::interface::rdk::rdk_request_with_params;
+use crate::device::rdk::interface::rdk::rdk_sound_mode_to_dab;
+use crate::device::rdk::interface::rdk::service_is_available;
+use crate::device::rdk::interface::rdk::RdkResponse;
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
-use crate::hw_specific::interface::get_audio_volume_range;
-use crate::hw_specific::interface::get_supported_languages;
+use crate::hw_specific::configuration::get_audio_volume_range;
+use crate::hw_specific::configuration::get_supported_languages;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 

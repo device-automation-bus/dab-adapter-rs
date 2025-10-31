@@ -5,7 +5,7 @@ use crate::device::rdk::applications::get_state::AppState;
 use crate::device::rdk::applications::get_state::get_app_state;
 use crate::device::rdk::applications::get_state::get_dab_app_state;
 use crate::device::rdk::applications::launch::{rdkshell_suspend, rdkshell_destroy};
-use crate::device::rdk::interface::get_lifecycle_timeout;
+use crate::device::rdk::configuration::get_lifecycle_timeout;
 use std::{thread, time};
 
 #[allow(non_snake_case)]

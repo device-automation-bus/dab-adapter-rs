@@ -1,8 +1,8 @@
 use crate::dab::structs::DabError;
 use crate::dab::structs::GetApplicationStateRequest;
 use crate::dab::structs::GetApplicationStateResponse;
-use crate::device::rdk::interface::rdk_request;
-use crate::device::rdk::interface::RdkResponse;
+use crate::device::rdk::interface::rdk::rdk_request;
+use crate::device::rdk::interface::rdk::RdkResponse;
 use crate::hw_specific::applications::launch::get_visibility;
 use serde::Deserialize;
 
@@ -97,10 +97,10 @@ pub fn get_app_state(callsign: &str) -> Result<AppState, DabError> {
                 },
                 _ => {
                     println!("Implement verification of: {} App state: {}",
-                        callsign.clone(), item.state.as_str());
+                        callsign, item.state.as_str());
                     return Err(DabError::Err500(
                         format!("RDKShell.getState; {} is in invalid state {}.",
-                            callsign.clone(), item.state.as_str()).to_string(),
+                            callsign, item.state.as_str()).to_string(),
                     ));
                 }
             }

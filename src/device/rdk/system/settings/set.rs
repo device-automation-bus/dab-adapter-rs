@@ -4,14 +4,14 @@ use crate::dab::structs::DabError;
 use crate::dab::structs::HdrOutputMode;
 use crate::dab::structs::OutputResolution;
 use crate::dab::structs::SetSystemSettingsRequest;
-use crate::device::rdk::interface::rdk_request_with_params;
-use crate::device::rdk::interface::RdkResponseSimple;
+use crate::device::rdk::interface::rdk::rdk_request_with_params;
+use crate::device::rdk::interface::rdk::RdkResponseSimple;
 
 use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;
 use crate::device::rdk::system::settings::list::get_rdk_hdr_settings;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
-use crate::hw_specific::interface::get_audio_volume_range;
+use crate::hw_specific::configuration::get_audio_volume_range;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 
 use serde::{Deserialize, Serialize};
