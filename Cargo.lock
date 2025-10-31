@@ -735,7 +735,7 @@ dependencies = [
 
 [[package]]
 name = "dab-adapter"
-version = "0.7.0"
+version = "0.8.0-dev"
 dependencies = [
  "async-std",
  "base64 0.21.7",
