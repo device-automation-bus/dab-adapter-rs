@@ -11,6 +11,7 @@ use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;
 use crate::device::rdk::system::settings::list::get_rdk_hdr_settings;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
+use crate::hw_specific::interface::RdkResponse;
 use crate::hw_specific::interface::get_audio_volume_range;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
 
@@ -21,16 +22,23 @@ use std::collections::HashMap;
 
 fn set_rdk_language(language: String) -> Result<(), DabError> {
     #[derive(Serialize)]
+    #[allow(non_snake_case)]
     struct Param {
-        ui_language: String,
+        presentationLanguage: String,
     }
 
-    let _rdkresponse: RdkResponseSimple = rdk_request_with_params(
-        "org.rdk.UserPreferences.1.setUILanguage",
+    let rdkresponse: RdkResponse<Option<String>> = rdk_request_with_params(
+        "org.rdk.UserSettings.setPresentationLanguage",
         Param {
-            ui_language: language,
+            presentationLanguage: language,
         },
     )?;
+
+    if let Some(msg) = rdkresponse.result {
+        return Err(DabError::Err500(
+            format!("Error from org.rdk.UserSettings.setPresentationLanguage {}", msg),
+        ));
+    }
 
     Ok(())
 }

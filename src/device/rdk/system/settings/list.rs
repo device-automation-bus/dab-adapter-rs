@@ -178,13 +178,6 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
     let mut ResponseOperator = ListSystemSettingsResponse::default();
     // *** Fill in the fields of the struct ListSystemSettings here ***
 
-    // // Return language tags defined in RFC 5646.
-    // /*
-    //     IMPORTANT NOTE: As defined on the org.rdk.UserPreferences plugin documentation
-    //     (https://rdkcentral.github.io/rdkservices/#/api/UserPreferencesPlugin):
-    //     "The language is written to the /opt/user_preferences.conf file on the device.
-    //     It is the responsibility of the client application to validate the language value and process
-    //     it if required. Any language string that is valid on the client can be set"
     ResponseOperator.language = get_supported_languages();
 
     ResponseOperator.outputResolution = get_rdk_resolutions()?;
