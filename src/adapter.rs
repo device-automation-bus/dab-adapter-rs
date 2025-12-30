@@ -83,7 +83,7 @@ pub fn main() {
     println!("DAB<->RDK Adapter ({:?} - {:?})", env!("VERGEN_BUILD_SEMVER"), env!("VERGEN_GIT_SHA_SHORT"));
     
     // Initialize the device
-    hw_specific::interface::init(&device_ip, debug);
+    hw_specific::configuration::init(&device_ip, debug);
 
     // Register the handlers
     let mut handlers: SharedMap = HashMap::new();

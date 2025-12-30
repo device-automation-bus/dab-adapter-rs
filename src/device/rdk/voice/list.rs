@@ -2,7 +2,7 @@ use crate::dab::structs::DabError;
 use crate::dab::structs::ListVoiceSystemsResponse;
 use crate::dab::structs::VoiceListRequest;
 use crate::dab::structs::VoiceSystem;
-use crate::device::rdk::interface::http_post;
+use crate::device::rdk::interface::http::http_post;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]

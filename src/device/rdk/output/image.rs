@@ -1,8 +1,8 @@
 use crate::dab::structs::CaptureScreenshotRequest;
 use crate::dab::structs::CaptureScreenshotResponse;
 use crate::dab::structs::DabError;
-use crate::device::rdk::interface::http_post;
-use crate::device::rdk::interface::{service_activate, get_service_state};
+use crate::device::rdk::interface::http::http_post;
+use crate::device::rdk::interface::rdk::{service_activate, get_service_state};
 use serde::{Deserialize, Serialize};
 
 use base64::{engine::general_purpose, Engine as _};
