@@ -21,8 +21,6 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-use super::get::get_rdk_tts;
-
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError> {
     #[allow(non_snake_case)]
     #[allow(dead_code)]
@@ -190,7 +188,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
 
     ResponseOperator.mute = true;
 
-    ResponseOperator.textToSpeech = get_rdk_tts()?;
+    ResponseOperator.textToSpeech = service_is_available("org.rdk.TextToSpeech")?;
 
     ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 
