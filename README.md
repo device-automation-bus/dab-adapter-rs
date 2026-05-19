@@ -23,13 +23,27 @@ $ cross build --target armv7-unknown-linux-gnueabihf --release
 
 The binary application will be the `target/armv7-unknown-linux-gnueabihf/release/dab-adapter` file.
 
-Copy the application to the RDK device.
+### Deploying to the RDK device ###
+
+First, check if the ssh connection:
 
 ```
-$ scp -O -v -oHostKeyAlgorithms=+ssh-rsa target/armv7-unknown-linux-gnueabihf/release/dab-adapter root@<rdk-device-ip>:/usr/bin/
+$ ssh root@<rdk-device-ip> pwd
+Simple dropbear SSH Service. Welcome to amlogic_accelerator...
+/home/root
 ```
 
-Reboot the RDK device. If the RDK image was previously built with `dab-adapter`, the systemd service will auto-start the application after boot.
+After this copy the binary to the device:
+
+```
+$ scp target/armv7-unknown-linux-gnueabihf/release/dab-adapter root@<rdk-device-ip>:/usr/bin/
+```
+
+Set the correct permissions and restart the service:
+
+```
+$ ssh root@<rdk-device-ip> "chmod 0755 /usr/bin/dab-adapter && systemctl restart dab-adapter"
+```
 
 **Development on macOS with M-series SOC**:
 Disable SSL for `paho` dependency by changing features from `vendored-ssl` to `bundled`.
@@ -56,7 +70,7 @@ $ cargo run -- -d <rdk-device-ip>
 
 **Note:** The voice operators will not be available when running dab-adapter on PC. To use the voice operators, run `dab-adapter` on a RDK device.
 
-## For Deployment ##
+## For Production ##
 
 Install [cargo bitbake](https://github.com/meta-rust/cargo-bitbake) and create a bitbake recipe and integrate it on Yocto build of RDK.
 
