@@ -366,6 +366,7 @@ pub struct ListSystemSettingsResponse {
 pub struct GetSystemSettingsRequest {}
 
 #[allow(non_snake_case)]
+#[skip_serializing_none]
 #[derive(Default, Serialize, Deserialize)]
 pub struct GetSystemSettingsResponse {
     pub language: String,
@@ -373,12 +374,12 @@ pub struct GetSystemSettingsResponse {
     pub memc: bool,
     pub cec: bool,
     pub lowLatencyMode: bool,
-    pub matchContentFrameRate: MatchContentFrameRate,
+    pub matchContentFrameRate: Option<MatchContentFrameRate>,
     pub hdrOutputMode: HdrOutputMode,
     pub pictureMode: PictureMode,
     pub audioOutputMode: AudioOutputMode,
     pub audioOutputSource: AudioOutputSource,
-    pub videoInputSource: VideoInputSource,
+    pub videoInputSource: Option<VideoInputSource>,
     pub audioVolume: u32,
     pub mute: bool,
     pub textToSpeech: bool,

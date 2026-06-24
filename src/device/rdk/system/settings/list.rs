@@ -204,7 +204,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
     ResponseOperator.audioVolume = get_audio_volume_range();
 
     ResponseOperator.matchContentFrameRate = vec![
-        MatchContentFrameRate::EnabledAlways,
+        // MatchContentFrameRate::EnabledAlways,
         // MatchContentFrameRate::EnabledSeamlessOnly,
         // MatchContentFrameRate::Disabled,
     ];
@@ -228,7 +228,7 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
         // VideoInputSource::HDMI4,
         // VideoInputSource::Composite,
         // VideoInputSource::Component,
-        VideoInputSource::Home,
+        // VideoInputSource::Home,
         // VideoInputSource::Cast,
     ];
 
