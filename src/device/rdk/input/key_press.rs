@@ -36,7 +36,6 @@ pub fn process(_dab_request: KeyPressRequest) -> Result<String, DabError> {
             let current_mute = get_rdk_mute().unwrap_or(false);
             let _ = set_rdk_mute(!current_mute);
         }
-        "KEY_FAST_FORWARD" => return Err(DabError::Err400("'KEY_FAST_FORWARD' not supported".to_string())),
         _ => {}
     }
 
