@@ -38,11 +38,49 @@ fn get_rdk_video_input_source() -> VideoInputSource {
         .unwrap_or(VideoInputSource::Home)
 }
 
+const DEFAULT_LANGUAGE: &str = "en-US";
+
 pub fn get_rdk_language() -> Result<String, DabError> {
     let rdkresponse: RdkResponse<String> =
         rdk_request("org.rdk.UserSettings.getPresentationLanguage")?;
 
-    Ok(rdkresponse.result)
+    if !rdkresponse.result.is_empty() {
+        return Ok(rdkresponse.result);
+    }
+
+    // Some images ship a settings UI that stores the language only in
+    // org.rdk.UserPreferences (ui_language in /opt/user_preferences.conf)
+    // without forwarding it to UserSettings, leaving presentationLanguage
+    // empty. Fall back to the UI language in that case. The fallback is
+    // best-effort: on any error return the default language.
+    #[derive(Deserialize)]
+    struct GetUILanguage {
+        ui_language: String,
+    }
+
+    match get_service_state("org.rdk.UserPreferences") {
+        Ok(state) => {
+            if state != "activated" {
+                if let Err(e) = service_activate("org.rdk.UserPreferences".to_string()) {
+                    println!("RDK error: {:?}", e);
+                    return Ok(DEFAULT_LANGUAGE.to_string());
+                }
+            }
+        }
+        Err(e) => {
+            println!("RDK error: {:?}", e);
+            return Ok(DEFAULT_LANGUAGE.to_string());
+        }
+    }
+
+    match rdk_request::<RdkResponse<GetUILanguage>>("org.rdk.UserPreferences.getUILanguage") {
+        Ok(uipref) if !uipref.result.ui_language.is_empty() => Ok(uipref.result.ui_language),
+        Ok(_) => Ok(DEFAULT_LANGUAGE.to_string()),
+        Err(e) => {
+            println!("RDK error: {:?}", e);
+            Ok(DEFAULT_LANGUAGE.to_string())
+        }
+    }
 }
 
 fn get_frequency_from_displayinfo_framerate(

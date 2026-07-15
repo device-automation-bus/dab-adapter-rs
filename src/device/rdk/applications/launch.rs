@@ -82,11 +82,19 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
             // Cold launch of app.
             let req_params = if is_cobalt {
                 let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
-                let language = get_rdk_language().map_err(|err|{
-                    eprintln!("Unable to retrieve RDK language.");
-                    err
-                })?;
-                let config = json!({"url": url, "language": language});
+                // The language is optional; do not abort the launch if the
+                // lookup fails, just launch without it.
+                let language = get_rdk_language().unwrap_or_else(|err| {
+                    eprintln!("Unable to retrieve RDK language: {:?}", err);
+                    String::new()
+                });
+                // An empty presentationLanguage would make the Cobalt plugin set
+                // LANG="" (C locale, navigator.language == "c"); omit it instead.
+                let config = if language.is_empty() {
+                    json!({"url": url})
+                } else {
+                    json!({"url": url, "language": language})
+                };
                 RDKShellParams {
                     callsign: _dab_request.appId.clone(),
                     r#type: "Cobalt".into(),
