@@ -1,7 +1,9 @@
 use crossbeam::channel::{self, Receiver, Sender};
 use paho_mqtt as mqtt;
 use paho_mqtt::properties::PropertyCode;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct MqttMessage {
@@ -11,11 +13,23 @@ pub struct MqttMessage {
     pub payload: String,
 }
 
+/// Why `receive()` did not return a message.
+pub enum RecvError {
+    /// The message was deliberately dropped (telemetry, our own broadcasts).
+    Ignored,
+    /// The broker connection dropped; the caller must call `reconnect()`.
+    Disconnected,
+    /// The message could not be handled (e.g. no ResponseTopic).
+    Failed(String),
+}
+
 #[derive(Clone)]
 pub struct MqttClient {
     paho_client: mqtt::Client,
     ipc_channel: (Sender<MqttMessage>, Receiver<MqttMessage>),
     paho_receiver: mqtt::Receiver<Option<mqtt::Message>>,
+    // Replayed after a reconnect: clean_start leaves no session on the broker.
+    subscriptions: Arc<Mutex<Vec<String>>>,
 }
 
 impl MqttClient {
@@ -33,9 +47,12 @@ impl MqttClient {
             .clean_start(true)
             .finalize();
 
-        // Connect and wait for it to complete or fail
-        if let Err(e) = paho_client.connect(conn_opts) {
+        // Keep retrying: on a cold boot the broker may not be up yet.
+        let mut delay = Duration::from_secs(1);
+        while let Err(e) = paho_client.connect(conn_opts.clone()) {
             println!("Error connecting: {:?}", e);
+            thread::sleep(delay);
+            delay = std::cmp::min(delay * 2, Duration::from_secs(30));
         }
 
         let paho_receiver = paho_client.start_consuming();
@@ -45,6 +62,7 @@ impl MqttClient {
             paho_client,
             ipc_channel,
             paho_receiver,
+            subscriptions: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -86,11 +104,30 @@ impl MqttClient {
         if let Err(e) = self.paho_client.subscribe(&topic, qos) {
             println!("Error subscribing to topic: {:?}", e);
         }
+        self.subscriptions.lock().unwrap().push(topic);
+    }
+    /// Reconnect to the broker and restore the subscriptions; blocks until connected.
+    pub fn reconnect(&mut self) {
+        println!("MQTT connection lost; reconnecting");
+        let mut delay = Duration::from_secs(1);
+        while let Err(e) = self.paho_client.reconnect() {
+            println!("Error reconnecting: {:?}", e);
+            thread::sleep(delay);
+            delay = std::cmp::min(delay * 2, Duration::from_secs(30));
+        }
+
+        let qos = 1;
+        for topic in self.subscriptions.lock().unwrap().iter() {
+            if let Err(e) = self.paho_client.subscribe(topic, qos) {
+                println!("Error resubscribing to topic: {:?}", e);
+            }
+        }
+        println!("Reconnected to the MQTT broker");
     }
     pub fn publish(&self, msg_tx: MqttMessage) {
         self.ipc_channel.0.send(msg_tx).unwrap();
     }
-    pub fn receive(&mut self) -> Result<MqttMessage, Option<String>> {
+    pub fn receive(&mut self) -> Result<MqttMessage, RecvError> {
         match self.paho_receiver.recv() {
             Ok(Some(packet)) => {
                 let function_topic = std::string::String::from(packet.topic());
@@ -98,10 +135,10 @@ impl MqttClient {
                 let operator = v.get(2).unwrap_or(&"");
                 // Ignore 'messages', 'device-telemetry/metrics', and 'app-telemetry/metrics/#' since this is a DAB adapter for device.
                 if operator == &"messages" {
-                    return Err(None);
+                    return Err(RecvError::Ignored);
                 } else if operator == &"device-telemetry" || operator == &"app-telemetry" {
                     if v.get(3).unwrap_or(&"") == &"metrics" {
-                        return Err(None);
+                        return Err(RecvError::Ignored);
                     }
                 }
 
@@ -128,11 +165,12 @@ impl MqttClient {
                         };
                         Ok(rx_msg)
                     }
-                    None => Err(Some("No ResponseTopic provided".to_string())),
+                    None => Err(RecvError::Failed("No ResponseTopic provided".to_string())),
                 }
             }
-            Ok(None) => Err(None),
-            Err(e) => Err(Some(e.to_string())),
+            // `start_consuming()` queues a `None` when the connection drops.
+            Ok(None) => Err(RecvError::Disconnected),
+            Err(e) => Err(RecvError::Failed(e.to_string())),
         }
     }
 }

@@ -20,6 +20,9 @@ pub enum RequestTypes {
     ApplicationExitRequest,
     DeviceInfoRequest,
     SystemRestartRequest,
+    SystemPowerModeGetRequest,
+    SystemPowerModeSetRequest,
+    SystemFactoryResetRequest,
     SystemSettingsListRequest,
     SystemSettingsGetRequest,
     SystemSettingsSetRequest,
@@ -429,6 +432,48 @@ pub struct RestartRequest {}
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
 pub struct RestartResponse {}
+
+#[allow(dead_code)]
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Debug)]
+pub enum PowerMode {
+    #[default]
+    Active,
+    Standby,
+    // The DAB wire format for this mode is "Deep Sleep"; "DeepSleep" is also
+    // accepted on requests since the specification uses both spellings.
+    #[serde(rename = "Deep Sleep", alias = "DeepSleep")]
+    DeepSleep,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct GetPowerModeRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct GetPowerModeResponse {
+    pub powerMode: PowerMode,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct SetPowerModeRequest {
+    pub powerMode: PowerMode,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct SetPowerModeResponse {
+    pub powerMode: PowerMode,
+}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct FactoryResetRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct FactoryResetResponse {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]

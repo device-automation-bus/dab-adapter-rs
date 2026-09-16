@@ -3,7 +3,7 @@ pub mod device_telemetry;
 pub mod mqtt_client;
 pub mod structs;
 use crate::device::rdk as hw_specific;
-use mqtt_client::{MqttClient, MqttMessage};
+use mqtt_client::{MqttClient, MqttMessage, RecvError};
 use std::time::{SystemTime, UNIX_EPOCH};
 use structs::{
     DabError, DabResponse, DiscoveryResponse, ErrorResponse, Messages, NotificationLevel,
@@ -53,6 +53,21 @@ fn call_function(json_str: String, request_type: RequestTypes) -> Result<String,
             let dab_request: structs::RestartRequest =
                 serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
             hw_specific::system::restart::process(dab_request)
+        }
+        RequestTypes::SystemPowerModeGetRequest => {
+            let dab_request: structs::GetPowerModeRequest =
+                serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
+            hw_specific::system::power_mode::get::process(dab_request)
+        }
+        RequestTypes::SystemPowerModeSetRequest => {
+            let dab_request: structs::SetPowerModeRequest =
+                serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
+            hw_specific::system::power_mode::set::process(dab_request)
+        }
+        RequestTypes::SystemFactoryResetRequest => {
+            let dab_request: structs::FactoryResetRequest =
+                serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
+            hw_specific::system::factory_reset::process(dab_request)
         }
         RequestTypes::SystemSettingsListRequest => {
             let dab_request: structs::ListSystemSettingsRequest =
@@ -305,11 +320,9 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                 };
                 println!("Publishing response: {} {}\n", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
             }
-            Err(err) => {
-                if let Some(msg) = err {
-                    println!("Error: {}", msg);
-                }
-            }
+            Err(RecvError::Ignored) => {}
+            Err(RecvError::Disconnected) => mqtt_client.reconnect(),
+            Err(RecvError::Failed(msg)) => println!("Error: {}", msg),
         }
     }
 }
