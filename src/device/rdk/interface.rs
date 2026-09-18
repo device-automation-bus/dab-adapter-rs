@@ -1,8 +1,8 @@
 #![allow(static_mut_refs)]
 
 use crate::dab::structs::AudioOutputMode;
-use crate::dab::structs::AudioVolume;
 use crate::dab::structs::DabError;
+use crate::dab::structs::SettingRange;
 use futures::executor::block_on;
 use futures_util::stream::StreamExt;
 use futures_util::SinkExt;
@@ -460,7 +460,7 @@ pub fn service_is_available(service: &str) -> Result<bool, DabError> {
 #[derive(Deserialize, Debug)]
 struct Settings {
     supported_languages: Option<Vec<String>>,
-    audio_volume_range: Option<AudioVolume>
+    audio_volume_range: Option<SettingRange>
 }
 
 lazy_static! {
@@ -806,9 +806,9 @@ pub fn get_supported_languages() -> Vec<String> {
         .unwrap_or_else(|| vec![String::from("en_US"), String::from("es_US")])
 }
 
-pub fn get_audio_volume_range() -> AudioVolume {
+pub fn get_audio_volume_range() -> SettingRange {
     SETTINGS
         .audio_volume_range
         .clone()
-        .unwrap_or_else(|| AudioVolume { min: 0, max: 100 })
+        .unwrap_or_else(|| SettingRange { min: 0, max: 100 })
 }

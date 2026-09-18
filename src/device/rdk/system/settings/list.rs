@@ -208,6 +208,13 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
         // PictureMode::Game,
         // PictureMode::Auto,
     ];
+
+    // brightness and contrast are not supported: RDK exposes them through
+    // org.rdk.AVOutput, which is only available in the TV device profile.
+    // Unsupported settings are omitted from the response.
+    ResponseOperator.brightness = None;
+    ResponseOperator.contrast = None;
+
     ResponseOperator.audioOutputMode = get_rdk_audio_output_modes()?;
     ResponseOperator.audioOutputSource = get_rdk_supported_audio_source()?;
     ResponseOperator.videoInputSource = vec![VideoInputSource::Home];

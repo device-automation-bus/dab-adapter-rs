@@ -352,7 +352,7 @@ pub enum VideoInputSource {
 
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct AudioVolume {
+pub struct SettingRange {
     pub min: u32,
     pub max: u32,
 }
@@ -361,6 +361,7 @@ pub struct AudioVolume {
 pub struct ListSystemSettingsRequest {}
 
 #[allow(non_snake_case)]
+#[skip_serializing_none]
 #[derive(Default, Serialize, Deserialize)]
 pub struct ListSystemSettingsResponse {
     pub language: Vec<String>,
@@ -371,10 +372,12 @@ pub struct ListSystemSettingsResponse {
     pub matchContentFrameRate: Vec<MatchContentFrameRate>,
     pub hdrOutputMode: Vec<HdrOutputMode>,
     pub pictureMode: Vec<PictureMode>,
+    pub brightness: Option<SettingRange>,
+    pub contrast: Option<SettingRange>,
     pub audioOutputMode: Vec<AudioOutputMode>,
     pub audioOutputSource: Vec<AudioOutputSource>,
     pub videoInputSource: Vec<VideoInputSource>,
-    pub audioVolume: AudioVolume,
+    pub audioVolume: SettingRange,
     pub mute: bool,
     pub textToSpeech: bool,
 }
@@ -384,6 +387,7 @@ pub struct ListSystemSettingsResponse {
 pub struct GetSystemSettingsRequest {}
 
 #[allow(non_snake_case)]
+#[skip_serializing_none]
 #[derive(Default, Serialize, Deserialize)]
 pub struct GetSystemSettingsResponse {
     pub language: String,
@@ -394,6 +398,8 @@ pub struct GetSystemSettingsResponse {
     pub matchContentFrameRate: MatchContentFrameRate,
     pub hdrOutputMode: HdrOutputMode,
     pub pictureMode: PictureMode,
+    pub brightness: Option<u32>,
+    pub contrast: Option<u32>,
     pub audioOutputMode: AudioOutputMode,
     pub audioOutputSource: AudioOutputSource,
     pub videoInputSource: VideoInputSource,
@@ -414,6 +420,8 @@ pub struct SetSystemSettingsRequest {
     pub matchContentFrameRate: Option<MatchContentFrameRate>,
     pub hdrOutputMode: Option<HdrOutputMode>,
     pub pictureMode: Option<PictureMode>,
+    pub brightness: Option<u32>,
+    pub contrast: Option<u32>,
     pub audioOutputMode: Option<AudioOutputMode>,
     pub audioOutputSource: Option<AudioOutputSource>,
     pub videoInputSource: Option<VideoInputSource>,
