@@ -355,5 +355,10 @@ pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, DabErro
     response.lowLatencyMode = false;
     response.textToSpeech = get_rdk_tts()?;
 
+    // brightness is not supported: RDK exposes it through org.rdk.AVOutput,
+    // which is only available in the TV device profile. Unsupported settings
+    // are omitted from the response.
+    response.brightness = None;
+
     Ok(serde_json::to_string(&response).unwrap())
 }
