@@ -85,6 +85,14 @@ pub fn main() {
     // Initialize the device
     hw_specific::interface::init(&device_ip, debug);
 
+    // Warm up the time zone cache: org.rdk.System.getTimeZones is too slow to be
+    // called while serving system/settings/list.
+    thread::spawn(|| {
+        if let Err(error) = hw_specific::system::settings::list::get_rdk_supported_timezones() {
+            println!("Failed to cache the supported time zones: {:?}", error);
+        }
+    });
+
     // Register the handlers
     let mut handlers: SharedMap = HashMap::new();
 

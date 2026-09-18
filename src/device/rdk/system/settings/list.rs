@@ -17,8 +17,64 @@ use crate::hw_specific::interface::get_audio_volume_range;
 use crate::hw_specific::interface::get_supported_languages;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use std::collections::HashMap;
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref SUPPORTED_TIMEZONES: Mutex<Option<Vec<String>>> = Mutex::new(None);
+}
+
+fn flatten_zoneinfo(prefix: &str, node: &serde_json::Map<String, Value>, out: &mut Vec<String>) {
+    for (name, value) in node.iter() {
+        // Skip tz database files and the posix/right trees, which only duplicate
+        // the zones already reported at the top level.
+        if name.contains('.') || name == "posix" || name == "right" || name == "leapseconds" {
+            continue;
+        }
+
+        let zone = if prefix.is_empty() {
+            name.clone()
+        } else {
+            format!("{}/{}", prefix, name)
+        };
+
+        match value {
+            Value::Object(children) => flatten_zoneinfo(&zone, children, out),
+            _ => out.push(zone),
+        }
+    }
+}
+
+/// Supported IANA time zones. The result is cached because the tz database does
+/// not change at runtime and org.rdk.System.getTimeZones takes several hundred
+/// milliseconds, which alone would exceed the latency budget of system/settings.
+pub fn get_rdk_supported_timezones() -> Result<Vec<String>, DabError> {
+    let mut cache = SUPPORTED_TIMEZONES
+        .lock()
+        .map_err(|e| DabError::Err500(e.to_string()))?;
+
+    if let Some(timezones) = cache.as_ref() {
+        return Ok(timezones.clone());
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Deserialize)]
+    struct GetTimeZones {
+        zoneinfo: serde_json::Map<String, Value>,
+    }
+
+    let rdkresponse: RdkResponse<GetTimeZones> = rdk_request("org.rdk.System.getTimeZones")?;
+
+    let mut timezones = Vec::new();
+    flatten_zoneinfo("", &rdkresponse.result.zoneinfo, &mut timezones);
+    timezones.sort();
+
+    *cache = Some(timezones.clone());
+
+    Ok(timezones)
+}
 
 fn get_rdk_resolutions() -> Result<Vec<OutputResolution>, DabError> {
     #[allow(non_snake_case)]
@@ -186,6 +242,8 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
     ResponseOperator.lowLatencyMode = false;
 
     ResponseOperator.mute = true;
+
+    ResponseOperator.timeZone = get_rdk_supported_timezones()?;
 
     ResponseOperator.textToSpeech = service_is_available("org.rdk.TextToSpeech")?;
 
