@@ -376,6 +376,7 @@ pub struct ListSystemSettingsResponse {
     pub videoInputSource: Vec<VideoInputSource>,
     pub audioVolume: AudioVolume,
     pub mute: bool,
+    pub timeZone: Vec<String>,
     pub textToSpeech: bool,
 }
 
@@ -399,6 +400,7 @@ pub struct GetSystemSettingsResponse {
     pub videoInputSource: VideoInputSource,
     pub audioVolume: u32,
     pub mute: bool,
+    pub timeZone: String,
     pub textToSpeech: bool,
 }
 
@@ -419,6 +421,7 @@ pub struct SetSystemSettingsRequest {
     pub videoInputSource: Option<VideoInputSource>,
     pub audioVolume: Option<u32>,
     pub mute: Option<bool>,
+    pub timeZone: Option<String>,
     pub textToSpeech: Option<bool>,
 }
 

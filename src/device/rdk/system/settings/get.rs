@@ -253,6 +253,24 @@ pub fn get_rdk_tts() -> Result<bool, DabError> {
     Ok(rdkresponse.result.isenabled)
 }
 
+pub fn get_rdk_timezone() -> Result<String, DabError> {
+    #[allow(non_snake_case)]
+    #[derive(Deserialize)]
+    struct GetTimeZoneDST {
+        timeZone: Option<String>,
+    }
+
+    let rdkresponse: RdkResponse<GetTimeZoneDST> = rdk_request("org.rdk.System.getTimeZoneDST")?;
+
+    rdkresponse
+        .result
+        .timeZone
+        .filter(|timezone| !timezone.is_empty())
+        .ok_or(DabError::Err500(
+            "Device time zone is not set.".to_string(),
+        ))
+}
+
 pub fn get_rdk_cec() -> Result<bool, DabError> {
     match get_service_state("org.rdk.HdmiCecSource") {
         Ok(state) => {
@@ -354,6 +372,7 @@ pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, DabErro
     response.videoInputSource = get_rdk_video_input_source();
     response.lowLatencyMode = false;
     response.textToSpeech = get_rdk_tts()?;
+    response.timeZone = get_rdk_timezone()?;
 
     Ok(serde_json::to_string(&response).unwrap())
 }

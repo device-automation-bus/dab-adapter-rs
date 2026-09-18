@@ -15,6 +15,7 @@ use crate::device::rdk::system::settings::get::get_rdk_audio_port;
 use crate::device::rdk::system::settings::get::get_rdk_hdr_current_setting;
 use crate::device::rdk::system::settings::list::get_rdk_hdr_settings;
 use crate::device::rdk::system::settings::list::get_rdk_supported_audio_modes;
+use crate::device::rdk::system::settings::list::get_rdk_supported_timezones;
 use crate::hw_specific::interface::RdkResponse;
 use crate::hw_specific::interface::get_audio_volume_range;
 use crate::hw_specific::system::settings::get::get_rdk_connected_video_displays;
@@ -272,6 +273,33 @@ fn set_rdk_text_to_speech(val: bool) -> Result<(), DabError> {
     Ok(())
 }
 
+fn set_rdk_timezone(timezone: String) -> Result<(), DabError> {
+    // Accept any case (e.g. "america/los_angeles") and apply the canonical IANA
+    // name advertised by the device; reject anything the device doesn't know.
+    let canonical = get_rdk_supported_timezones()?
+        .into_iter()
+        .find(|supported| supported.eq_ignore_ascii_case(&timezone))
+        .ok_or(DabError::Err400(format!(
+            "Unsupported time zone '{}'",
+            timezone
+        )))?;
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize)]
+    struct Param {
+        timeZone: String,
+    }
+
+    let _rdkresponse: RdkResponseSimple = rdk_request_with_params(
+        "org.rdk.System.setTimeZoneDST",
+        Param {
+            timeZone: canonical,
+        },
+    )?;
+
+    Ok(())
+}
+
 fn set_rdk_video_input_source(source: VideoInputSource) -> Result<(), DabError> {
     match source {
         VideoInputSource::Home => {
@@ -356,6 +384,9 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabErro
                 set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
+            "timeZone" => {
+                set_rdk_timezone(serde_json::from_value::<String>(value.take()).unwrap())?
+            }
             "videoInputSource" => set_rdk_video_input_source(serde_json::from_value::<
                 VideoInputSource,
             >(value.take()).unwrap())?,
