@@ -1,6 +1,6 @@
 # DAB <==> RDK Adapter #
 
-This software is a RUST application that enables compatibility with [DAB 2.0 specification](https://getdab.org/) to devices based on [Reference Design Kit (RDK)](https://rdkcentral.com/).
+This software is a RUST application that enables compatibility with [DAB 2.1 specification](https://getdab.org/) to devices based on [Reference Design Kit (RDK)](https://rdkcentral.com/).
 The DAB <-> RDK adapter can be executed both on the RDK device or using an external PC.
 
 ## Building ##
@@ -117,11 +117,6 @@ It must be in a form of an array of RFC 5646 language tags. If this field is not
 
 2. `audio_volume_range`
 It is a object with `min` and `max` fields. This is used to indicate possible audio volume range. If this field is not provided, or if the deserialization of settings fails, `audio_volume_range` falls back to `{min: 0, max: 100}`.
-
-
-#### Features ####
-
-Since DAB2.1 specification and implementation is not yet ready, a feature flag has been introduced to enable development and testing. Pass `--features 2_1` to a `cross` command to enable DAB2.1 experimental features.
 
 ## Device ID ##
 
