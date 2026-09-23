@@ -253,6 +253,12 @@ pub fn get_rdk_tts() -> Result<bool, DabError> {
     Ok(rdkresponse.result.isenabled)
 }
 
+pub fn get_rdk_high_contrast_text() -> Result<bool, DabError> {
+    let rdkresponse: RdkResponse<bool> = rdk_request("org.rdk.UserSettings.getHighContrast")?;
+
+    Ok(rdkresponse.result)
+}
+
 pub fn get_rdk_cec() -> Result<bool, DabError> {
     match get_service_state("org.rdk.HdmiCecSource") {
         Ok(state) => {
@@ -354,6 +360,7 @@ pub fn process(_dab_request: GetSystemSettingsRequest) -> Result<String, DabErro
     response.videoInputSource = get_rdk_video_input_source();
     response.lowLatencyMode = false;
     response.textToSpeech = get_rdk_tts()?;
+    response.highContrastText = get_rdk_high_contrast_text()?;
 
     Ok(serde_json::to_string(&response).unwrap())
 }

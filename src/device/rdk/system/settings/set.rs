@@ -272,6 +272,18 @@ fn set_rdk_text_to_speech(val: bool) -> Result<(), DabError> {
     Ok(())
 }
 
+fn set_rdk_high_contrast_text(enabled: bool) -> Result<(), DabError> {
+    #[derive(Serialize)]
+    struct Param {
+        enabled: bool,
+    }
+
+    let _rdkresponse: RdkResponse<Value> =
+        rdk_request_with_params("org.rdk.UserSettings.setHighContrast", Param { enabled })?;
+
+    Ok(())
+}
+
 fn set_rdk_video_input_source(source: VideoInputSource) -> Result<(), DabError> {
     match source {
         VideoInputSource::Home => {
@@ -356,6 +368,7 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabErro
                 set_rdk_hdr_mode(serde_json::from_value::<HdrOutputMode>(value.take()).unwrap())?
             }
             "textToSpeech" => set_rdk_text_to_speech(value.take().as_bool().unwrap())?,
+            "highContrastText" => set_rdk_high_contrast_text(value.take().as_bool().unwrap())?,
             "videoInputSource" => set_rdk_video_input_source(serde_json::from_value::<
                 VideoInputSource,
             >(value.take()).unwrap())?,

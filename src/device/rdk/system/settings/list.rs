@@ -189,6 +189,8 @@ pub fn process(_dab_request: ListSystemSettingsRequest) -> Result<String, DabErr
 
     ResponseOperator.textToSpeech = service_is_available("org.rdk.TextToSpeech")?;
 
+    ResponseOperator.highContrastText = service_is_available("org.rdk.UserSettings")?;
+
     ResponseOperator.hdrOutputMode = get_rdk_hdr_settings()?;
 
     ResponseOperator.audioVolume = get_audio_volume_range();

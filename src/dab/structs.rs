@@ -377,6 +377,7 @@ pub struct ListSystemSettingsResponse {
     pub audioVolume: AudioVolume,
     pub mute: bool,
     pub textToSpeech: bool,
+    pub highContrastText: bool,
 }
 
 #[allow(non_snake_case)]
@@ -400,6 +401,7 @@ pub struct GetSystemSettingsResponse {
     pub audioVolume: u32,
     pub mute: bool,
     pub textToSpeech: bool,
+    pub highContrastText: bool,
 }
 
 #[allow(non_snake_case)]
@@ -420,6 +422,7 @@ pub struct SetSystemSettingsRequest {
     pub audioVolume: Option<u32>,
     pub mute: Option<bool>,
     pub textToSpeech: Option<bool>,
+    pub highContrastText: Option<bool>,
 }
 
 #[allow(non_snake_case)]
