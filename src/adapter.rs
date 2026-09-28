@@ -118,6 +118,10 @@ pub fn main() {
         RequestTypes::SystemRestartRequest,
     );
     handlers.insert(
+        "system/network-reset".to_string(),
+        RequestTypes::SystemNetworkResetRequest,
+    );
+    handlers.insert(
         "system/settings/list".to_string(),
         RequestTypes::SystemSettingsListRequest,
     );

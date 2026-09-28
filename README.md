@@ -169,6 +169,7 @@ This version currently supports the following DAB operations:
 | applications/exit                |    Yes    |
 | device/info                      |    Yes    |
 | system/restart                   |    Yes    |
+| system/network-reset             |    Yes    |
 | system/settings/list             |    Yes    |
 | system/settings/get              |    Yes    |
 | system/settings/set              |    Yes    |
