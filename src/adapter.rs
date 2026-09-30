@@ -118,6 +118,14 @@ pub fn main() {
         RequestTypes::SystemRestartRequest,
     );
     handlers.insert(
+        "system/logs/start-collection".to_string(),
+        RequestTypes::SystemLogsStartCollectionRequest,
+    );
+    handlers.insert(
+        "system/logs/stop-collection".to_string(),
+        RequestTypes::SystemLogsStopCollectionRequest,
+    );
+    handlers.insert(
         "system/settings/list".to_string(),
         RequestTypes::SystemSettingsListRequest,
     );

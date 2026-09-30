@@ -54,6 +54,16 @@ fn call_function(json_str: String, request_type: RequestTypes) -> Result<String,
                 serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
             hw_specific::system::restart::process(dab_request)
         }
+        RequestTypes::SystemLogsStartCollectionRequest => {
+            let dab_request: structs::StartSystemLogCollectionRequest =
+                serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
+            hw_specific::system::logs::start_collection::process(dab_request)
+        }
+        RequestTypes::SystemLogsStopCollectionRequest => {
+            let dab_request: structs::StopSystemLogCollectionRequest =
+                serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
+            hw_specific::system::logs::stop_collection::process(dab_request)
+        }
         RequestTypes::SystemSettingsListRequest => {
             let dab_request: structs::ListSystemSettingsRequest =
                 serde_json::from_str(&json_str).map_err(|e| DabError::Err400(e.to_string()))?;
@@ -240,23 +250,35 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                     }
                 };
 
-                let payload = match response {
+                let payloads = match response {
                     Ok(r) => {
                         // The request was successful.
                         let template = DabResponse { status: 200 };
                         let dab_json =
                             serde_json::to_value(template).expect("Error serializing DabResponse");
                         // Parse the JSON string
-                        let mut dab_response: Value =
+                        let dab_response: Value =
                             serde_json::from_str(&r).expect("Error parsing JSON string");
-                        if dab_response.is_object() {
-                            for (key, value) in dab_json.as_object().unwrap() {
-                                dab_response[key] = value.clone();
-                            }
-                        }
-                        dab_response.to_string()
+                        // A handler that answers with several responses (such as the
+                        // chunks of system/logs/stop-collection) returns them as a JSON
+                        // array; each element is published as its own response, in order.
+                        let dab_responses = match dab_response {
+                            Value::Array(responses) => responses,
+                            response => vec![response],
+                        };
+                        dab_responses
+                            .into_iter()
+                            .map(|mut dab_response| {
+                                if dab_response.is_object() {
+                                    for (key, value) in dab_json.as_object().unwrap() {
+                                        dab_response[key] = value.clone();
+                                    }
+                                }
+                                dab_response.to_string()
+                            })
+                            .collect::<Vec<String>>()
                     }
-                    Err(e) => match e {
+                    Err(e) => vec![match e {
                         DabError::Err400(msg) => {
                             // The request was not successful.
                             serde_json::to_string(&ErrorResponse {
@@ -287,23 +309,25 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                             })
                             .unwrap()
                         }
-                    },
+                    }],
                 };
 
-                let msg_tx = MqttMessage {
-                    function_topic: response_topic.clone(),
-                    response_topic: "".to_string(),
-                    correlation_data: correlation_data.clone(),
-                    payload: payload.clone(),
-                };
-                // Publish the response
-                mqtt_client.publish(msg_tx);
-                let limited_payload = if cfg!(debug_assertions) {
-                    payload.clone()
-                } else {
-                    payload.chars().take(255).collect::<String>()
-                };
-                println!("Publishing response: {} {}\n", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
+                for payload in payloads {
+                    let msg_tx = MqttMessage {
+                        function_topic: response_topic.clone(),
+                        response_topic: "".to_string(),
+                        correlation_data: correlation_data.clone(),
+                        payload: payload.clone(),
+                    };
+                    // Publish the response
+                    mqtt_client.publish(msg_tx);
+                    let limited_payload = if cfg!(debug_assertions) {
+                        payload.clone()
+                    } else {
+                        payload.chars().take(255).collect::<String>()
+                    };
+                    println!("Publishing response: {} {}\n", response_topic.clone().replace(&substring, ""), limited_payload.as_str());
+                }
             }
             Err(err) => {
                 if let Some(msg) = err {

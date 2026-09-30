@@ -33,6 +33,12 @@ pub fn process(_dab_request: OperationsListRequest) -> Result<String, DabError> 
         .push("system/restart".to_string());
     ResponseOperator
         .operations
+        .push("system/logs/start-collection".to_string());
+    ResponseOperator
+        .operations
+        .push("system/logs/stop-collection".to_string());
+    ResponseOperator
+        .operations
         .push("system/settings/list".to_string());
     ResponseOperator
         .operations

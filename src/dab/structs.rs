@@ -20,6 +20,8 @@ pub enum RequestTypes {
     ApplicationExitRequest,
     DeviceInfoRequest,
     SystemRestartRequest,
+    SystemLogsStartCollectionRequest,
+    SystemLogsStopCollectionRequest,
     SystemSettingsListRequest,
     SystemSettingsGetRequest,
     SystemSettingsSetRequest,
@@ -429,6 +431,25 @@ pub struct RestartRequest {}
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
 pub struct RestartResponse {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartSystemLogCollectionRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StartSystemLogCollectionResponse {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopSystemLogCollectionRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct StopSystemLogCollectionResponse {
+    pub logArchive: String,
+    pub remainingChunks: u32,
+}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]

@@ -70,6 +70,8 @@ $ cargo run -- -d <rdk-device-ip>
 
 **Note:** The voice operators will not be available when running dab-adapter on PC. To use the voice operators, run `dab-adapter` on a RDK device.
 
+**Note:** The `system/logs/*` operators read `/opt/logs` and the crash dump folders directly, so they are also only available when `dab-adapter` runs on the RDK device.
+
 ## For Production ##
 
 Install [cargo bitbake](https://github.com/meta-rust/cargo-bitbake) and create a bitbake recipe and integrate it on Yocto build of RDK.
@@ -169,6 +171,8 @@ This version currently supports the following DAB operations:
 | applications/exit                |    Yes    |
 | device/info                      |    Yes    |
 | system/restart                   |    Yes    |
+| system/logs/start-collection     |    Yes    |
+| system/logs/stop-collection      |    Yes    |
 | system/settings/list             |    Yes    |
 | system/settings/get              |    Yes    |
 | system/settings/set              |    Yes    |
