@@ -20,6 +20,7 @@ pub enum RequestTypes {
     ApplicationExitRequest,
     DeviceInfoRequest,
     SystemRestartRequest,
+    SystemFactoryResetRequest,
     SystemSettingsListRequest,
     SystemSettingsGetRequest,
     SystemSettingsSetRequest,
@@ -429,6 +430,14 @@ pub struct RestartRequest {}
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]
 pub struct RestartResponse {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct FactoryResetRequest {}
+
+#[allow(non_snake_case)]
+#[derive(Default, Serialize, Deserialize)]
+pub struct FactoryResetResponse {}
 
 #[allow(non_snake_case)]
 #[derive(Default, Serialize, Deserialize)]

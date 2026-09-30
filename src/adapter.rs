@@ -118,6 +118,10 @@ pub fn main() {
         RequestTypes::SystemRestartRequest,
     );
     handlers.insert(
+        "system/factory-reset".to_string(),
+        RequestTypes::SystemFactoryResetRequest,
+    );
+    handlers.insert(
         "system/settings/list".to_string(),
         RequestTypes::SystemSettingsListRequest,
     );
