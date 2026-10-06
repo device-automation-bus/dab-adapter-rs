@@ -4,7 +4,7 @@ pub mod mqtt_client;
 pub mod structs;
 use crate::device::rdk as hw_specific;
 use mqtt_client::{MqttClient, MqttMessage};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use structs::{
     DabError, DabResponse, DiscoveryResponse, ErrorResponse, Messages, NotificationLevel,
     RequestTypes, SharedMap, TelemetryMessage,
@@ -172,6 +172,10 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
     let mqtt_client_telemetry = mqtt_client.clone();
     let mut device_telemetry = DeviceTelemetry::new(mqtt_client_telemetry, device_id.clone());
 
+    // Set when system/restart is accepted. RDK only starts the shutdown a
+    // few seconds after org.rdk.System.reboot returns.
+    let mut restart_requested: Option<Instant> = None;
+
     // Infinite loop
     loop {
         // Check for messages
@@ -204,10 +208,22 @@ pub fn run(mqtt_server: String, mqtt_port: u16, mut function_map: SharedMap) {
                     }
 
                     match function_map.get_mut(&operation) {
+                        // The device is going down, so do not start anything new.
+                        // The time limit keeps DAB usable if the reboot never happens.
+                        _ if restart_requested
+                            .map_or(false, |t| t.elapsed() < Duration::from_secs(60)) =>
+                        {
+                            println!("rejected, device is restarting: {}", operation);
+                            Err(DabError::Err500("Device is restarting".to_string()))
+                        }
                         // If we get the proper handler, then call it
                         Some(request_type) => {
                             println!("processing: {}", operation);
-                            call_function(payload.clone(), request_type.clone())
+                            let result = call_function(payload.clone(), request_type.clone());
+                            if &operation == "system/restart" && result.is_ok() {
+                                restart_requested = Some(Instant::now());
+                            }
+                            result
                         }
                         // If we can't get the proper handler, then this is a telemetry operation or is not implemented
                         _ => {
