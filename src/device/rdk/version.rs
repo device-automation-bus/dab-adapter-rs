@@ -9,7 +9,6 @@ pub fn process(_dab_request: VersionRequest) -> Result<String, DabError> {
     let mut ResponseOperator = Version::default();
     // *** Fill in the fields of the struct Version here ***
     ResponseOperator.versions.push("2.0".to_string());
-    ResponseOperator.versions.push("2.0".to_string());
     ResponseOperator.versions.push("2.1".to_string());
 
     // *******************************************************************
