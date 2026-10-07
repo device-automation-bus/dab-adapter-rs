@@ -329,7 +329,7 @@ pub enum AudioOutputSource {
     EArc,
     Optical,
     Aux,
-    Bluetooth,
+    WirelessSpeakers,
     Auto,
     #[default]
     HDMI,
@@ -345,6 +345,7 @@ pub enum VideoInputSource {
     HDMI4,
     Composite,
     Component,
+    USB,
     #[default]
     Home,
     Cast,

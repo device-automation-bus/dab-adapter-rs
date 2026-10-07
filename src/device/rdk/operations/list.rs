@@ -77,15 +77,6 @@ pub fn process(_dab_request: OperationsListRequest) -> Result<String, DabError> 
         .operations
         .push("voice/send-text".to_string());
     ResponseOperator.operations.push("version".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/language/list".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/language/get".to_string());
-    // ResponseOperator
-    //     .operations
-    //     .push("system/language/set".to_string());
     ResponseOperator.operations.shrink_to_fit();
 
     // *******************************************************************
