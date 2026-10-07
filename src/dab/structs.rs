@@ -420,6 +420,10 @@ pub struct SetSystemSettingsRequest {
     pub audioVolume: Option<u32>,
     pub mute: Option<bool>,
     pub textToSpeech: Option<bool>,
+    pub screenSaver: Option<bool>,
+    pub screenSaverTimeout: Option<u32>,
+    pub personalizedAds: Option<bool>,
+    pub identifierForAdvertising: Option<String>,
 }
 
 #[allow(non_snake_case)]

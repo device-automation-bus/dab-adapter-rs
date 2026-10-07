@@ -362,8 +362,9 @@ pub fn process(_dab_request: SetSystemSettingsRequest) -> Result<String, DabErro
             "matchContentFrameRate" => set_rdk_match_content_frame_rate(
                 serde_json::from_value::<MatchContentFrameRate>(value.take()).unwrap(),
             )?,
-            "pictureMode" | "lowLatencyMode" | _ => {
-                return Err(DabError::Err400(format!(
+            "pictureMode" | "lowLatencyMode" | "screenSaver" | "screenSaverTimeout"
+            | "personalizedAds" | "identifierForAdvertising" | _ => {
+                return Err(DabError::Err501(format!(
                     "Setting '{}' is not supported",
                     key
                 )))
