@@ -40,7 +40,14 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
     };
 
     let is_cobalt = _dab_request.appId.to_lowercase() == "cobalt"
-        || _dab_request.appId.to_lowercase() == "youtube";
+        || _dab_request.appId.to_lowercase() == "youtube"
+        || _dab_request.appId.to_lowercase() == "youtubetv";
+
+    let cobalt_url = if _dab_request.appId.to_lowercase() == "youtubetv" {
+        "https://www.youtube.com/tv/upg"
+    } else {
+        "https://www.youtube.com/tv"
+    };
 
     let is_netflix = _dab_request.appId.to_lowercase() == "netflix";
 
@@ -81,7 +88,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
         AppState::Stopped => {
             // Cold launch of app.
             let req_params = if is_cobalt {
-                let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
+                let url = format!("{}?{}", cobalt_url, param_list.join("&"));
                 let language = get_rdk_language().map_err(|err|{
                     eprintln!("Unable to retrieve RDK language.");
                     err
@@ -121,7 +128,7 @@ pub fn process(_dab_request: LaunchApplicationRequest) -> Result<String, DabErro
                         jsonrpc: "2.0".into(),
                         id: 3,
                         method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                        params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+                        params: format!("{}?{}", cobalt_url, param_list.join("&")),
                     };
 
                     let json_string = serde_json::to_string(&request).unwrap();

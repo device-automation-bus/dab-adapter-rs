@@ -29,6 +29,12 @@ pub fn process(_dab_request: ApplicationListRequest) -> Result<String, DabError>
                 };
                 ResponseOperator.applications.push(app);
             }
+            "YouTubeTV" => {
+                let app = Application {
+                    appId: ("YouTubeTV").to_string(),
+                };
+                ResponseOperator.applications.push(app);
+            }
             "Amazon" => {
                 let app = Application {
                     appId: ("PrimeVideo").to_string(),

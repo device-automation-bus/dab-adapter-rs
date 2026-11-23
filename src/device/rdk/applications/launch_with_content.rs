@@ -21,7 +21,14 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
     }
 
     let is_cobalt = _dab_request.appId.to_lowercase() == "cobalt"
-        || _dab_request.appId.to_lowercase() == "youtube";
+        || _dab_request.appId.to_lowercase() == "youtube"
+        || _dab_request.appId.to_lowercase() == "youtubetv";
+
+    let cobalt_url = if _dab_request.appId.to_lowercase() == "youtubetv" {
+        "https://www.youtube.com/tv/upg"
+    } else {
+        "https://www.youtube.com/tv"
+    };
 
     // TODO: expand this to support more apps.
     if !is_cobalt
@@ -75,7 +82,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
         AppState::Stopped => {
             // Cold launch of app.
             let req_params = if is_cobalt {
-                let url = format!("https://www.youtube.com/tv?{}", param_list.join("&"));
+                let url = format!("{}?{}", cobalt_url, param_list.join("&"));
                 let config = json!({"url": url});
                 RDKShellParams {
                     callsign: _dab_request.appId.clone(),
@@ -102,7 +109,7 @@ pub fn process(_dab_request: LaunchApplicationWithContentRequest) -> Result<Stri
                         jsonrpc: "2.0".into(),
                         id: 3,
                         method: _dab_request.appId.clone() + ".1.deeplink".into(),
-                        params: format!("https://www.youtube.com/tv?{}", param_list.join("&")),
+                        params: format!("{}?{}", cobalt_url, param_list.join("&")),
                     };
         
                     let json_string = serde_json::to_string(&request).unwrap();
