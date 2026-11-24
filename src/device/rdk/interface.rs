@@ -738,14 +738,16 @@ lazy_static! {
     static ref APP_LIFECYCLE_TIMEOUTS: LifecycleTimeouts = {
         let mut app_lifecycle_timeouts = LifecycleTimeouts::new();
 
-        app_lifecycle_timeouts.insert("youtube".to_string(), {
-            let mut timeouts = TimeoutMap::new();
-            timeouts.insert("cold_launch_timeout_ms".to_string(), 6000);
-            timeouts.insert("resume_launch_timeout_ms".to_string(), 3000);
-            timeouts.insert("exit_to_destroy_timeout_ms".to_string(), 2500);
-            timeouts.insert("exit_to_background_timeout_ms".to_string(), 2000);
-            timeouts
-        });
+        let default_youtube_timeouts = TimeoutMap::from([
+            ("cold_launch_timeout_ms".to_string(), 6000),
+            ("resume_launch_timeout_ms".to_string(), 3000),
+            ("exit_to_destroy_timeout_ms".to_string(), 2500),
+            ("exit_to_background_timeout_ms".to_string(), 2000),
+        ]);
+
+        for app_id in ["youtube", "youtubetv"] {
+            app_lifecycle_timeouts.insert(app_id.to_string(), default_youtube_timeouts.clone());
+        }
 
         match read_platform_config_json("/opt/dab_platform_app_lifecycle.json") {
             /* File Format Reference:
@@ -768,7 +770,7 @@ lazy_static! {
                 match serde_json::from_str::<HashMap<String, HashMap<String, u64>>>(&json_file) {
                     Ok(app_lifecycle_config) => {
                         for (app_id, timeout_map) in app_lifecycle_config {
-                            if app_id == "youtube" || app_id == "uk.co.bbc.iplayer" || app_id == "netflix" || app_id == "primevideo" {
+                            if app_id == "youtube" || app_id == "youtubetv" || app_id == "uk.co.bbc.iplayer" || app_id == "netflix" || app_id == "primevideo" {
                                 app_lifecycle_timeouts.insert(app_id, timeout_map);
                             }
                         }
